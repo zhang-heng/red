@@ -1,7 +1,7 @@
 namespace java dvr.netsdk
 namespace cpp  dvr.netsdk
 
-enum MediaType{
+enum eMediaType{
 FileHeader  = 1,
 MediaData   = 2,
 VideoFrame  = 3,
@@ -24,7 +24,7 @@ bool CleanSDK(),
 bool Login(),
 //注销设备
 bool Logout(),
-/××××××××××维护××××××××××/
+//**********维护**********/
 //获取设备状态
 bool GetStatus(),
 //远程升级
@@ -33,26 +33,26 @@ bool Updata(),
 bool Restart(),
 //设置时间
 bool SetTime(),
-/××××××××××控制××××××××××/
+//**********控制**********/
 //云台控制
 bool PTZControl(),
 //透明串口
 bool SerialStart(),
 bool SerialSend(),
 bool SerialStop(),
-/××××××××××预览××××××××××/
+//**********预览**********/
 //打开预览
 bool StartRealPlay(),
 //关闭预览
 bool StopRealPlay(),
-/××××××××××对讲××××××××××/
+//**********对讲**********/
 //启动对讲
 bool StartVoiceTalk(),
 //发送对讲音频
 bool SendVoiceData(),
 //关闭对讲
 bool StopVoiceTalk(),
-/××××××××××点播××××××××××/
+//**********点播**********/
 //查询录像
 bool InquiryRecordTimeSpan(),
 //按时间点播
@@ -61,7 +61,7 @@ bool PlayBackByTime(),
 bool PlayBackByFile(),
 //停止点播
 bool StopPlayBack(),
-/×××××回放控制×××××/
+//*****回放控制*****/
 //暂停
 bool PlayBackPause(),
 //恢复
@@ -74,7 +74,7 @@ bool PlayBackSlow(),
 bool PlayBackNormalSpeed(),
 //改变进度
 bool PlayBackSeek(),
-/××××××××××下载××××××××××/
+//**********下载**********/
 //按文件名下载
 bool DownloadRecordByFile(),
 //按时间下载
@@ -88,11 +88,11 @@ service Notify{
 oneway void Online(),
 //掉线通知
 oneway void Offline(),
-/××××××××××媒体通知××××××××××/
+//**********媒体通知**********/
 //媒体数据
-oneway void MediaData(1:string session, 2:MediaType type, 3:string data),
+oneway void MediaData(1:string session, 2:eMediaType type, 3:string data),
 //媒体通知
 oneway void MediaNotify(1:eMediaNotify what),
-/××××××××××报警通知××××××××××/
+//**********报警通知**********/
 oneway void AlarmNotify(),
 }
