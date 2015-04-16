@@ -14,7 +14,6 @@ pom.xml.asc
 .nrepl-port
 .#*
 *.dvr
-*.so
 *.log
 *.orig
 /dvr
@@ -24,4 +23,4 @@ pom.xml.asc
 *.toc
 *.pyg
 
-/gen-*
+gen-*

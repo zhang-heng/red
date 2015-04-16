@@ -85,7 +85,7 @@ bool StopDownload(),
 
 service Notify{
 //上线通知
-oneway void Online(),
+void Online(),
 //掉线通知
 oneway void Offline(),
 //**********媒体通知**********/
@@ -95,4 +95,6 @@ oneway void MediaData(1:string session, 2:eMediaType type, 3:string data),
 oneway void MediaNotify(1:eMediaNotify what),
 //**********报警通知**********/
 oneway void AlarmNotify(),
+//test
+binary TestBytes(1:binary bytes),
 }

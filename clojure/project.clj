@@ -7,4 +7,4 @@
                  [org.slf4j/slf4j-log4j12 "1.7.10"]
                  [org.apache.thrift/libthrift "0.9.2"]]
   :main red.core
-  :java-source-paths ["../gen-java"])
+  :java-source-paths ["./gen-java"])
