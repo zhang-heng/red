@@ -1,5 +1,5 @@
-namespace java dvr.netsdk
-namespace cpp  dvr.netsdk
+namespace java device.sdk.netsdk
+namespace cpp  device.sdk.netsdk
 
 enum eMediaType{
 FileHeader  = 1,

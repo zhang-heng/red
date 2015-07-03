@@ -1,4 +1,0 @@
-#!/bin/sh
-rm -rf gen-*
-thrift -o clojure -gen java netsdk.thrift
-thrift -o cpp/src -gen cpp netsdk.thrift
