@@ -1,6 +1,8 @@
 namespace java device.sdk.media
 namespace cpp  device.sdk.media
 
+const string version = "1.0.0"
+
 //媒体类型
 enum eMediaType{
 FileHeader  = 1,//头
@@ -16,7 +18,7 @@ struct MediaPackage{
 1: string     session
 2: eMediaType type,
 3: i32        extraType,
-4: binary     payload,
+4: string     payload,
 }
 
 //请求操作
@@ -46,9 +48,10 @@ bool PlayBackSeek(),             //改变进度
 
 //通知反馈
 service Notify{
-oneway void Offline(),                        //断线通知
-oneway void MediaFinish(),                    //结束通知
-oneway void MediaData(1: MediaPackage data),  //媒体数据
+void Lanuched(),                       //启动完成
+void Offline(),                        //断线通知
+void MediaFinish(),                    //结束通知
+void MediaData(1: MediaPackage data),  //媒体数据
 
 //test
 binary TestBytes(1:binary bytes),

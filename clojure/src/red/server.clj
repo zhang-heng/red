@@ -1,31 +1,34 @@
 (ns red.server
-  (:import [dvr.netsdk Notify$Client Notify$Iface Notify$Processor]
-           [org.apache.thrift.server TServer]
-           [org.apache.thrift.server TServer$Args]
-           [org.apache.thrift.server TSimpleServer]
-           [org.apache.thrift.protocol TBinaryProtocol TJSONProtocol]
-           [org.apache.thrift.transport TServerSocket TMemoryBuffer]))
+  (:require [thrift-clj.core :as thrift]))
 
-(defonce sv (atom nil))
+(thrift/import
+ (:types    [device.sdk.media eMediaType MediaPackage])
+ (:services [device.sdk.media Notify]))
 
-(defn stop-server []
-  (when @sv
-    (swap! sv (fn [s] (.stop s) nil))))
 
-(defn start-server []
-  (let [handler (reify Notify$Iface
-                  (Online      [this] (prn 111))
-                  (Offline     [this])
-                  (MediaData   [this session type data] ;; (prn (count data))
-                    )
-                  (MediaNotify [this what])
-                  (AlarmNotify [this]))
-        processor (Notify$Processor. handler)]
-    (future (let [transport (TServerSocket. 8090)
-                  server (TSimpleServer.
-                          (.processor (TServer$Args. transport) processor))]
-              (stop-server)
-              (swap! sv
-                     (fn [_] server))
-              (prn "server start")
-              (.serve server)))))
+(defn offline [])
+
+(defn media-finish [])
+
+(defn media-data [media] )
+
+(thrift/defservice media-notify
+  Notify
+  (Offline [] (offline))
+  (MediaFinish [] (media-finish))
+  (MediaData [media] (media-data media)))
+
+(defonce th (atom nil))
+
+(defn start-server[]
+  (reset! th (Thread.
+              (fn []
+                (thrift/serve-and-block!
+                 (thrift/multi-threaded-server
+                  media-notify 7007
+                  :bind "localhost"
+                  :protocol :compact)))))
+  (.start @th)
+  @th)
+
+;;(start-server)
