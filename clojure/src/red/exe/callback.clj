@@ -22,31 +22,26 @@
     (handle media)))
 
 ;;监听请求
-(defn- start-listen [args port]
+(defn- start-listen! [info port]
   (let [handler (thrift/service Notify
-                                (Lanuched    []      (launched args))
-                                (Offline     []      (offline args))
-                                (MediaFinish []      (media-finish args))
-                                (MediaData   [media] (media-data args media)))
+                                (Lanuched    []      (launched info))
+                                (Offline     []      (offline info))
+                                (MediaFinish []      (media-finish info))
+                                (MediaData   [media] (media-data info media)))
         server (thrift/multi-threaded-server
                 handler port :bind "localhost"
                 :protocol :compact)]
     (thrift/serve! server)
-    {:server server :port port :args args}))
+    {:server server :port port :info info}))
 
-(defn try-to-start-listen [args]
-  (let [server (some (fn [port]
-                       (try
-                         (start-listen args port)
-                         (catch org.apache.thrift.transport.TTransportException e nil)
-                         (catch Exception e (prn e))))
-                     (range 50000 60000))]
-    server))
+(defn try-to-start-listen [info]
+  (some (fn [port]
+          (try
+            (start-listen! info port)
+            (catch org.apache.thrift.transport.TTransportException e nil)
+            (catch Exception e (prn e))))
+        (range 50000 60000)))
 
-(defn stop-server [{server :server}]
+(defn stop-server! [{server :server}]
   (try (thrift/stop! server)
        (catch Exception e (prn e))))
-
-
-;;(def xx (try-to-start-listen 123))
-;;(def xx2 (try-to-start-listen 123))
