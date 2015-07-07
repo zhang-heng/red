@@ -1,53 +1,32 @@
 (ns red.exe.launcher
   (:require [environ.core :refer [env]])
-  (:import [java.io InputStreamReader BufferedReader]))
+  (:import [java.io
+            InputStreamReader BufferedReader
+            InputStream OutputStream FileInputStream DataInputStream
+            File
+            IOException EOFException]
+           [java.lang ProcessBuilder$Redirect]))
 
-(defn kill-exe-by-PID [pid]
-  (prn pid))
+(defn- creat-process-builder [path command]
+  (doto (ProcessBuilder. ^"[Ljava.lang.String;" command)
+    (.directory (File. path))
+    (.. (environment)
+        (put "LD_LIBRARY_PATH" path))))
 
-(defn clean-last-exe [manufacturer]
-  (let [cmd "ps -C java"
-        ps  (.. (Runtime/getRuntime)
-                (exec cmd))
-        br  (-> (.getInputStream ps)
-                (InputStreamReader.)
-                (BufferedReader.))]
-    (.readLine br)
-    (doseq [proc (->> (repeatedly #(.readLine br))
-                      (take-while not-empty))]
-      (let [pid (first (re-seq #"\d+" proc))]
-        (kill-exe-by-PID pid)))))
+;; 启动进程
+(defn launch [path name thrift-notify-port printer]
+  (let [command      (into-array String [(format "%s/%s.exe" path name) (str thrift-notify-port)])
+        proc-builder (creat-process-builder path command)
+        proc         (.start proc-builder)
+        br           (-> (.getInputStream proc) InputStreamReader. BufferedReader.)]
+    (future
+      (while (let [r (.readLine br)]
+               (printer (str r))
+               r)))
+    {:process proc}))
 
-(defn launch [manufacturer local-port]
-  (clean-last-exe manufacturer)
-  (let [exe-dir      (format "%s/%s" (env :exe-dir) manufacturer)
-        cmd          (into-array String [(format "%s/%s.dvr" exe-dir manufacturer) local-port])
-
-        proc-builder (doto (ProcessBuilder. ^"[Ljava.lang.String;" cmd)
-                       (.directory (File. drayd-dir))
-                       (.redirectErrorStream true)
-                       (.redirectOutput (ProcessBuilder$Redirect/appendTo
-                                         (if
-                                             (= (clojure.string/lower-case (get-in setting/settings [:log :level])) "debug")
-                                           (File. (format "%s/%s.dvr.stdout" drayd-dir manufacturer))
-                                           (File. "/dev/null"))))
-                       (.. (environment) (put "LD_LIBRARY_PATH" drayd-dir)))]
-    (.. (Runtime/getRuntime) (exec (format "rm -f %s" fifo-path)) (waitFor))
-    (.. (Runtime/getRuntime) (exec (format "mkfifo -m +rw %s" fifo-path)) (waitFor))
-    (let [drayd-process (.start proc-builder)
-          output-stream (.getOutputStream drayd-process)
-          input-stream  (-> (FileInputStream. fifo-path) (DataInputStream.))
-          execute       (make-queue-executor (format "%s output writer" manufacturer))
-          drayd         (Drayd. manufacturer drayd-process input-stream output-stream execute {} 0)]
-      (dosync (alter drayds assoc manufacturer drayd))
-      (.start (Thread. #(try (while true
-                               (handle-drayd-msg manufacturer (read<-drayd input-stream)))
-                             (catch EOFException ex
-                               (log/error ex)
-                               (clean-crashed-drayd manufacturer))
-                             (catch Exception ex
-                               (log/error "Kill drayd because:" ex)
-                               (.printStackTrace ex)
-                               (clean-crashed-drayd manufacturer)
-                               (.destroy drayd-process)))
-                       (format "%s fifo reader" manufacturer))))))
+;; 杀进程
+(defn exit-process [{proc :process}]
+  (try
+    (.destroy proc)
+    (catch Exception e (prn e))))
