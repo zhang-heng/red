@@ -59,6 +59,8 @@ Sub   = 2, //辅码流
 
 //请求操作
 service Sdk{
+string GetVersion(),             //获取版本信息
+
 bool Init(),                     //初始化sdk
 bool Uninit(),                   //释放SDK,退出
 
