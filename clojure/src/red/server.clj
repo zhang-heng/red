@@ -1,34 +1,35 @@
 (ns red.server
-  (:require [thrift-clj.core :as thrift]))
+  (:require [ring.adapter.jetty :refer [run-jetty]]
+            [red.handler :refer [app]])
+  (:import [org.apache.commons.daemon DaemonContext])
+  (:gen-class :implements [org.apache.commons.daemon.Daemon]))
 
-(thrift/import
- (:types    [device.sdk.media eMediaType MediaPackage])
- (:services [device.sdk.media Notify]))
+(defonce ^:private server (atom nil))
+
+(defn- run-rest []
+  (run-jetty app {:port 8080, :join? false}))
+
+(defn- run [join?]
+  (let [status (merge {:rest (run-rest)})]
+    (reset! server status)))
+
+(defn- stop []
+  (when-let [rest (:rest @server)]
+    (.stop rest)))
+
+;;;daemon
+
+(defn -main []
+  (run true))
+
+(defn -init [this, ^DaemonContext context])
+
+(defn -start [this]
+  (run false))
+
+(defn -stop [this]
+  (stop))
 
 
-(defn offline [])
-
-(defn media-finish [])
-
-(defn media-data [media] )
-
-(thrift/defservice media-notify
-  Notify
-  (Offline [] (offline))
-  (MediaFinish [] (media-finish))
-  (MediaData [media] (media-data media)))
-
-(defonce th (atom nil))
-
-(defn start-server[]
-  (reset! th (Thread.
-              (fn []
-                (thrift/serve-and-block!
-                 (thrift/multi-threaded-server
-                  media-notify 7007
-                  :bind "localhost"
-                  :protocol :compact)))))
-  (.start @th)
-  @th)
-
-;;(start-server)
+;;(-start 1)
+;;(-stop 1)
