@@ -4,10 +4,10 @@
 (defroutes playback-routes
   (context "/playback" []
            ;;启动回放
-           (POST "/play" [manufacturer
-                          host port user password
-                          channel-id
-                          start-time end-time]
+           (POST "/" [manufacturer
+                      host port user password
+                      channel-id
+                      start-time end-time]
                  (str manufacturer host port user password channel-id start-time end-time))
            ;;回放控制
            (context "/:session" [session]
