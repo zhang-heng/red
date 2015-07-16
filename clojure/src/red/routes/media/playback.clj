@@ -10,7 +10,7 @@
                       start-time end-time]
                  (str manufacturer host port user password channel-id start-time end-time))
            ;;回放控制
-           (context "/:session" [session]
+           (context "/:session-id" [session-id]
                     (GET "/status" [] "status")
                     (DELETE "/drop" [] "drop")
 

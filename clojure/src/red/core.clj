@@ -1,19 +1,14 @@
 (ns red.core
-  (:import [java.util UUID]))
+  (:require [red.client.core :refer [check-timeout-task]]))
 
-;;订阅数据
-(defonce subscribes (ref #{}))
-
-;;订阅请求
-(defn subscribe [args]
-  (let [session-id (UUID/randomUUID)]
-    (dosync
-     (alter subscribes conj (assoc args :session-id session-id)))
-    session-id))
-
-
-
-;;按变量名生成map
-;;(correspond-args a b)->{:a a :b b}
-(defmacro correspond-args [& args]
-  (reduce (fn [c k] (assoc c (keyword k) k)) {} args))
+(defn start-check-task
+  "启动维护任务@返回关闭函数"
+  []
+  (let [running (promise)
+        task    (Thread. #(while (deref running 1000 true)
+                            (check-timeout-task)))]
+    (.start task)
+    #(try (do (deliver running false)
+              (.join task)
+              (.stop task))
+          (catch Exception _))))

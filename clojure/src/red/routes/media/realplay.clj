@@ -1,6 +1,6 @@
 (ns red.routes.media.realplay
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]
-            [red.core :refer [subscribe correspond-args]]
+            [red.client.core :refer [subscribe correspond-args]]
             [environ.core :refer [env]]))
 
 (defroutes realplay-routes
@@ -15,6 +15,6 @@
                   :gtsp-port (env :gtsp-port)})
 
            ;;状态
-           (context "/:session" [session]
+           (context "/:session-id" [session-id]
                     (GET "/status" [] "status")
                     (DELETE "/drop" [] "drop"))))

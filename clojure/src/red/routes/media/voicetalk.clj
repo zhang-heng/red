@@ -9,6 +9,6 @@
                       voice-type]
                  (str manufacturer host port user password channel-id voice-type))
            ;;状态
-           (context "/:session" [session]
+           (context "/:session-id" [session-id]
                     (GET "/status" [] "status")
                     (DELETE "/drop" [] "drop"))))

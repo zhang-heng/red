@@ -1,8 +1,10 @@
 ;;主动连接
-(ns red.device.active
-  (:require [red.exe.launcher :as launcher]
+(ns red.device.active.core
+  (:require [red.utils :refer [now]]
+            [red.exe.launcher :as launcher]
             [red.exe.callback :as callback]
             [red.exe.request :as request]))
+
 (def path "/home/kay/project/red/dvr/gt/")
 (def name "gt")
 
