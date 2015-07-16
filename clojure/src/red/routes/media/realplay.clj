@@ -1,6 +1,6 @@
 (ns red.routes.media.realplay
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]
-            [red.client.core :refer [subscribe correspond-args]]
+            [red.client.restfull :refer [subscribe correspond-args]]
             [environ.core :refer [env]]))
 
 (defroutes realplay-routes
