@@ -21,38 +21,48 @@
                   :writer (completion :write att)
                   :send-queue (ref [])))))
 
-(defn- do-read [l {:keys [socket reader] :as connection}]
-  (let [buffer (ByteBuffer/allocate l)]
+(defn- do-read [len {:keys [socket reader] :as connection}]
+  (let [buffer (ByteBuffer/allocate len)]
     (.read socket buffer buffer reader)))
+
+(defn- do-write
+  [{:keys [socket writer]} buffer]
+  (send (agent nil)
+        (fn [_] (.write socket buffer buffer writer))))
 
 (defn- completion
   "处理完成请求
   phase: accept; read; write"
   [phase attachment-ref]
   (proxy [CompletionHandler] []
-    (completed [a b]
+    (completed [result attachment]
       ":read/write: Integer i, ByteBuffer buf
        :accept:     AsynchronousSocketChannel socket, AsynchronousServerSocketChannel attachment"
       (try
         (case phase
-          :accept (let [{:keys [server receive-handler accept-handler]} b
-                        connection (mk-attachment (assoc b :socket a))]
-                    (.accept server b this)
+          :accept (let [{:keys [server receive-handler accept-handler]} attachment
+                        connection (mk-attachment (assoc attachment :socket result))]
+                    (.accept server attachment this)
                     (-> (accept-handler connection)
                         (do-read connection)))
 
           :read (let [{:keys [socket receive-handler] :as connection} (deref attachment-ref)]
-                  (when (neg? a)
+                  (when (neg? result)
                     (prn "disconnet:" (.getRemoteAddress socket))
-                    (-> (receive-handler b attachment-ref)
+                    (-> (receive-handler attachment attachment-ref)
                         (do-read connection))))
 
-          :write (let [{:keys [socket send-queue writer]} (deref attachment-ref)
-                       buffer (dosync (alter send-queue pop)
-                                      (peek send-queue))]
-                   (when (neg? a)
+          :write (let [{:keys [socket] :as connection} (deref attachment-ref)]
+                   (when (neg? result)
                      (prn "disconnet:" (.getRemoteAddress socket))
-                     (do (.write socket send-queue send-queue writer)))))
+                     (dosync
+                      (let [{:keys [send-queue writer]} connection
+                            buffer (peek send-queue)]
+                        (alter send-queue pop)
+                        (when (empty? @send-queue)
+                          (alter send-queue dissoc :writer))
+                        (when buffer
+                          (do-write connection buffer)))))))
 
         (catch Exception e (prn e))))
 
@@ -67,6 +77,16 @@
 
 
 
+(defn write-to
+  "将数据写入队列"
+  [connection buffer]
+  (let [{:keys [send-queue writer]} (deref connection)]
+    (dosync
+     (if writer
+       (alter send-queue conj buffer)
+       (do (alter connection update-in [:writer]
+                  (completion :write (deref connection)))
+           (do-write (deref connection) buffer))))))
 
 (defn break-connect
   "断开连接"
