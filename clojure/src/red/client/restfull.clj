@@ -22,11 +22,6 @@
          subscribe (get session (deref subscribes))]
      (alter subscribes dissoc session))))
 
-(defmacro correspond-args
-  "按变量名生成map";;(correspond-args a b)->{:a a :b b}
-  [& args]
-  (reduce (fn [c k] (assoc c (keyword k) k)) {} args))
-
 (defn check-timeout-task
   "处理请求session的超时"
   [] (let [timeout (* 30 1000)]

@@ -4,6 +4,7 @@
             [compojure.route :refer [not-found]]
             [clojure.java.io :as io])
   (:import [java.util Properties]))
+;;待办:添加阈值判断，通过获取带宽、cpu、通道数、设备数来拒绝请求
 
 (defn get-version [dep]
   (or (System/getProperty "red.version")
