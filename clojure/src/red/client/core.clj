@@ -1,4 +1,5 @@
 (ns red.client.core
+  (:require [red.client.asynchronous-server :refer [run-server]])
   (:import [java.nio.channels AsynchronousServerSocketChannel CompletionHandler AsynchronousChannelGroup]
            [java.nio ByteBuffer charset.Charset]
            [java.util.concurrent TimeUnit Executors]
@@ -6,64 +7,27 @@
 
 (defonce server (atom nil))
 
+(defn decoder [buffer]
+  (.. (Charset/forName "GBK")
+      newDecoder
+      (decode buffer)))
 
+(defn accept-handler [connection]
+  (prn "accept-handler")
+  4)
 
-(def decoder (.. (Charset/forName "GBK") newDecoder))
-
-(defn stream [socket]
-  (proxy [CompletionHandler] []
-    (completed [i buf]
-      (if (neg? i)
-        (try
-          (prn "disconnet:" (.getRemoteAddress socket))
-          (catch Exception e (prn e)))
-        (try
-          (do
-            (.flip buf)
-            (prn (.getRemoteAddress socket) ": " (.decode decoder buf))
-            (.compact buf)
-            (.read socket buf buf this)
-            )
-          (catch Exception e (prn e)))))
-
-    (cancelled [attachment]
-      (prn "cancelled"))
-    (failed [e buf]
-      (prn e))))
-
-(defn handler []
-  (proxy [CompletionHandler] []
-    (completed [socket attachment]
-      (try
-        (do
-          (.accept attachment attachment this)
-          (prn "connect:" (.getRemoteAddress socket))
-          (let [buff (ByteBuffer/allocate 10)]
-            (.read socket buff buff (stream socket))))
-        (catch Exception e (prn e))))
-
-    (failed [e attachment]
-      (prn e))))
-
-(defn- run-socket-server
-  "启动监听"
-  [host port]
-  (let [executor (Executors/newFixedThreadPool 20)
-        asyncChannel-group (AsynchronousChannelGroup/withThreadPool executor)]
-    (.. (AsynchronousServerSocketChannel/open asyncChannel-group)
-        (bind (InetSocketAddress. host port)))))
-
-(defn run-accepts [svr]
-  (.accept svr svr (handler)))
+(defn receive-handler [connection buffer]
+  (.flip buffer)
+  (prn (str (decoder buffer)))
+  8)
 
 (defn stop []
-  (.close @server))
+  (@server))
 
 (defn start []
   (when @server
     (stop))
-  (reset! server (run-socket-server "0.0.0.0" 10000))
-  (run-accepts @server))
+  (reset! server (run-server "0.0.0.0" 10001
+                             accept-handler receive-handler)))
 
 (start)
-;;(stop)
