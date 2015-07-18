@@ -1,11 +1,13 @@
 (ns red.client.core
-  (:require [red.client.asynchronous-server :refer [run-server]])
+  (:require [red.client.asynchronous-server :refer [run-server write-to]])
   (:import [java.nio.channels AsynchronousServerSocketChannel CompletionHandler AsynchronousChannelGroup]
            [java.nio ByteBuffer charset.Charset]
            [java.util.concurrent TimeUnit Executors]
            [java.net InetSocketAddress]))
 
 (defonce server (atom nil))
+(defonce connect (atom nil))
+(defonce bb (atom nil))
 
 (defn decoder [buffer]
   (.. (Charset/forName "GBK")
@@ -14,14 +16,17 @@
 
 (defn accept-handler [connection]
   (prn "accept-handler")
+  (reset! connect connection)
   4)
 
 (defn receive-handler [connection buffer]
   (.flip buffer)
+  (reset! bb buffer)
   (prn (str (decoder buffer)))
   8)
 
 (defn stop []
+  (reset! connect nil)
   (@server))
 
 (defn start []
@@ -31,3 +36,8 @@
                              accept-handler receive-handler)))
 
 (start)
+;;connect
+
+(future (while @connect
+          (write-to connect @bb)
+          (Thread/sleep 1000)))
