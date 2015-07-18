@@ -36,8 +36,11 @@
                              accept-handler receive-handler)))
 
 (start)
+
 ;;connect
 
-(future (while @connect
-          (write-to connect @bb)
-          (Thread/sleep 1000)))
+(-> #(while true
+       (write-to connect @bb)
+       (Thread/sleep 1000))
+    (Thread.)
+    (.start))

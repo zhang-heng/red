@@ -17,47 +17,47 @@
   [{:keys [receive-handler accept-handler socket] :as args}]
   (let [att (atom nil)]
     (reset! att (assoc args
-                  :write  (completion :write att)
-                  :reader (completion :read att)
+                  :write-completion (completion :write att)
+                  :write-status (ref nil)
+                  :read-completion (completion :read att)
                   :send-queue (ref [])))))
 
-(defn- do-accept [connections connection attachment socket]
+(defn- do-accept [connections connection attachment completion-handler]
   (let [{:keys [server receive-handler accept-handler]} attachment
-        {:keys [reader] :as connections} (mk-attachment (assoc attachment :socket connection))]
+        {:keys [read-completion] :as connections} (mk-attachment (assoc attachment :socket connection))]
     (prn "accept:" (.getRemoteAddress connection))
-    (.accept server attachment socket)
-    (dosync connections conj socket)
+    (.accept server attachment completion-handler)
+    (dosync connections conj completion-handler)
     (let [len (accept-handler connections)]
       (when (number? len)
         (let [buffer (ByteBuffer/allocate len)]
-          (.read connection buffer buffer reader))))))
+          (.read connection buffer buffer read-completion))))))
 
 (defn- do-read [attachment-ref result buffer]
-  (let [{:keys [socket reader receive-handler] :as connection} (deref attachment-ref)]
+  (let [{:keys [socket read-completion receive-handler] :as connection} (deref attachment-ref)]
     (if (neg? result)
-      (prn "disconnet:" (.getRemoteAddress socket))
+      (prn "disconnet:r " (.getRemoteAddress socket))
       (if (.hasRemaining buffer)
-        (.read socket buffer buffer reader)
+        (.read socket buffer buffer read-completion)
         (let [len (receive-handler attachment-ref buffer)]
           (when (number? len)
             (let [buffer (ByteBuffer/allocate len)]
-              (.read socket buffer buffer reader))))))))
+              (.read socket buffer buffer read-completion))))))))
 
 (defn- do-write [attachment-ref result buffer]
-  (let [{:keys [socket writer] :as connection} (deref attachment-ref)]
-    ;; (if (neg? result)
-    ;;   (prn "disconnet:" (.getRemoteAddress socket))
-    ;;   (if (.hasRemaining buffer)
-    ;;     (.write socket buffer buffer writer)
-    ;;     (dosync (let [{:keys [send-queue writer]} connection
-    ;;                   buffer (peek send-queue)]
-    ;;               (alter send-queue pop)
-    ;;               (when (empty? @send-queue)
-    ;;                 (alter send-queue dissoc :writer))
-    ;;               (when buffer
-    ;;                 (send (agent nil)
-    ;;                       (fn [_] (.write socket buffer buffer writer))))))))
-    ))
+  (let [{:keys [socket write-completion] :as connection} (deref attachment-ref)]
+    (prn "do-write: buffer")
+    (if (neg? result)
+      (prn "disconnet:w " (.getRemoteAddress socket))
+      (if (.hasRemaining buffer)
+        (.write socket buffer buffer write-completion)
+        (dosync (let [{:keys [send-queue write-completion write-status]} connection
+                      buffer (peek @send-queue)]
+                  (if (empty? @send-queue)
+                    (ref-set write-status :waitting)
+                    (do (alter send-queue pop)
+                        (send (agent nil)
+                              (fn [_] (.write socket buffer buffer write-completion)))))))))))
 
 (defn- completion
   "处理完成请求
@@ -88,12 +88,10 @@
 (defn write-to
   "将数据写入队列"
   [connection buffer]
-  ;; (let [{:keys [send-queue writer]} (deref connection)]
-  ;;   (dosync
-  ;;    (alter send-queue conj buffer)
-  ;;    (do (completion :write connection)
-  ;;        (do-write (deref connection) buffer))))
-  )
+  (dosync
+   (let [{:keys [socket]} (deref connection)
+         buff (-> (java.util.Date.) (str "\r\n") String. (.getBytes) (ByteBuffer/wrap))]
+     (.write socket buff))))
 
 (defn break-connect
   "断开连接"
