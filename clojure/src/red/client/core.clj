@@ -7,7 +7,6 @@
 
 (defonce server (atom nil))
 (defonce connect (atom nil))
-(defonce bb (atom nil))
 
 (defn decoder [buffer]
   (.. (Charset/forName "GBK")
@@ -21,9 +20,11 @@
 
 (defn receive-handler [connection buffer]
   (.flip buffer)
-  (reset! bb buffer)
   (prn (str (decoder buffer)))
   8)
+
+(defn write-handler [connection buffer]
+  (write-to connection buffer))
 
 (defn stop []
   (reset! connect nil)
@@ -39,8 +40,4 @@
 
 ;;connect
 
-(-> #(while true
-       (write-to connect @bb)
-       (Thread/sleep 1000))
-    (Thread.)
-    (.start))
+;;(write-to connect (-> (java.util.Date.) (str "\r\n") String. (.getBytes) (ByteBuffer/wrap)))
