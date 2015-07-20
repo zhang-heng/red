@@ -1,4 +1,5 @@
 (ns red.device.active.realplay
+  (:require [red.device.active.core :refer [open-session*]])
   (:import [java.util UUID Date]
            [clojure.lang Ref Keyword IPersistentSet]))
 
@@ -15,5 +16,8 @@
 ;;                            ^boolean        discarded?])
 ;;掉线
 
-(defn open-realplay [connection subscribe]
-  (subscribe))
+(defn- mk-receive-handler [subscribe]
+  (fn [buffer]))
+
+(defmethod open-session* :realplay [subscribe write-handle close-handle]
+  (mk-receive-handler subscribe))
