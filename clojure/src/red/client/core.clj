@@ -10,7 +10,7 @@
            [java.net InetSocketAddress]
            [java.util UUID Date]))
 
-;; (defonce server (atom nil))
+
 
 ;; (defn- uuid [byte-buffer]
 ;;   (try
@@ -60,17 +60,6 @@
 ;; (defn stop []
 ;;   (@server))
 
-;; (defn start []
-;;   (when @server
-;;     (stop))
-;;   (reset! server (run-server "0.0.0.0" 10001
-;;                              accept-handler receive-handler*)))
-
-;;(start)
-
-
-
-
 
 
 ;;core.clj
@@ -87,15 +76,15 @@
   (let [subscribe nil
         receiver (open-session* subscribe (mk-send-handler) (mk-close-handler))]))
 
-
-
 (defn- accept-handler [connection]
   (let [buffer nil]
     (read-from connection buffer session-handler)))
 
-(defn start []
-  (run-server "host" "port" accept-handler))
-(defn stop [])
+(defn ^clojure.lang.Fn
+  start
+  "启动监听服务,返回关闭函数"
+  [host port]
+  (run-server host port accept-handler))
 
 
 ;;server.clj
