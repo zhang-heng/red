@@ -1,6 +1,6 @@
 (ns red.client.asynchronous-server
   (:require [red.utils :refer [correspond-args]])
-  (:import [clojure.lang Ref Fn]
+  (:import [clojure.lang Ref Fn PersistentArrayMap Atom]
            [java.nio.channels AsynchronousServerSocketChannel AsynchronousSocketChannel
             CompletionHandler AsynchronousChannelGroup]
            [java.nio ByteBuffer]
@@ -11,32 +11,37 @@
 
 (defonce execut-pool (Executors/newFixedThreadPool 2))
 (defonce connections (ref #{})) ;;连接记录，用于关闭服务时释放
-(declare completion)
-
+(declare completion break-connect)
 
 (defn- mk-attachment [args]
   (let [att (atom nil)]
     (reset! att (assoc args
                   :write-completion (completion :write att)
                   :write-status (ref nil)
-                  :send-queue nil
+                  :send-queue (ref [])
                   :read-completion (completion :read att)))))
 
-(defn- do-accept [socket info completion-handler]
+(defn- do-accept [^AsynchronousSocketChannel socket
+                  ^PersistentArrayMap info
+                  ^CompletionHandler completion-handler]
   (let [{:keys [accept-handler listener]} info
         {:keys [read-completion] :as connection-info} (mk-attachment (assoc info :socket socket))]
     (prn "accept:" (.getRemoteAddress socket))
-    (dosync connections conj socket)      ;; 添加新连接至连接记录表
+    (dosync (alter connections conj socket))      ;; 添加新连接至连接记录表
     (.accept listener listener completion-handler) ;; 继续监听新的连接
-    (let [len (accept-handler socket)] ;; 访问新连接handler
-      (when (number? len)
+    (let [len (accept-handler connection-info)] ;; 访问新连接handler
+      (if (number? len)
         (let [buffer (ByteBuffer/allocate len)]
-          (.read socket buffer buffer read-completion))))))
+          (.read socket buffer buffer read-completion))
+        (break-connect connection-info)))))
 
-(defn- do-read [result buffer info]
+(defn- do-read [^Integer result
+                ^ByteBuffer buffer
+                ^Atom info]
   (let [{:keys [socket read-completion receive-handler]} (deref info)]
     (if (neg? result)
-      (prn "disconnet:r " (.getRemoteAddress socket))
+      (do (prn "disconnet:r " (.getRemoteAddress socket))
+          (break-connect info))
       (if (.hasRemaining buffer)
         (.read socket buffer buffer read-completion)
         (let [len (receive-handler info buffer)]
@@ -44,18 +49,23 @@
             (let [buffer (ByteBuffer/allocate len)]
               (.read socket buffer buffer read-completion))))))))
 
-(defn- do-write [result buffer info]
+(defn- do-write [^Integer result
+                 ^ByteBuffer buffer
+                 ^Atom info]
   (dosync
    (let [{:keys [socket send-queue write-completion write-status]} (deref info)
          next-buffer (peek @send-queue)]
-     (prn "do-write: buffer")
      (if (neg? result)
-       (prn "disconnet:w " (.getRemoteAddress socket))
+       (do(prn "disconnet:w " (.getRemoteAddress socket))
+          (break-connect info))
        (if (.hasRemaining buffer)
-         (.write socket buffer buffer write-completion)
+         (send (agent nil)
+               (fn [_] (.write socket buffer buffer write-completion) ))
          (if (empty? @send-queue)
-           (alter info :send-queue :waitting)
-           (do (alter send-queue pop)
+           (do (prn "empty")
+             (alter write-status :waitting))
+           (do (prn (count @send-queue))
+               (alter send-queue pop)
                (send (agent nil)
                      (fn [_] (.write socket next-buffer next-buffer write-completion))))))))))
 
@@ -63,48 +73,54 @@
   "处理完成请求
   phase:          accept; read; write
   attachment-ref  info  ;  "
-  [phase attachment-ref]
+  [phase info]
   (proxy [CompletionHandler] []
     (completed [result attachment]
       ":accept:     AsynchronousSocketChannel socket, AsynchronousServerSocketChannel server
        :read/write: Integer i, ByteBuffer buf"
       (try
         (case phase
-          :accept (do-accept result attachment-ref this)
-          :read   (do-read result attachment attachment-ref)
-          :write  (do-read result attachment attachment-ref))
-        (catch Exception e (prn "" e))))
+          :accept (do-accept result info this)
+          :read   (do-read  result attachment info)
+          :write  (do-write result attachment info))
+        (catch Exception e (prn phase ": b" e))))
 
     (failed [e attachment]
       ":accept:     Throwable  e, AsynchronousServerSocketChannel server
        :read/write: Throwable  e, ByteBuffer buf"
-      (prn e)
+      (prn "completion failed:" e)
       ;; (when-not (.isOpen attachment)
       ;;   (prn "server closed"))
       )))
 
 (defn- mk-stop-fn [server]
   (fn []
-    (prn 111)
     (.close server)
-    (prn 222)
     (doseq [connection (deref connections)]
-      (.close connection))))
+      (.close connection))
+    (dosync (ref-set connections #{}))))
 
 
 (defn write-to
   "将数据写入队列"
   [connection buffer]
   (dosync
-   (let [{:keys [socket write-status send-queue]} (deref connection)]
-     (if (= write-status :writing)
-       (alter send-queue conj buffer)
-       (send (agent nil)(fn [_] (.write socket buffer)))))))
+   (let [{:keys [socket write-status send-queue write-completion]} (deref connection)]
+     (if (= @write-status :writing)
+       (do (alter send-queue conj buffer))
+       (do (ref-set write-status :writing)
+           (send (agent nil) (fn [_] (.write socket buffer buffer write-completion))))))))
 
 (defn break-connect
   "断开连接"
-  [{^AsynchronousSocketChannel connection :connection}]
-  (.close connection))
+  [info]
+  (let [{^AsynchronousSocketChannel socket :socket} (deref info)]
+    (.close socket)
+    (dosync (alter connections disj socket))))
+
+(defn get-connections
+  "获取所有客户端连接" []
+  (dosync @connections))
 
 (defn run-server
   [host port

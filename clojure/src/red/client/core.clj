@@ -36,8 +36,4 @@
   (reset! server (run-server "0.0.0.0" 10001
                              accept-handler receive-handler)))
 
-(start)
-
-;;connect
-
-;;(write-to connect (-> (java.util.Date.) (str "\r\n") String. (.getBytes) (ByteBuffer/wrap)))
+;;(start)
