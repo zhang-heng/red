@@ -6,7 +6,6 @@
            [java.net InetSocketAddress]))
 
 (defonce server (atom nil))
-(defonce connect (atom nil))
 
 (defn decoder [buffer]
   (.. (Charset/forName "GBK")
@@ -14,14 +13,26 @@
       (decode buffer)))
 
 (defn accept-handler [connection]
-  (prn "accept-handler")
-  (reset! connect connection)
-  4)
+  (dosync
+   (let [{user :user}  connection]
+     (ref-set user :header)
+     (prn "accept-handler")
+     (prn connection)
+     8)))
 
 (defn receive-handler [connection buffer]
-  (.flip buffer)
-  (prn (str (decoder buffer)))
-  8)
+  (dosync
+   (let [{user :user} connection]
+     (prn (str (decoder buffer)))
+     (case (deref user)
+       :header
+       (do
+         (ref-set user :payload)
+         4)
+       :payload
+       (do
+         (ref-set user :header)
+         2)))))
 
 (defn write-handler [connection buffer]
   (write-to connection buffer))
@@ -36,4 +47,4 @@
   (reset! server (run-server "0.0.0.0" 10001
                              accept-handler receive-handler)))
 
-;;(start)
+(start)
