@@ -1,5 +1,5 @@
 (ns red.client.restfull
-  (:require [red.utils :refer [now pass-mill]])
+  (:require [red.utils :refer [now pass-mill correspond-args]])
   (:import [java.util UUID Date]))
 
 ;;订阅列表
@@ -14,13 +14,13 @@
      (alter subscribes assoc session-id (assoc args :session-id session-id :regist-time current)))
     session-id))
 
-(defn remove-subscribe
+(defn get-and-remove-subscribe
   "媒体请求成功之后,移除订阅项,返回详细信息"
-  [^String session-id]
+  [^UUID session-id]
   (dosync
-   (let [session (UUID/fromString session-id)
-         subscribe (get session (deref subscribes))]
-     (alter subscribes dissoc session))))
+   (let [subscribe (get (deref subscribes) session-id)]
+     (alter subscribes dissoc session-id)
+     subscribe)))
 
 (defn check-timeout-task
   "处理请求session的超时"
@@ -28,8 +28,7 @@
        (dosync
         (doseq [m (vals @subscribes)]
           (when (> (pass-mill (:regist-time m)) timeout)
-            (-> (:session-id m) str remove-subscribe))))))
-
+            (-> (:session-id m) get-and-remove-subscribe))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn test-data []

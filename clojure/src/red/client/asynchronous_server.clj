@@ -13,11 +13,13 @@
 (defonce connections (ref #{})) ;;连接记录，用于关闭服务时释放
 (declare completion break-connect)
 
-(defn- mk-attachment [args]
+(defn- mk-attachment [info socket]
   (let [att (atom nil)]
-    (reset! att (assoc args
+    (reset! att (assoc info
                   :write-completion (completion :write att)
                   :write-status (ref nil)
+                  :socket socket
+                  :closer #(.close socket)
                   :send-queue (ref [])
                   :read-completion (completion :read att)
                   :user (ref nil)))))
@@ -26,12 +28,10 @@
                   ^PersistentArrayMap info
                   ^CompletionHandler completion-handler]
   (let [{:keys [accept-handler listener]} info
-        {:keys [read-completion] :as connection-info} (mk-attachment (assoc info :socket socket))]
-    (prn "accept:" (.getRemoteAddress socket))
+        {:keys [read-completion] :as connection-info} (mk-attachment info socket)]
     (dosync (alter connections conj socket)) ;; 添加新连接至连接记录表
     (.accept listener listener completion-handler) ;; 继续监听新的连接
     (let [len (accept-handler connection-info)]    ;; 访问新连接handler
-      (prn len)
       (if (number? len)
         (let [buffer (ByteBuffer/allocate len)]
           (.read socket buffer buffer read-completion))
@@ -42,8 +42,7 @@
                 ^PersistentArrayMap info]
   (let [{:keys [socket read-completion receive-handler]} info]
     (if (neg? result)
-      (do (prn "disconnet:r " (.getRemoteAddress socket))
-          (break-connect info))
+      (break-connect info)
       (if (.hasRemaining buffer)
         (.read socket buffer buffer read-completion)
         (do
@@ -60,16 +59,13 @@
    (let [{:keys [socket send-queue write-completion write-status]} info
          next-buffer (peek @send-queue)]
      (if (neg? result)
-       (do(prn "disconnet:w " (.getRemoteAddress socket))
-          (break-connect info))
+       (break-connect info)
        (if (.hasRemaining buffer)
          (send (agent nil)
                (fn [_] (.write socket buffer buffer write-completion) ))
          (if (empty? @send-queue)
-           (do (prn "empty")
-               (alter write-status :waitting))
-           (do (prn (count @send-queue))
-               (alter send-queue pop)
+           (alter write-status :waitting)
+           (do (alter send-queue pop)
                (send (agent nil)
                      (fn [_] (.write socket next-buffer next-buffer write-completion))))))))))
 
@@ -92,10 +88,7 @@
     (failed [e attachment]
       ":accept:     Throwable  e, AsynchronousServerSocketChannel server
        :read/write: Throwable  e, ByteBuffer buf"
-      (prn "completion failed:" e)
-      ;; (when-not (.isOpen attachment)
-      ;;   (prn "server closed"))
-      )))
+      (prn "completion failed:" e))))
 
 (defn- mk-stop-fn [server]
   (fn []

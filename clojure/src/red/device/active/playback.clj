@@ -1,4 +1,4 @@
-(ns red.device.active.realplay
+(ns red.device.active.playback
   (:import [java.util UUID Date]
            [clojure.lang Ref Keyword IPersistentSet]))
 
@@ -15,5 +15,5 @@
 ;;                            ^boolean        discarded?])
 ;;掉线
 
-(defn open-realplay [connection subscribe]
+(defn open-playback [connection subscribe]
   (subscribe))
