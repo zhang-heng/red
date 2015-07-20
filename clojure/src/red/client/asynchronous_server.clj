@@ -77,7 +77,8 @@
                (.read socket byte-buffer byte-buffer this)
                (read-handler connection byte-buffer)))))
         (catch Exception e (prn e))))
-    (failed [e byte-buffer])))
+    (failed [e byte-buffer]
+      (prn e))))
 
 (defmethod completion* :write [_ ^Ref connection]
   (proxy [CompletionHandler] []
@@ -98,7 +99,8 @@
                    (send-off (agent nil)
                              (fn [_] (.write scoket next-buffer next-buffer this)))))))))
         (catch Exception e (prn e))))
-    (failed [e byte-buffer])))
+    (failed [e byte-buffer]
+      (prn e))))
 
 
 

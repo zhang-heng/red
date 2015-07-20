@@ -25,6 +25,12 @@
 ;;         (do (callback/stop-server! server)
 ;;             (prn "error"))))))
 
-;;
+(defrecord ClientSession [^IPersistentMap subscribe
+                          ^Fn             dev->client
+                          ^Fn             dev->close
+                          ])
 
 (defmulti open-session* (fn [subscribe write-handle close-handle] (:session-type subscribe)))
+
+(defmethod open-session* :realplay [subscribe write-handle close-handle]
+  (fn [] (prn "disconnect")))

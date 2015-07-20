@@ -1,5 +1,5 @@
 (ns red.client.core
-  (:require [red.client.asynchronous-server :refer [run-server read-from write-to]]
+  (:require [red.client.asynchronous-server :refer [run-server read-from write-to disconnect-notify]]
             [red.client.restfull :refer [get-and-remove-subscribe]]
             [red.device.active.core :refer [open-session*]]
             [red.device.active.realplay]
@@ -10,91 +10,48 @@
            [java.net InetSocketAddress]
            [java.util UUID Date]))
 
-
-
-;; (defn- uuid [byte-buffer]
-;;   (try
-;;     (-> (Charset/forName "ASCII")
-;;         (.decode byte-buffer)
-;;         (str)
-;;         (UUID/fromString))
-;;     (catch Exception _ nil)))
-
-;; (defn- open-session
-;;   [connection {:keys [session-type] :as subscribe}]
-;;   (case session-type
-;;     :realplay (open-realplay connection subscribe)
-;;     :playback (open-playback connection subscribe)
-;;     :voicetalk (open-voicetalk connection subscribe)))
-
-;; (defn- accept-handler
-;;   "处理新连接,返回准备接受UUID的36字长"
-;;   [connection]
-;;   (dosync
-;;    (let [{user :user}  connection]
-;;      (ref-set user :session)
-;;      36)))
-
-;; (defmulti receive-handler* (fn [connection] (deref (:user connection))))
-
-;; (defmethod receive-handler* :session [{:keys [user] :as connection} buffer]
-;;   (dosync
-;;    (when-let [{:keys [session-id] :as subscribe}
-;;               (-> buffer uuid get-and-remove-subscribe)]
-;;      (open-session connection subscribe)
-;;      (ref-set user :payload)
-;;      4)))
-
-;; (defmethod receive-handler* :header [{:keys [user] :as connection} buffer]
-;;   (dosync
-;;    (let [len (.getInt buffer)]
-;;      (when (< len (* 1024 1024))
-;;        (ref-set user :payload)
-;;        len))))
-
-;; (defmethod receive-handler* :payload [{:keys [user] :as connection} buffer]
-;;   (dosync
-;;    (ref-set user :header)
-;;    2))
-
-;; (defn stop []
-;;   (@server))
-
-
-
-;;core.clj
-
-(defn- mk-receive-header-handler [connection])
-(defn- mk-receive-payload-handler [connection])
+(defn- buffer->uuid [byte-buffer]
+  (try
+    (-> (Charset/forName "ASCII")
+        (.decode byte-buffer)
+        (str)
+        (UUID/fromString))
+    (catch Exception _ nil)))
 
 (defn- mk-send-handler [connection]
   (fn [buffer] (write-to connection buffer)))
 
-(defn- mk-close-handler [connection])
+(defn- mk-close-handler [connection]
+  (fn [] (let [{:keys [closer]} (deref connection)]
+          (closer))))
+
+(defn- payload-handler [connection payload-buffer]
+  (let [{:keys [user]} (deref connection)]
+    (@user payload-buffer)
+    (read-from connection 4 header-handler)))
+
+(defn- header-handler [connection size-buffer]
+  (let [l (.getInt size-buffer)]
+    (read-from connection l payload-handler)))
 
 (defn- session-handler [connection session-buffer]
-  (let [subscribe nil
-        receiver (open-session* subscribe (mk-send-handler) (mk-close-handler))]))
+  (dosync
+   (when-let [subscribe (-> session-buffer buffer->uuid get-and-remove-subscribe)]
+     (let [{:keys [disconnector reader]} (open-session* subscribe (mk-send-handler) (mk-close-handler))
+           {:keys [user]} (deref connection)]
+       (disconnect-notify connection disconnector)
+       (ref-set user reader)
+       (read-from connection 4 header-handler)))))
 
-(defn- accept-handler [connection]
-  (let [buffer nil]
-    (read-from connection buffer session-handler)))
+(defn- accept-handler
+  [connection]
+  (read-from connection 36 session-handler))
 
 (defn ^clojure.lang.Fn
-  start
+  start-gtsp-server
   "启动监听服务,返回关闭函数"
   [host port]
   (run-server host port accept-handler))
-
-
-;;server.clj
-
-;;realplay
-
-
-
-
-
 
 
 ;;run-server -> [client-connect]
