@@ -5,49 +5,48 @@
   (:import (clojure.lang Ref PersistentArrayMap)
            (org.joda.time DateTime)))
 
-(defrecord Client [^PersistentArrayMap subscribe
-                   ^Ref                flow<-device
-                   ^Ref                flow->device
+(defrecord Client [^PersistentArrayMap subscribe    ;;请求描述
+                   ^Ref                flow<-device ;;来自设备流量统计
+                   ^Ref                flow->device ;;发送至设备的流量统计
                    ^clojure.lang.Fn    dev->client
                    ^clojure.lang.Fn    dev->close
-                   ^clojure.lang.Fn    dev<-client
-                   ^clojure.lang.Fn    close<-client
                    ^DateTime           start-time])
 
-(defn- mk-client*dev<-client
-  "生成处理来自客户端数据的处理函数"
-  [client source]
+(defn- mk-client->dev
+  [{:keys [flow->device]} {:keys [dev<-client]}]
   (fn [buffer]
-    (let [])))
+    (dosync (alter flow->device +))
+    (dev<-client buffer)))
 
-(defn- mk-client*close<-client
-  "生成来自客户端的关闭处理函数"
-  [client source]
-  (fn []))
+(defn- mk-client->close
+  [client {:keys [client->close]}]
+  (fn [] (client->close client)))
 
-(defn- mk-client*session
+(defn- mk-dev->client
+  [flow->device {:keys [dev->client]}]
+  (fn [buffer]
+    (dosync (alter flow->device +))
+    (dev->client buffer)))
+
+(defn- mk-client
   "生成与客户端的相关数据"
   [{:keys [clients] :as source}
    subscribe dev->client dev->close]
-  (let [client        (ref {})
-        dev<-client   (mk-client*dev<-client client source)
-        close<-client (mk-client*close<-client client source)]
+  (let [flow->device (ref 0)
+        client (Client. subscribe flow->device (ref 0) (mk-dev->client dev->client) dev->close (now))]
     (dosync
      (alter clients conj client)
-     (ref-set client (Client. subscribe
-                              (ref 0) (ref 0)
-                              dev->client dev->close dev<-client close<-client
-                              (now)))
-     (deref client))))
+     {:client->dev   (mk-client->dev client source)
+      :client->close (mk-client->close client source)})))
 
 (defn get-all-clients []
   (dosync
-   (let [{:keys [clients]} (get-all-sources)]
-     (deref clients))))
+   (reduce (fn [c {clients :clients}] (clojure.set/union c))
+           #{} (get-all-sources))))
 
 (defn open-session!
-  "处理请求,建立与设备的准备数据"
+  "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"
   [subscribe write-handle close-handle]
   (-> subscribe
       get-source!
-      (mk-client*session subscribe write-handle close-handle)))
+      (mk-client subscribe write-handle close-handle)))

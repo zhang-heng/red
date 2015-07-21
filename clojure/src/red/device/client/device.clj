@@ -41,5 +41,5 @@
 
 (defn get-all-devices []
   (dosync
-   (let [{:keys [devices]} (get-all-executors)]
-     (deref devices))))
+   (reduce (fn [c {devices :devices}] (clojure.set/union c))
+           #{} (get-all-executors))))

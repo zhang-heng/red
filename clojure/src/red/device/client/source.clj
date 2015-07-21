@@ -10,6 +10,7 @@
                    ^Ref                flow->device
                    ^Ref                last-data-time
                    ^clojure.lang.Fn    close<-client
+                   ^clojure.lang.Fn    dev<-client
                    ^DateTime           start-time])
 
 (defn- create-source!
