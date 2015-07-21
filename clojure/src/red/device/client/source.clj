@@ -1,5 +1,5 @@
 (ns red.device.client.source
-  (:require [red.device.client.device :refer [added-device?* add-device get-all-devices]]
+  (:require [red.device.client.device :refer [add-device! get-all-devices]]
             [red.utils :refer [now]])
   (:import (clojure.lang Ref PersistentArrayMap)
            (org.joda.time DateTime)))
@@ -7,23 +7,44 @@
 (defrecord Source [^Ref                clients
                    ^PersistentArrayMap subscribe
                    ^Ref                header-data
+                   ^Ref                last-data-time
                    ^Ref                device->flow
                    ^Ref                client->flow
-                   ^Ref                last-data-time
                    ^clojure.lang.Fn    client->dev
                    ^clojure.lang.Fn    client->close
                    ^DateTime           start-time])
 
 (declare get-all-sources)
 
+(defn- mk-client->dev
+  [client->dev client->flow]
+  (fn [buffer]
+    (dosync
+     (alter client->flow +)
+     (client->dev buffer))))
+
+(defn- mk-client->close
+  [client->close]
+  (fn []
+    (client->close)))
+
 (defn- create-source!
   "新建媒体源"
   [subscribe]
-  (let [device (if-let [device (added-device?* subscribe)]
-                 device
-                 (add-device [subscribe]))]
-    ;; (Source. device (ref 0) subscribe (ref 0) (ref 0) (ref (now)) (now))
-    ))
+  (dosync
+   (let [{:keys [sources client->dev client->close] :as device} (add-device [subscribe])
+         clients (ref #{})
+         header-data (ref nil)
+         last-data-time (ref (now))
+         device->flow (ref 0)
+         client->flow (ref 0)
+         client->dev* (mk-client->dev client->dev client->flow)
+         client->close* (mk-client->close clients client->close)
+         source (Source. clients subscribe
+                         header-data last-data-time
+                         device->flow client->flow client->dev* client->close*
+                         (now))]
+     (alter sources conj source))))
 
 (defn- can-cource-multiplex?*
   "源能否复用"
