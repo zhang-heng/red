@@ -7,14 +7,14 @@
             [red.routes.media.status :refer [status-routes]]
             [red.routes.media.realplay :refer [realplay-routes]]
             [red.routes.media.playback :refer [playback-routes]]
-            [red.routes.media.voicetalk :refer [voicetalk-routes]]))
+            [red.routes.media.voice-talk :refer [voice-talk-routes]]))
 
 (def app
   (-> (routes
        status-routes
        realplay-routes
        playback-routes
-       voicetalk-routes
+       voice-talk-routes
        base-routes)
       wrap-json-params
       wrap-json-response

@@ -34,10 +34,3 @@
 ;;通过thrift的状态描述，保存运行参数
 (defrecord Thriftor [^long methods-port  ;;方法服务端口
                      ^long notify-port]) ;;通知服务端口
-
-;;执行程序的数据描述，包括执行程序的基本信息及状态
-(defrecord Executor [^String  describe   ;;厂商描述
-                     ^String  path       ;;路径
-                     ^Data    start-time ;;启动时间
-                     ^Ref     devices    ;;设备列表
-                     ^Process process])  ;;进程对象

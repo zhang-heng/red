@@ -1,7 +1,7 @@
-(ns red.routes.media.voicetalk
+(ns red.routes.media.voice-talk
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]))
 
-(defroutes voicetalk-routes
+(defroutes voice-talk-routes
   (context "/voice-talk" []
            ;;启动对讲
            (POST "/" [manufacturer host port user password
