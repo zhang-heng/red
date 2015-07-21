@@ -39,7 +39,9 @@
               device)))
         (deref devices)))
 
-(defn get-all-devices []
+(defn get-all-devices
+  "获取所有设备数据"
+  []
   (dosync
    (reduce (fn [c {devices :devices}] (clojure.set/union c))
            #{} (get-all-executors))))

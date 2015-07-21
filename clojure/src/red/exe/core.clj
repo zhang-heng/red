@@ -7,6 +7,8 @@
 ;;exe复用个数
 (defonce _MUX 2)
 
+(defrecord Thrift [])
+
 (defrecord Executor [^Process  proc
                      ^Ref      devices
                      ^Thrift   thrift
@@ -22,11 +24,6 @@
 (defn get-all-executors []
   (dosync
    (deref executors)))
-
-(defn find-device [device]
-  (dosync
-   (->> (select-keys device [:addr :port])
-        (get (refer procs)))))
 
 (defn can-exe-multiplex?*
   "创建执行程序"

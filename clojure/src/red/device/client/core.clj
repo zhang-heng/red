@@ -6,38 +6,41 @@
            (org.joda.time DateTime)))
 
 (defrecord Client [^PersistentArrayMap subscribe    ;;请求描述
-                   ^Ref                flow<-device ;;来自设备流量统计
-                   ^Ref                flow->device ;;发送至设备的流量统计
-                   ^clojure.lang.Fn    dev->client
-                   ^clojure.lang.Fn    dev->close
+                   ^Ref                device->flow ;;来自设备流量统计
+                   ^Ref                client->flow ;;发送至设备的流量统计
+                   ^clojure.lang.Fn    dev->client  ;;设备发往客户端的操作
+                   ^clojure.lang.Fn    dev->close   ;;来自设备关闭通知
                    ^DateTime           start-time])
 
 (defn- mk-client->dev
-  [{:keys [flow->device]} {:keys [dev<-client]}]
+  [client->flow client->dev]
   (fn [buffer]
-    (dosync (alter flow->device +))
-    (dev<-client buffer)))
+    (dosync (alter client->flow +))
+    (client->dev  buffer)))
 
 (defn- mk-client->close
-  [client {:keys [client->close]}]
+  [client client->close]
   (fn [] (client->close client)))
 
 (defn- mk-dev->client
-  [flow->device {:keys [dev->client]}]
+  [dev->client device->flow]
   (fn [buffer]
-    (dosync (alter flow->device +))
+    (dosync (alter device->flow +))
     (dev->client buffer)))
 
 (defn- mk-client
   "生成与客户端的相关数据"
-  [{:keys [clients] :as source}
+  [{:keys [clients client->dev client->flow client->close] :as source}
    subscribe dev->client dev->close]
-  (let [flow->device (ref 0)
-        client (Client. subscribe flow->device (ref 0) (mk-dev->client dev->client) dev->close (now))]
+  (let [device->flow (ref 0)
+        client->flow (ref 0)
+        client (Client. subscribe device->flow client->flow
+                        (mk-dev->client dev->client device->flow) dev->close
+                        (now))]
     (dosync
      (alter clients conj client)
-     {:client->dev   (mk-client->dev client source)
-      :client->close (mk-client->close client source)})))
+     {:client->dev   (mk-client->dev client->flow client->dev)
+      :client->close (mk-client->close client client->close)})))
 
 (defn get-all-clients []
   (dosync

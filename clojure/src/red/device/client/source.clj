@@ -1,17 +1,20 @@
 (ns red.device.client.source
-  (:require [red.device.client.device :refer [added-device?* add-device get-all-devices]])
+  (:require [red.device.client.device :refer [added-device?* add-device get-all-devices]]
+            [red.utils :refer [now]])
   (:import (clojure.lang Ref PersistentArrayMap)
            (org.joda.time DateTime)))
 
 (defrecord Source [^Ref                clients
                    ^PersistentArrayMap subscribe
                    ^Ref                header-data
-                   ^Ref                flow<-device
-                   ^Ref                flow->device
+                   ^Ref                device->flow
+                   ^Ref                client->flow
                    ^Ref                last-data-time
-                   ^clojure.lang.Fn    close<-client
-                   ^clojure.lang.Fn    dev<-client
+                   ^clojure.lang.Fn    client->dev
+                   ^clojure.lang.Fn    client->close
                    ^DateTime           start-time])
+
+(declare get-all-sources)
 
 (defn- create-source!
   "新建媒体源"
@@ -24,14 +27,18 @@
 
 (defn- can-cource-multiplex?*
   "源能否复用"
-  [sources {:keys [session-type] :as subscribe}]
+  [{:keys [session-type] :as subscribe}]
   (dosync
-   (and (= :realplay session-type)
-        (some (fn [source]
-                (let [{subscribed :subscribe} (deref source)]
-                  (when (= subscribe subscribed)
-                    source)))
-              (deref sources)))))
+   (when (= :realplay session-type)
+     (some (fn [{subscribed :subscribe :as source}]
+             (when (= subscribe subscribed)
+               source))
+           (get-all-sources)))))
+
+(defn get-all-sources []
+  (dosync
+   (reduce (fn [c {sources :sources}] (clojure.set/union c))
+           #{} (get-all-devices))))
 
 (defn get-source!
   "获取源,即生成执行程序并建立联系"
@@ -40,8 +47,3 @@
    (if-let [source (can-cource-multiplex?* subscribe)]
      source
      (create-source! subscribe))))
-
-(defn get-all-sources []
-  (dosync
-   (let [{:keys [sources]} (get-all-devices)]
-     (deref sources))))

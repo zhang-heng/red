@@ -1,7 +1,7 @@
 (ns red.exe.callback
   (:require [thrift-clj.core :as thrift]))
 (thrift/import
- (:types    [device.sdk.media eMediaType MediaPackage])
+ (:types    [device.sdk.media MediaType MediaPackage])
  (:services [device.sdk.media Notify]))
 
 ;;定义方法:分离出来方便调试
