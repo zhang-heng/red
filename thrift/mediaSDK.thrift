@@ -86,10 +86,12 @@ bool PlayBackSeek(),             //改变进度
 
 //通知反馈
 service Notify{
-void Lanuched(),                       //启动完成
-void Offline(),                        //断线通知
-void MediaFinish(),                    //结束通知
-void MediaData(1: MediaPackage data),  //媒体数据
+void Lanuched(),                      //启动完成
+void Connected(1:string device_id),   //连接成功
+void Offline(1:string device_id),     //断线通知
+void MediaFinish(1:string source_id), //结束通知
+void MediaData(1:string source_id,
+               2:MediaPackage data),  //媒体数据
 
 //test
 binary TestBytes(1:binary bytes),

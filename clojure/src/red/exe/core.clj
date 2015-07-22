@@ -18,9 +18,6 @@
 
 (defonce executors (ref #{}))
 
-(defonce locker (Object.))
-
-
 (defn login
   [device-info])
 
@@ -44,6 +41,8 @@
   "创建执行程序"
   [])
 
+
+(defonce locker (Object.))
 (defn create-exe!
   "创建执行程序"
   [media-info]
