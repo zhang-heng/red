@@ -30,7 +30,8 @@
 (defn- mk-client->close
   [client->close user]
   (fn []
-    (client->close user)))
+    (dosync
+     (client->close user))))
 
 (defn- mk-device->client
   [clients device->flow]
