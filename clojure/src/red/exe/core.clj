@@ -27,6 +27,15 @@
 (defn logout
   [source-id])
 
+(defn client->device
+  [executor device-id source-id buffer])
+
+(defn client->close
+  [executor device-id source-id])
+
+(defn open-source
+  [executor device-id source-id])
+
 (defn get-all-executors []
   (dosync
    (deref executors)))

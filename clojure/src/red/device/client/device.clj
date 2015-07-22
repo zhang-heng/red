@@ -1,12 +1,14 @@
 (ns red.device.client.device
-  (:require [red.exe.core :refer [create-exe! get-all-executors login logout]]
+  (:require [red.exe.core :refer [create-exe! get-all-executors
+                                  login logout client->device client->close open-source]]
             [red.utils :refer [now]])
   (:import (clojure.lang Ref)
+           (java.util UUID)
+           (java.nio ByteBuffer)
            (org.joda.time DateTime)))
 
 (defrecord Device [^Ref               sources
-                   ^Ref               gateway
-                   ^clojure.lang.Fn   handler
+                   ^Ref               device-id
                    ^clojure.lang.Fn   device->connected     ;;登陆成功
                    ^clojure.lang.Fn   device->offline       ;;掉线通知
                    ^clojure.lang.Fn   device->media-finish  ;;媒体结束通知
@@ -20,39 +22,52 @@
 (declare get-all-devices)
 
 (defn- mk-client->device
-  [sources client->flow]
+  [executor device-id client->flow]
   (fn [source-id buffer]
     (dosync
      (alter client->flow + (.limit buffer))
-     (when-let [{:keys [client->device] :as source} (get (deref sources) source-id)]
-       (client->device buffer)))))
+     (client->device executor device-id source-id buffer))))
 
 (defn- mk-client->close
-  [sources]
+  [executor device-id]
   (fn [source-id]
     (dosync
-     (when-let [{:keys [client->close] :as source} (get (deref sources) source-id)]
-       (client->close)))))
+     (client->close executor device-id source-id))))
 
 (defn- mk-device->connected
-  [sources source-id]
+  [devices executor]
   (fn [device-id]
-    (when-let [{:keys [subscribe]} (get (deref sources) source-id)]
-      (login device-id subscribe))))
+    (dosync
+     (when-let [{:keys [sources]} (get (deref devices) device-id)]
+       (doseq [{:keys [source-id]} sources]
+         (open-source executor device-id source-id))))))
 
 (defn- mk-device->offline
-  [sources source-id]
+  [devices]
   (fn [device-id]
-    (when-let [source (get (deref sources) source-id)]
-      (login device-id))))
+    (dosync
+     (when-let [{:keys [sources]} (get (deref devices) device-id)]
+       (doseq [{:keys [device->close]} sources]
+         (device->close))))))
 
 (defn- mk-device->media-finish
-  [sources]
-  (fn [source-id]))
+  [devices]
+  (fn [device-id source-id]
+    (dosync
+     (when-let [{:keys [sources]} (get (deref devices) device-id)]
+       (when-let [{:keys [device->close device->client]}
+                  (get (deref sources) source-id)]
+         (device->client (ByteBuffer/allocate 0))
+         (device->close))))))
 
 (defn- mk-device->media-data
-  [sources]
-  (fn [source-id buffer]))
+  [devices]
+  (fn [device-id source-id buffer]
+    (dosync
+     (when-let [{:keys [sources]} (get (deref devices) device-id)]
+       (when-let [{:keys [device->close device->client]}
+                  (get (deref sources) source-id)]
+         (device->client buffer))))))
 
 (defn- mk-handler
   []
@@ -62,20 +77,17 @@
   (dosync
    (let [{:keys [devices] :as executor} (create-exe! device-info)
          sources (ref #{})
-         gateway (ref #{})
+         device-id (UUID/randomUUID)
          client->flow (ref 0)
          device->flow (ref 0)
-         device  (Device. sources gateway
-                          (mk-handler)
-                          (mk-device->connected sources)
+         device  (Device. sources device-id
+                          (mk-device->connected sources executor)
                           (mk-device->offline sources)
                           (mk-device->media-finish sources)
                           (mk-device->media-data sources)
-                          (mk-client->close executor)
-                          (mk-client->device executor)
-                          client->flow
-                          device->flow
-                          (now))]
+                          (mk-client->close executor executor device-id)
+                          (mk-client->device executor executor device-id client->flow)
+                          client->flow device->flow (now))]
      (login device-info)
      (alter devices conj device))))
 
