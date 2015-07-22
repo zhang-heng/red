@@ -69,10 +69,6 @@
                   (get (deref sources) source-id)]
          (device->client buffer))))))
 
-(defn- mk-handler
-  []
-  (fn []))
-
 (defn- creat-device! [device-info]
   (dosync
    (let [{:keys [devices] :as executor} (create-exe! device-info)
@@ -81,12 +77,12 @@
          client->flow (ref 0)
          device->flow (ref 0)
          device  (Device. sources device-id
-                          (mk-device->connected sources executor)
-                          (mk-device->offline sources)
-                          (mk-device->media-finish sources)
-                          (mk-device->media-data sources)
-                          (mk-client->close executor executor device-id)
-                          (mk-client->device executor executor device-id client->flow)
+                          (mk-device->connected devices executor)
+                          (mk-device->offline devices)
+                          (mk-device->media-finish devices)
+                          (mk-device->media-data devices)
+                          (mk-client->close executor device-id)
+                          (mk-client->device executor device-id client->flow)
                           client->flow device->flow (now))]
      (login device-info)
      (alter devices conj device))))
@@ -94,14 +90,14 @@
 (defn- added-device?*
   "设备是否已添加"
   [device-info]
-  (some (fn [{info :subscribe :as device}]
-          (when (= device-info info)
-            device))
-        (get-all-devices)))
+  (dosync
+   (some (fn [{info :subscribe :as device}]
+           (when (= device-info info)
+             device))
+         (get-all-devices))))
 
 (defn get-all-devices
-  "获取所有设备数据"
-  []
+  "获取所有设备数据" []
   (dosync
    (reduce (fn [c {devices :devices}] (clojure.set/union c))
            #{} (get-all-executors))))
