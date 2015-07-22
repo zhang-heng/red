@@ -17,37 +17,41 @@
 (defn- mk-client->device
   [client->device client->flow]
   (fn [buffer]
-    (dosync (alter client->flow + (.limit buffer)))
-    (client->device  buffer)))
+    (dosync (alter client->flow + (.limit buffer))
+            (client->device  buffer))))
 
 (defn- mk-client->close
   [client->close source]
-  (fn [] (client->close)))
+  (fn []
+    (dosync
+     (client->close))))
 
 (defn- mk-device->client
   [device->client device->flow]
   (fn [buffer]
-    (dosync (alter device->flow + (.limit buffer)))
-    (device->client buffer)))
+    (dosync
+     (alter device->flow + (.limit buffer))
+     (device->client buffer))))
 
 (defn- mk-device-close
   [device->close]
   (fn []
-    device->close))
+    (dosync
+     device->close)))
 
 (defn- mk-client
   "生成与客户端的相关数据"
   [{:keys [clients client->device client->close] :as source}
    subscribe device->client device->close]
-  (let [device->flow (ref 0)
-        client->flow (ref 0)
-        client (Client. subscribe device->flow client->flow
-                        (mk-device->client device->client device->flow)
-                        (mk-device-close device->close)
-                        (mk-client->device client->device client->flow )
-                        (mk-client->close client->close source )
-                        (now))]
-    (dosync
+  (dosync
+   (let [device->flow (ref 0)
+         client->flow (ref 0)
+         client (Client. subscribe device->flow client->flow
+                         (mk-device->client device->client device->flow)
+                         (mk-device-close device->close)
+                         (mk-client->device client->device client->flow )
+                         (mk-client->close client->close source )
+                         (now))]
      (alter clients conj client)
      client)))
 
@@ -59,6 +63,7 @@
 (defn open-session!
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"
   [subscribe write-handle close-handle]
-  (-> subscribe
-      get-source!
-      (mk-client subscribe write-handle close-handle)))
+  (dosync
+   (-> subscribe
+       get-source!
+       (mk-client subscribe write-handle close-handle))))
