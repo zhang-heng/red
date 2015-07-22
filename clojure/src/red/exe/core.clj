@@ -14,12 +14,18 @@
                      ^Thrift   thrift
                      ^String   describe ;;厂商描述
                      ^String   path     ;;路径
-                     ^Fn       close<-client
                      ^DateTime start-time])
 
 (defonce executors (ref #{}))
 
 (defonce locker (Object.))
+
+
+(defn login
+  [device-info])
+
+(defn logout
+  [source-id])
 
 (defn get-all-executors []
   (dosync
@@ -29,7 +35,7 @@
   "创建执行程序"
   [])
 
-(defn create-exe
+(defn create-exe!
   "创建执行程序"
   [media-info]
   (locking locker

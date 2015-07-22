@@ -1,7 +1,7 @@
 (ns red.client.core
   (:require [red.client.asynchronous-server :refer [run-server read-from write-to disconnect-notify]]
             [red.client.restfull :refer [get-and-remove-subscribe]]
-            [red.device.active.core :refer [open-session*]])
+            [red.device.client.core :refer [open-session!]])
   (:import [java.nio ByteBuffer charset.Charset]
            [java.util.concurrent TimeUnit Executors]
            [java.net InetSocketAddress]
@@ -22,6 +22,17 @@
   (fn [] (let [{:keys [closer]} (deref connection)]
           (closer))))
 
+(declare session-handler header-handler payload-handler)
+
+(defn- session-handler [connection session-buffer]
+  (dosync
+   (when-let [subscribe (-> session-buffer buffer->uuid get-and-remove-subscribe)]
+     (let [{:keys [disconnector reader]} (open-session! subscribe (mk-send-handler) (mk-close-handler))
+           {:keys [user]} (deref connection)]
+       (disconnect-notify connection disconnector)
+       (ref-set user reader)
+       (read-from connection 4 header-handler)))))
+
 (defn- payload-handler [connection payload-buffer]
   (let [{:keys [user]} (deref connection)]
     (@user payload-buffer)
@@ -30,15 +41,6 @@
 (defn- header-handler [connection size-buffer]
   (let [l (.getInt size-buffer)]
     (read-from connection l payload-handler)))
-
-(defn- session-handler [connection session-buffer]
-  (dosync
-   (when-let [subscribe (-> session-buffer buffer->uuid get-and-remove-subscribe)]
-     (let [{:keys [disconnector reader]} (open-session* subscribe (mk-send-handler) (mk-close-handler))
-           {:keys [user]} (deref connection)]
-       (disconnect-notify connection disconnector)
-       (ref-set user reader)
-       (read-from connection 4 header-handler)))))
 
 (defn- accept-handler
   [connection]
