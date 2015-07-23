@@ -1,4 +1,4 @@
-(ns red.exe.launcher
+(ns red.sdk.launcher
   (:import [java.io InputStreamReader BufferedReader File]))
 
 (defn- creat-process-builder [path command]

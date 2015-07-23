@@ -1,12 +1,11 @@
-(ns red.exe.core
+(ns red.sdk.core
   (:require [red.utils :refer [now]]
             [environ.core :refer [env]]
-            [red.exe.callback :refer [start-thrift!]]
-            [red.exe.launcher :refer [launch!]]
-            [red.exe.request :as req])
+            [red.sdk.callback :refer [start-thrift!]]
+            [red.sdk.launcher :refer [launch!]]
+            [red.sdk.request :as req])
   (:import [clojure.lang Ref PersistentArrayMap Fn]
            [java.util UUID]
-
            [org.joda.time DateTime]))
 
 ;;exe复用个数

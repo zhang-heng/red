@@ -1,5 +1,5 @@
 (ns red.device.client.device
-  (:require [red.exe.core :refer [create-exe! get-all-executors
+  (:require [red.sdk.core :refer [create-exe! get-all-executors
                                   login logout client->device client->close open-source]]
             [red.utils :refer [now]])
   (:import (clojure.lang Ref PersistentArrayMap)
