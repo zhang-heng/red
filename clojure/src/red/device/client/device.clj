@@ -2,22 +2,23 @@
   (:require [red.exe.core :refer [create-exe! get-all-executors
                                   login logout client->device client->close open-source]]
             [red.utils :refer [now]])
-  (:import (clojure.lang Ref)
+  (:import (clojure.lang Ref PersistentArrayMap)
            (java.util UUID)
            (java.nio ByteBuffer)
            (org.joda.time DateTime)))
 
-(defrecord Device [^Ref               sources
-                   ^Ref               device-id
-                   ^clojure.lang.Fn   device->connected     ;;登陆成功
-                   ^clojure.lang.Fn   device->offline       ;;掉线通知
-                   ^clojure.lang.Fn   device->media-finish  ;;媒体结束通知
-                   ^clojure.lang.Fn   device->media-data    ;;媒体数据通知
-                   ^clojure.lang.Fn   client->close
-                   ^clojure.lang.Fn   client->device
-                   ^Ref               client->flow
-                   ^Ref               device->flow
-                   ^DateTime          start-time])
+(defrecord Device [^Ref                sources
+                   ^Ref                device-id
+                   ^PersistentArrayMap device-info
+                   ^clojure.lang.Fn    device->connected    ;;登陆成功
+                   ^clojure.lang.Fn    device->offline      ;;掉线通知
+                   ^clojure.lang.Fn    device->media-finish ;;媒体结束通知
+                   ^clojure.lang.Fn    device->media-data   ;;媒体数据通知
+                   ^clojure.lang.Fn    client->close
+                   ^clojure.lang.Fn    client->device
+                   ^Ref                client->flow
+                   ^Ref                device->flow
+                   ^DateTime           start-time])
 
 (declare get-all-devices)
 
@@ -77,6 +78,7 @@
          client->flow (ref 0)
          device->flow (ref 0)
          device  (Device. sources device-id
+                          device-info
                           (mk-device->connected devices executor)
                           (mk-device->offline devices)
                           (mk-device->media-finish devices)
@@ -109,4 +111,4 @@
    (let [device-info (select-keys [:addr :port :password :user] subscribe)]
      (if-let [source (added-device?* device-info)]
        source
-       (creat-device! subscribe)))))
+       (creat-device! device-info)))))

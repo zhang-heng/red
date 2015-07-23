@@ -1,55 +1,172 @@
 (ns red.exe.core
-  (:require [red.exe.callback :refer [try-to-start-listen stop-server!]]
-            [red.exe.launcher :refer [launch!]])
-  (:import [clojure.lang Ref Fn]
+  (:require [red.utils :refer [now]]
+            [environ.core :refer [env]]
+            [red.exe.callback :refer [start-thrift!]]
+            [red.exe.launcher :refer [launch!]]
+            [red.exe.request :as req])
+  (:import [clojure.lang Ref PersistentArrayMap Fn]
+           [java.util UUID]
+
            [org.joda.time DateTime]))
 
 ;;exe复用个数
 (defonce _MUX 2)
 
-(defrecord Thrift [])
+(defonce executors (ref {}))
 
-(defrecord Executor [^Process  proc
+(defrecord Executor [^UUID     executor-id
+                     ^String   manufacturer
                      ^Ref      devices
-                     ^Thrift   thrift
-                     ^String   describe ;;厂商描述
-                     ^String   path     ;;路径
+                     ^Fn       proc-closer
+                     ^Object   proc-thrift
+                     ^Fn       thrfit-closer
+                     ^Long     thrfit-port
                      ^DateTime start-time])
 
-(defonce executors (ref #{}))
+(defn- can-exe-multiplex?*
+  "创建执行程序"
+  [manufacturer*]
+  (dosync
+   (some (fn [{:keys [devices manufacturer] :as executor}]
+           (when (and (= (manufacturer manufacturer*))
+                      (< (count (deref devices)) _MUX))
+             executor))
+         (get-all-executors))))
+
+(defn- find-device [executor-id device-id]
+  (dosync
+   (when-let [{:keys [devices]}
+              (get (get-all-executors) executor-id)]
+     (get (deref devices) device-id))))
+
+(defn- mk-crashed [executor-id]
+  (fn []
+    (dosync
+     (when-let [{:keys [devices proc-closer thrift-closer]} (get (get-all-executors) executor-id)]
+       (proc-closer)
+       (thrift-closer)
+       (alter executors dissoc executor-id)
+       (doseq [{:keys [device->offline]} (deref devices)]
+         (device->offline))))))
+
+(defn- mk-lanuched [executor-id]
+  (fn [port]
+    (dosync
+     (when-let [{:keys [proc-thrift]} (get (get-all-executors) executor-id)]
+       (deliver proc-thrift port)
+       (req/init port)))))
+
+(defn- mk-device->connected [executor-id]
+  (fn [device-id]
+    (dosync
+     (when-let [{:keys [device->connected]} (find-device executor-id device-id)]
+       (device->connected)))))
+
+(defn- mk-device->offline [executor-id]
+  (fn [device-id]
+    (dosync
+     (when-let [{:keys [device->offline]} (find-device executor-id device-id)]
+       (device->offline)))))
+
+(defn- mk-device->media-finish [executor-id]
+  (fn [device-id source-id]
+    (dosync
+     (when-let [{:keys [device->media-finish]} (find-device executor-id device-id)]
+       (device->media-finish source-id)))))
+
+(defn- mk-device->media-data [executor-id]
+  (fn [device-id source-id buffer]
+    (dosync
+     (when-let [{:keys [device->media-data]}
+                (find-device executor-id device-id)]
+       (device->media-data source-id buffer)))))
+
+(defn- mk-out-printer [manufacturer]
+  (fn [pid string]
+    (prn "<" manufacturer ", " pid ">: " string)))
+
+(defn- create-process*thrift
+  [manufacturer]
+  (dosync
+   (let [executor-id           (UUID/randomUUID)
+         devices               (ref #{})
+         {:keys [thrift-closer thrfit-port]}
+         (start-thrift! (mk-lanuched executor-id)
+                        (mk-device->connected executor-id)
+                        (mk-device->offline executor-id)
+                        (mk-device->media-finish executor-id)
+                        (mk-device->media-data executor-id)
+                        (mk-lanuched executor-id))
+
+         sdk-path     (env :sdk-path)
+         working-path (format "%s/%s" sdk-path manufacturer)
+         exe-path     (format "%s/%s.exe" working-path manufacturer)
+         proc-closer  (launch! (mk-crashed executor-id) (mk-out-printer manufacturer)
+                               exe-path working-path
+                               thrfit-port)
+         proc-port    (promise)
+         executor (Executor. executor-id manufacturer devices proc-closer proc-port thrift-closer thrfit-port (now))]
+     (alter executors assoc  executor))))
 
 (defn login
-  [device-info])
+  "args: executor device"
+  [{:keys [proc-thrift]}
+   {{:keys [addr port user password]} :device-info
+    device->offline :device->offline}]
+  (if-let [thrift-port (deref proc-thrift 3000 nil)]
+    (req/login thrift-port addr port user password)
+    (device->offline)))
 
 (defn logout
-  [source-id])
+  "args: executor device"
+  [{:keys [proc-thrift]}
+   {:keys [device-id]}]
+  (req/logout proc-thrift device-id))
 
 (defn client->device
-  [executor device-id source-id buffer])
+  "args: executor device source-id buffer"
+  [{:keys [proc-thrift]}
+   {:keys [device-id]}
+   source-id
+   buffer]
+  (req/voicedata-send proc-thrift source-id device-id))
 
 (defn client->close
-  [executor device-id source-id])
+  "args: executor device source-id buffer"
+  [{:keys [proc-thrift]}
+   {:keys [device-id sources]}
+   source-id]
+  (dosync
+   (when-let [{{:keys [session-type]} :subscribe} (get (deref sources) source-id)]
+     (case session-type
+       :realplay   (req/realplay-stop proc-thrift device-id source-id)
+       :playback   (req/playback-stop proc-thrift device-id source-id)
+       :voick-talk (req/voicetalk-stop proc-thrift device-id source-id)))))
 
 (defn open-source
-  [executor device-id source-id])
+  "args: executor device source-id buffer"
+  [{:keys [proc-thrift]}
+   {:keys [device-id sources]}
+   source-id]
+  (dosync
+   (when-let [{{:keys [session-type channel
+                       stream-type start-time end-time]} :subscribe}
+              (get (deref sources) source-id)]
+     (case session-type
+       :realplay   (req/realplay-start proc-thrift device-id source-id
+                                       channel stream-type)
+       :playback   (req/playback-bytime proc-thrift device-id source-id
+                                        channel start-time end-time)
+       :voick-talk (req/voicetalk-start proc-thrift device-id source-id
+                                        channel)))))
 
 (defn get-all-executors []
   (dosync
    (deref executors)))
 
-(defn can-exe-multiplex?*
-  "创建执行程序"
-  [])
-
-
-(defonce locker (Object.))
 (defn create-exe!
   "创建执行程序"
-  [media-info]
-  (locking locker
-    (when-let [{:keys [server port info] :as cb}
-               (try-to-start-listen media-info)]
-      (if-let [proc (launch! 'path 'name port '(proc-loger media-info))]
-        (assoc cb :process proc)
-        (do (stop-server! server)
-            (prn "error"))))))
+  [{:keys [manufacturer]}]
+  (if-let [executor (can-exe-multiplex?* manufacturer)]
+    executor
+    (create-process*thrift manufacturer)))

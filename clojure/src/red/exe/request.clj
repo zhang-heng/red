@@ -12,69 +12,68 @@
       (unparse dt)))
 
 (thrift/import
- (:types    [device.sdk.media LoginAccount MediaType MediaPackage StreamType])
- (:clients  [device.sdk.media Sdk]))
+ (:types    [device.netsdk LoginAccount MediaType MediaPackage StreamType])
+ (:clients  [device.netsdk Sdk]))
 
-(defn connect [handler func]
-  (let [{port :port} handler]
-    (with-open [c (thrift/connect! Sdk ["localhost" port])]
-      (func c))))
+(defn connect [thrift-port func]
+  (with-open [c (thrift/connect! Sdk ["localhost" thrift-port])]
+    (func c)))
 
-(defn init [handler]
-  (connect handler #(Sdk/Init %)))
+(defn init [thrift-port]
+  (connect thrift-port #(Sdk/InitSDK %)))
 
-(defn uninit [handler]
-  (connect handler #(Sdk/Uninit %)))
+(defn uninit [thrift-port]
+  (connect thrift-port #(Sdk/CleanSDK %)))
 
 ;;ret login-id
-(defn login [handler addr port user pass]
-  (connect handler #(Sdk/Login % (LoginAccount. addr port user pass))))
+(defn login [thrift-port addr port user pass]
+  (connect thrift-port #(Sdk/Login % (LoginAccount. addr port user pass))))
 
-(defn logout [handler login-id]
-  (connect handler #(Sdk/Logout % login-id)))
+(defn logout [thrift-port login-id]
+  (connect thrift-port #(Sdk/Logout % login-id)))
 
 ;;实时视频
 ;;ret media-id
-(defn realplay-start [handler login-id channel stream-type]
+(defn realplay-start [thrift-port login-id channel stream-type]
   (let [stream-type (get {:main StreamType/Main
                           :sub StreamType/Sub}
                          stream-type StreamType/Main)])
-  (connect handler #(Sdk/StartRealPlay % login-id channel stream-type)))
+  (connect thrift-port #(Sdk/StartRealPlay % login-id channel stream-type)))
 
-(defn realplay-stop [handler media-id]
-  (connect handler #(Sdk/StopRealPlay % media-id)))
+(defn realplay-stop [thrift-port media-id]
+  (connect thrift-port #(Sdk/StopRealPlay % media-id)))
 
 ;;对讲
-(defn voicetalk-start [handler login-id channel]
-  (connect handler #(Sdk/StartVoiceTalk % login-id)))
+(defn voicetalk-start [thrift-port login-id channel]
+  (connect thrift-port #(Sdk/StartVoiceTalk % login-id)))
 
-(defn voicedata-send [handler talk-id data]
-  (connect handler #(Sdk/SendVoiceData % talk-id data)))
+(defn voicedata-send [thrift-port talk-id data]
+  (connect thrift-port #(Sdk/SendVoiceData % talk-id data)))
 
-(defn voicetalk-stop [handler talk-id]
-  (connect handler #(Sdk/StopVoiceTalk % talk-id)))
+(defn voicetalk-stop [thrift-port talk-id]
+  (connect thrift-port #(Sdk/StopVoiceTalk % talk-id)))
 
 ;;回放
-(defn playback-bytime [handler login-id channel start-time end-time]
-  (connect handler #(Sdk/PlayBackByTime % login-id channel
+(defn playback-bytime [thrift-port login-id channel start-time end-time]
+  (connect thrift-port #(Sdk/PlayBackByTime % login-id channel
                                         (zh-cn-time-str start-time)
                                         (zh-cn-time-str end-time))))
 
-(defn playback-stop [handler media-id]
-  (connect handler #(Sdk/StopPlayBack % media-id)))
+(defn playback-stop [thrift-port media-id]
+  (connect thrift-port #(Sdk/StopPlayBack % media-id)))
 
 ;;回放控制
-(defn playback-pause [handler media-id]
-  (connect handler #(Sdk/PlayBackPause % media-id)))
+(defn playback-pause [thrift-port media-id]
+  (connect thrift-port #(Sdk/PlayBackPause % media-id)))
 
-(defn playback-fast [handler media-id]
-  (connect handler #(Sdk/PlayBackFast % media-id)))
+(defn playback-fast [thrift-port media-id]
+  (connect thrift-port #(Sdk/PlayBackFast % media-id)))
 
-(defn playback-slow [handler media-id]
-  (connect handler #(Sdk/PlayBackSlow % media-id)))
+(defn playback-slow [thrift-port media-id]
+  (connect thrift-port #(Sdk/PlayBackSlow % media-id)))
 
-(defn playBack-normalspeed [handler media-id]
-  (connect handler #(Sdk/PlayBackNormalSpeed % media-id)))
+(defn playBack-normalspeed [thrift-port media-id]
+  (connect thrift-port #(Sdk/PlayBackNormalSpeed % media-id)))
 
-(defn playbackseek [handler media-id]
-  (connect handler #(Sdk/PlayBackSeek % media-id)))
+(defn playbackseek [thrift-port media-id]
+  (connect thrift-port #(Sdk/PlayBackSeek % media-id)))
