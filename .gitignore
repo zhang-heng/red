@@ -24,3 +24,5 @@ pom.xml.asc
 *.pyg
 
 gen-*
+
+cpp/build/
