@@ -9,18 +9,22 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 set(CMAKE_BUILD_TYPE Release)
 
 ## 基础框架
-
+include(CMakeLibrarys/thrift.cmake)
 
 set(BASE_SOURCE_LIST src/base.cpp)
+include_directories(${thrift_deps_INC_PATH})
+link_directories(${thrift_deps_LIB_PATH})
 add_library(base ${BASE_SOURCE_LIST})
+target_link_libraries(base ${thrift_deps_LIBS})
+
 set(DEPS base)
 
 ## hik
 include(CMakeLibrarys/hik.cmake)
-include_directories(${HIK_DEPS_INC_PATH})
-link_directories(${HIK_DEPS_LIB_PATH})
+include_directories(${hik_deps_INC_PATH})
+link_directories(${hik_deps_LIB_PATH})
 add_executable(hik src/hik.cpp)
-target_link_libraries(hik ${DEPS} ${HIK_DEPS_LIBS})
+target_link_libraries(hik ${DEPS} ${hik_deps_LIBS})
 
 ## dahua
 include(CMakeLibrarys/dahua.cmake)
