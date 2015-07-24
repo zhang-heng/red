@@ -1,9 +1,5 @@
 #include<iostream>
-#include "Sdk.h"
-
-#include <thrift/protocol/TBinaryProtocol.h>
-#include <thrift/transport/TSocket.h>
-#include <thrift/transport/TTransportUtils.h>
+#include "client.h"
 
 namespace sdk{
   bool init ();
@@ -23,7 +19,8 @@ namespace sdk{
   bool playback_seek();
 }
 
-int main()
+int main(int argn, char** args)
 {
+
   return 0;
 }

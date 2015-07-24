@@ -127,5 +127,5 @@ void MediaData    (1:string device_id, 2:string media_id, 3:MediaPackage data), 
 //**********报警通知**********/
 void xAlarmNotify (),//
 //test
-binary TestBytes(1:binary bytes),
+void TestBytes(1:binary bytes),
 }
