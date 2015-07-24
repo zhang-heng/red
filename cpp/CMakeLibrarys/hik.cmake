@@ -1,5 +1,4 @@
 set(proj hik_deps)
-set(proj_DEPENDENCIES)
 
 if(WIN32)
   set(PACKET_URL "http://download.hikvision.com/UploadFile/SDK/CH-HCNetSDK\(Windows32\)V5.1.1.3.zip")
@@ -18,5 +17,5 @@ ExternalProject_Add(
   CONFIGURE_COMMAND ""
   BUILD_COMMAND ""
   INSTALL_COMMAND ""
-  DEPENDS ${proj_DEPENDENCIES}
+  #DEPENDS ${proj_DEPENDENCIES}
   )
