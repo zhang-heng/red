@@ -1,0 +1,3 @@
+[submodule "third-part"]
+	path = third-part
+	url = git@git.oschina.net:zhangheng/red2-deps.git
