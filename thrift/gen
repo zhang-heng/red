@@ -1,0 +1,5 @@
+#!/bin/sh
+rm -rf gen-*
+
+../third-part/thrift/thrift -gen java netSDK.thrift
+../third-part/thrift/thrift -gen cpp  netSDK.thrift
