@@ -7,6 +7,7 @@ all: hik.exe dahua.exe
 
 clean:
 	rm -rf $(OBJ_DIR)
+	rm -rf $(TARGET)
 
 #*********libs*********
 libs_path = ../third-part/linux
