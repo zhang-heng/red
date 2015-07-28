@@ -25,26 +25,29 @@ $(shell mkdir -p $(thrfit_gen_obj_path))
 $(thrfit_gen_obj_path)/%.o : $(thrift_gen_src_path)/%.cpp
 	$(COMPILE) -I $(thrift_include_path) -c -o $@ $<
 
-#**********base**********
-base_src_path = ./src
-base_srcs = $(wildcard $(base_src_path)/*.cpp)
-base_obj_path = $(OBJ_DIR)/base
-base_objs = $(thrift_gen_objs) $(patsubst %.cpp, $(base_obj_path)/%.o, $(notdir $(base_srcs)))
-base_links = $(thrift_links)
-$(shell mkdir -p $(base_obj_path))
-$(base_obj_path)/%.o : $(base_src_path)/%.cpp
-	$(COMPILE) -I $(thrift_include_path) -I $(thrift_gen_src_path) -c -o $@ $<
+#**********main**********
+main_src_path = src
+main_srcs = $(wildcard $(main_src_path)/*.cpp)
+main_include = -I $(thrift_include_path) -I $(thrift_gen_src_path)
+main_obj_path = $(OBJ_DIR)/main
+main_objs = $(thrift_gen_objs) $(patsubst %.cpp, $(main_obj_path)/%.o, $(notdir $(main_srcs)))
+main_links = $(thrift_links)
+$(shell mkdir -p $(main_obj_path))
+$(main_obj_path)/%.o : $(main_src_path)/%.cpp
+	$(COMPILE) $(main_include) -c -o $@ $<
 
 #**********hik************
+hik_include = -I $(libs_path)/hik $(main_include)
 hik_links_path = -L$(libs_path)/hik $(thrift_links_path)
-hik_links = $(base_links) -lhcnetsdk -lHCCore -lhpr
+hik_links = $(main_links) -lhcnetsdk -lHCCore -lhpr
 $(shell mkdir -p $(TARGET)/hik)
-hik.exe :$(base_objs)
-	$(COMPILE) src/sdks/hik.cpp $(base_objs) -I $(libs_path)/hik $(hik_links_path) $(hik_links) -o $(TARGET)/hik/hik.exe
+hik.exe :$(main_objs)
+	$(COMPILE) src/sdks/hik.cpp $(main_objs) $(hik_include) $(hik_links_path) $(hik_links) -o $(TARGET)/hik/hik.exe
 
 #**********dahua**********
+dahua_include = -I $(libs_path)/dahua $(main_include)
 dahua_links_path = -L$(libs_path)/dahua $(thrift_links_path)
-dahua_links = $(base_links) -ldhnetsdk -ldhdvr
+dahua_links = $(main_links) -ldhnetsdk -ldhdvr
 $(shell mkdir -p $(TARGET)/dahua)
-dahua.exe :$(base_objs)
-	$(COMPILE) src/sdks/dahua.cpp $(base_objs) -I $(libs_path)/dahua $(dahua_links_path) $(dahua_links) -o $(TARGET)/dahua/dahua.exe
+dahua.exe :$(main_objs)
+	$(COMPILE) src/sdks/dahua.cpp $(main_objs) $(dahua_include) $(dahua_links_path) $(dahua_links) -o $(TARGET)/dahua/dahua.exe
