@@ -29,7 +29,6 @@ private:
   std::function<void()> _f;
 };
 
-
 void Server::ServerStarted(){
   std::cout<<"sdk started, tell clojure ..."<<std::endl;
   client = new Client(_client_port);
@@ -69,8 +68,11 @@ Server::Server(int client_port) {
 Server::~Server(){
 }
 
-
 int Server::GetRandomPort(int from, int to){
   std::random_device rd;
   return from + rd() % (to - from);
+}
+
+void Server::Testing(const int32_t Bps) {
+  printf("Testing\n");
 }

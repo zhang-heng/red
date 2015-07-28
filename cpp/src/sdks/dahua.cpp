@@ -3,89 +3,17 @@
 
 using namespace device::netsdk;
 
-void Server::Testing(const int32_t Bps) {
-  // Your implementation goes here
-  printf("Testing\n");
-}
-
 bool Server::InitSDK() {
-  // Your implementation goes here
-  printf("InitSDK\n");
 }
 
 bool Server::CleanSDK() {
-  // Your implementation goes here
-  printf("CleanSDK\n");
 }
 
-bool Server::Login(const LoginAccount& info) {
-  // Your implementation goes here
-  printf("Login\n");
+bool Server::Login(const LoginAccount& account) {
 }
 
-bool Server::Logout(const std::string& loginID) {
-  // Your implementation goes here
-  printf("Logout\n");
-}
-
-void Server::xGetVersion(std::string& _return) {
-  // Your implementation goes here
-  printf("xGetVersion\n");
-}
-
-bool Server::xGetStatus() {
-  // Your implementation goes here
-  printf("xGetStatus\n");
-}
-
-bool Server::xUpdata() {
-  // Your implementation goes here
-  printf("xUpdata\n");
-}
-
-bool Server::xRestart() {
-  // Your implementation goes here
-  printf("xRestart\n");
-}
-
-bool Server::xSetTime() {
-  // Your implementation goes here
-  printf("xSetTime\n");
-}
-
-bool Server::xPTZControl() {
-  // Your implementation goes here
-  printf("xPTZControl\n");
-}
-
-bool Server::xSerialStart() {
-  // Your implementation goes here
-  printf("xSerialStart\n");
-}
-
-bool Server::xSerialSend() {
-  // Your implementation goes here
-  printf("xSerialSend\n");
-}
-
-bool Server::xSerialStop() {
-  // Your implementation goes here
-  printf("xSerialStop\n");
-}
-
-bool Server::xDownloadRecordByFile() {
-  // Your implementation goes here
-  printf("xDownloadRecordByFile\n");
-}
-
-bool Server::xDownloadRecordByTime() {
-  // Your implementation goes here
-  printf("xDownloadRecordByTime\n");
-}
-
-bool Server::xStopDownload() {
-  // Your implementation goes here
-  printf("xStopDownload\n");
+bool Server::Logout(const std::string& device_id) {
+  //NET_DVR_Logout(login_id);
 }
 
 bool Server::StartRealPlay(const std::string& device_id, const PlayInfo& play_info) {
@@ -103,7 +31,7 @@ bool Server::StartVoiceTalk(const std::string& device_id, const PlayInfo& play_i
   printf("StartVoiceTalk\n");
 }
 
-bool Server::SendVoiceData(const std::string& media_id, const std::string& buffer) {
+void Server::SendVoiceData(const std::string& media_id, const std::string& buffer) {
   // Your implementation goes here
   printf("SendVoiceData\n");
 }
