@@ -26,3 +26,6 @@ pom.xml.asc
 gen-*
 
 cpp/build/
+
+bin/
+cpp/.obj/

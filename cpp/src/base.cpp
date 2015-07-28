@@ -19,7 +19,7 @@ namespace sdk{
   bool playback_seek();
 }
 
-int main(int argn, char** args)
+int main(int argc, char* argv[])
 {
 
   return 0;
