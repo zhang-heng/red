@@ -1,6 +1,6 @@
 OBJ_DIR = .obj
 
-COMPILE = g++ -std=c++11 -m32 -pthread
+COMPILE = g++ -O2 -s -std=c++11 -m32 -pthread
 TARGET = ../bin/sdk
 
 all: hik.exe dahua.exe
