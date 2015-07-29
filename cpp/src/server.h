@@ -10,36 +10,39 @@ class Server : virtual public device::netsdk::SdkIf {
   void ServerStarted();
   ~Server();
 
-  void Testing(const int32_t Bps);
-  bool InitSDK();
-  bool CleanSDK();
-  bool Login(const device::netsdk::LoginAccount& account);
-  bool Logout(const std::string& device_id);
-  bool StartRealPlay(const std::string& device_id, const device::netsdk::PlayInfo& play_info);
-  bool StopRealPlay(const std::string& device_id, const std::string& media_id);
-  bool StartVoiceTalk(const std::string& device_id, const device::netsdk::PlayInfo& play_info);
-  void SendVoiceData(const std::string& media_id, const std::string& buffer);
-  bool StopVoiceTalk(const std::string& device_id, const std::string& media_id);
-  bool PlayBackByTime(const std::string& device_id, const device::netsdk::PlayInfo& play_info);
-  bool StopPlayBack(const std::string& device_id, const std::string& media_id);
-  bool PlayBackNormalSpeed(const std::string& device_id, const std::string& media_id);
-  bool PlayBackPause(const std::string& device_id, const std::string& media_id);
-  bool PlayBackFast(const std::string& device_id, const std::string& media_id);
-  bool PlayBackSlow(const std::string& device_id, const std::string& media_id);
-  bool PlayBackSeek(const std::string& device_id, const std::string& media_id);
+  void Testing(const int32_t Bps) override;
+  bool InitSDK() override;
+  bool CleanSDK() override;
+  bool Login(const device::netsdk::LoginAccount& account) override;
+  bool Logout(const std::string& device_id) override;
 
-  void xGetVersion(std::string& _return){};
-  bool xGetStatus(){};
-  bool xUpdata(){};
-  bool xRestart(){};
-  bool xSetTime(){};
-  bool xPTZControl(){};
-  bool xSerialStart(){};
-  bool xSerialSend(){};
-  bool xSerialStop(){};
-  bool xDownloadRecordByFile(){};
-  bool xDownloadRecordByTime(){};
-  bool xStopDownload(){};
+  bool StartRealPlay(const std::string& device_id, const std::string& media_id, const device::netsdk::PlayInfo& play_info) override;
+  bool StopRealPlay(const std::string& device_id, const std::string& media_id) override;
+
+  bool StartVoiceTalk(const std::string& device_id, const std::string& media_id, const device::netsdk::PlayInfo& play_info) override;
+  void SendVoiceData(const std::string& media_id, const std::string& buffer) override;
+  bool StopVoiceTalk(const std::string& device_id, const std::string& media_id) override;
+
+  bool PlayBackByTime(const std::string& device_id, const std::string& media_id, const device::netsdk::PlayInfo& play_info) override;
+  bool StopPlayBack       (const std::string& device_id, const std::string& media_id) override;
+  bool PlayBackNormalSpeed(const std::string& device_id, const std::string& media_id) override;
+  bool PlayBackPause      (const std::string& device_id, const std::string& media_id) override;
+  bool PlayBackFast       (const std::string& device_id, const std::string& media_id) override;
+  bool PlayBackSlow       (const std::string& device_id, const std::string& media_id) override;
+  bool PlayBackSeek       (const std::string& device_id, const std::string& media_id) override;
+
+  void xGetVersion(std::string& _return) override {} ;
+  bool xGetStatus() override {};
+  bool xUpdata() override {};
+  bool xRestart() override {};
+  bool xSetTime() override {};
+  bool xPTZControl() override {};
+  bool xSerialStart() override {};
+  bool xSerialSend() override {};
+  bool xSerialStop() override {};
+  bool xDownloadRecordByFile() override {};
+  bool xDownloadRecordByTime() override {};
+  bool xStopDownload() override {};
 
  private:
   Client *client;

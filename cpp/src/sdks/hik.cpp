@@ -42,7 +42,7 @@ bool Server::Logout(const std::string& device_id) {
   }
 }
 
-bool Server::StartRealPlay(const std::string& device_id, const PlayInfo& play_info) {
+bool Server::StartRealPlay(const std::string& device_id, const std::string& media_id, const PlayInfo& play_info) {
   auto it = _devices.find(device_id);
   if(it != _devices.end()){
     auto login_id = it->second;
@@ -83,7 +83,7 @@ bool Server::StopRealPlay(const std::string& device_id, const std::string& media
   printf("StopRealPlay\n");
 }
 
-bool Server::StartVoiceTalk(const std::string& device_id, const PlayInfo& play_info) {
+bool Server::StartVoiceTalk(const std::string& device_id, const std::string& media_id, const PlayInfo& play_info) {
   // Your implementation goes here
   printf("StartVoiceTalk\n");
 }
@@ -98,7 +98,7 @@ bool Server::StopVoiceTalk(const std::string& device_id, const std::string& medi
   printf("StopVoiceTalk\n");
 }
 
-bool Server::PlayBackByTime(const std::string& device_id, const PlayInfo& play_info) {
+bool Server::PlayBackByTime(const std::string& device_id, const std::string& media_id, const PlayInfo& play_info) {
   // Your implementation goes here
   printf("PlayBackByTime\n");
 }

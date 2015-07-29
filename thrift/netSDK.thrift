@@ -110,21 +110,21 @@ bool xDownloadRecordByTime(), //按时间下载
 bool xStopDownload(),         //停止下载
 
 //**********预览**********/
-bool StartRealPlay (1:string device_id, 2:PlayInfo play_info), //打开预览
-bool StopRealPlay  (1:string device_id, 2:string media_id),    //关闭预览
+bool StartRealPlay (1:string device_id, 2:string media_id, 3:PlayInfo play_info), //打开预览
+bool StopRealPlay  (1:string device_id, 2:string media_id),     //关闭预览
 //**********对讲**********/
-bool StartVoiceTalk (1:string device_id, 2:PlayInfo play_info), //启动对讲
+bool StartVoiceTalk (1:string device_id, 2:string media_id, 3:PlayInfo play_info), //启动对讲
 oneway void SendVoiceData (1:string media_id, 2:string buffer), //发送对讲音频
 bool StopVoiceTalk  (1:string device_id, 2:string media_id),    //关闭对讲
 //**********回放**********/
-bool PlayBackByTime (1:string device_id, 2:PlayInfo play_info), //按时间点播
-bool StopPlayBack   (1:string device_id, 2:string media_id),    //停止点播
+bool PlayBackByTime (1:string device_id, 2:string media_id, 3:PlayInfo play_info), //按时间点播
+bool StopPlayBack   (1:string device_id, 2:string media_id), //停止点播
 //->回放控制
 bool PlayBackNormalSpeed (1:string device_id, 2:string media_id), //正常速度
-bool PlayBackPause (1:string device_id, 2:string media_id),       //暂停
-bool PlayBackFast  (1:string device_id, 2:string media_id),       //快放
-bool PlayBackSlow  (1:string device_id, 2:string media_id),       //慢放
-bool PlayBackSeek  (1:string device_id, 2:string media_id),       //改变进度
+bool PlayBackPause       (1:string device_id, 2:string media_id), //暂停
+bool PlayBackFast        (1:string device_id, 2:string media_id), //快放
+bool PlayBackSlow        (1:string device_id, 2:string media_id), //慢放
+bool PlayBackSeek        (1:string device_id, 2:string media_id), //改变进度
 }
 
 //通知反馈
