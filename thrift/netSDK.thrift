@@ -45,10 +45,11 @@ struct VoiceInfo{
 
 //登录信息
 struct LoginAccount{
-1: string addr,
-2: i32    port,
-3: string user,
-4: string password,
+1: string device_id,
+2: string addr,
+3: i32    port,
+4: string user,
+5: string password,
 }
 
 //码流类型
@@ -57,12 +58,20 @@ Main = 1, //主码流
 Sub  = 2, //辅码流
 }
 
+//连接类型
+enum ConnectType{
+Tcp = 1,
+Udp = 2,
+}
+
+
 //媒体请求信息
 struct PlayInfo{
-1:i32        channel,
-2:StreamType stream_type
-3:string     start_time,
-4:string     end_time
+1:i32         channel,
+2:StreamType  stream_type,
+3:ConnectType connect_type,
+4:string      start_time,
+5:string      end_time
 }
 
 //异常

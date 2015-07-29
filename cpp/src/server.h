@@ -1,6 +1,8 @@
 #include "Sdk.h"
 #include "client.h"
 
+#include <map>
+
 class Server : virtual public device::netsdk::SdkIf {
  public:
   Server(){};
@@ -44,6 +46,7 @@ class Server : virtual public device::netsdk::SdkIf {
   int const workerCount = 20;
   int _listen_port;
   int _client_port;
-
+  std::map<std::string, long> _devices;
+  std::map<long, std::string> _sources;
   int GetRandomPort(int from, int to);
 };

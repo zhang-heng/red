@@ -66,6 +66,8 @@ Server::Server(int client_port) {
 }
 
 Server::~Server(){
+  _devices.clear();
+  _sources.clear();
 }
 
 int Server::GetRandomPort(int from, int to){
