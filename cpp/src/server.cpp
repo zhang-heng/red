@@ -75,7 +75,3 @@ int Server::GetRandomPort(int from, int to){
   std::random_device rd;
   return from + rd() % (to - from);
 }
-
-void Server::Testing(const int32_t Bps) {
-  printf("Testing\n");
-}

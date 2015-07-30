@@ -1,4 +1,5 @@
 #include "Sdk.h"
+
 #include "client.h"
 
 #include <vector>
@@ -7,24 +8,19 @@
 
 #define SESSION_ID void*
 
-class MediaInfo{
- public:
-  std::string _MediaID;
-  SESSION_ID _HandleID;
-};
-
-
 class DeviceInfo{
  public:
-  MediaInfo* GetMedia(std::string MediaID);
-  device::netsdk::DeviceInfo _info;
-  std::string _DeviceID;
-  SESSION_ID _LoginID;
-
- private:
-  std::vector<MediaInfo> _medias;
+  std::string _device_id;
+  SESSION_ID _login_id;
+  device::info::DeviceInfo _info;
 };
 
+class MediaInfo{
+ public:
+  std::string _device_id;
+  std::string _media_id;
+  SESSION_ID _handle_id;
+};
 
 class Server : virtual public device::netsdk::SdkIf {
  public:
@@ -33,45 +29,136 @@ class Server : virtual public device::netsdk::SdkIf {
   void ServerStarted();
   ~Server();
 
-  void Testing(const int32_t Bps) override;
   bool InitSDK() override;
   bool CleanSDK() override;
-  bool Login(const device::netsdk::LoginAccount& account) override;
-  bool Logout(const std::string& device_id) override;
+  bool Login(const  ::device::info::LoginAccount& account) override;
+  bool Logout(const std::string& deviceID) override;
 
-  bool StartRealPlay(const std::string& device_id, const std::string& media_id, const device::netsdk::PlayInfo& play_info) override;
+  bool StartRealPlay(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info) override;
   bool StopRealPlay(const std::string& device_id, const std::string& media_id) override;
 
-  bool StartVoiceTalk(const std::string& device_id, const std::string& media_id, const device::netsdk::PlayInfo& play_info) override;
-  void SendVoiceData(const std::string& media_id, const std::string& buffer) override;
-  bool StopVoiceTalk(const std::string& device_id, const std::string& media_id) override;
+  bool StartVoiceTalk(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info) override {
+    // Your implementation goes here
+    printf("StartVoiceTalk\n");
+  }
 
-  bool PlayBackByTime(const std::string& device_id, const std::string& media_id, const device::netsdk::PlayInfo& play_info) override;
-  bool StopPlayBack       (const std::string& device_id, const std::string& media_id) override;
-  bool PlayBackNormalSpeed(const std::string& device_id, const std::string& media_id) override;
-  bool PlayBackPause      (const std::string& device_id, const std::string& media_id) override;
-  bool PlayBackFast       (const std::string& device_id, const std::string& media_id) override;
-  bool PlayBackSlow       (const std::string& device_id, const std::string& media_id) override;
-  bool PlayBackSeek       (const std::string& device_id, const std::string& media_id) override;
+  bool StopVoiceTalk(const std::string& device_id, const std::string& media_id) override {
+    // Your implementation goes here
+    printf("StopVoiceTalk\n");
+  }
 
-  void xGetVersion(std::string& _return) override {} ;
-  bool xGetStatus() override {};
-  bool xUpdata() override {};
-  bool xRestart() override {};
-  bool xSetTime() override {};
-  bool xPTZControl() override {};
-  bool xSerialStart() override {};
-  bool xSerialSend() override {};
-  bool xSerialStop() override {};
-  bool xDownloadRecordByFile() override {};
-  bool xDownloadRecordByTime() override {};
-  bool xStopDownload() override {};
+  void SendVoiceData(const std::string& media_id, const std::string& buffer) override {
+    // Your implementation goes here
+    printf("SendVoiceData\n");
+  }
+
+  bool PlayBackByTime(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info) override {
+    // Your implementation goes here
+    printf("PlayBackByTime\n");
+  }
+
+  bool StopPlayBack(const std::string& device_id, const std::string& media_id) override {
+    // Your implementation goes here
+    printf("StopPlayBack\n");
+  }
+
+  bool PlayBackNormalSpeed(const std::string& device_id, const std::string& media_id) override {
+    // Your implementation goes here
+    printf("PlayBackNormalSpeed\n");
+  }
+
+  bool PlayBackPause(const std::string& device_id, const std::string& media_id) override {
+    // Your implementation goes here
+    printf("PlayBackPause\n");
+  }
+
+  bool PlayBackFast(const std::string& device_id, const std::string& media_id) override {
+    // Your implementation goes here
+    printf("PlayBackFast\n");
+  }
+
+  bool PlayBackSlow(const std::string& device_id, const std::string& media_id) override {
+    // Your implementation goes here
+    printf("PlayBackSlow\n");
+  }
+
+  bool PlayBackSeek(const std::string& device_id, const std::string& media_id) override {
+    // Your implementation goes here
+    printf("PlayBackSeek\n");
+  }
+
+  bool xGetVersion() override {
+    // Your implementation goes here
+    printf("xGetVersion\n");
+  }
+
+  bool xGetStatus() override {
+    // Your implementation goes here
+    printf("xGetStatus\n");
+  }
+
+  bool xUpdata() override {
+    // Your implementation goes here
+    printf("xUpdata\n");
+  }
+
+  bool xRestart() override {
+    // Your implementation goes here
+    printf("xRestart\n");
+  }
+
+  bool xSetTime() override {
+    // Your implementation goes here
+    printf("xSetTime\n");
+  }
+
+  bool xResetPassword() override {
+    // Your implementation goes here
+    printf("xResetPassword\n");
+  }
+
+  bool xPTZControl() override {
+    // Your implementation goes here
+    printf("xPTZControl\n");
+  }
+
+  bool xSerialStart() override {
+    // Your implementation goes here
+    printf("xSerialStart\n");
+  }
+
+  bool xSerialStop() override {
+    // Your implementation goes here
+    printf("xSerialStop\n");
+  }
+
+  void xSerialSend() override {
+    // Your implementation goes here
+    printf("xSerialSend\n");
+  }
+
+  bool xDownloadRecordByFile() override {
+    // Your implementation goes here
+    printf("xDownloadRecordByFile\n");
+  }
+
+  bool xDownloadRecordByTime() override {
+    // Your implementation goes here
+    printf("xDownloadRecordByTime\n");
+  }
+
+  bool xStopDownload() override {
+    // Your implementation goes here
+    printf("xStopDownload\n");
+  }
+
 
  private:
   Client *client;
   int const workerCount = 20;
   int _listen_port;
   int _client_port;
-  std::vector<DeviceInfo*> _devices;
+  std::map<SESSION_ID ,DeviceInfo*> _devices;
+  std::map<SESSION_ID ,MediaInfo*> _medias;
   int GetRandomPort(int from, int to);
 };
