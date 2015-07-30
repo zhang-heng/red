@@ -45,7 +45,7 @@ void Client::send_media_finish (std::string device_id, std::string media_id){
   client->MediaFinish(device_id, media_id);
 }
 
-void Client::send_media_data (std::string device_id, std::string media_id, device::netsdk::MediaPackage data){
+void Client::send_media_data (std::string device_id, std::string media_id, device::info::MediaPackage data){
   client->MediaData(device_id, media_id, data);
 }
 

@@ -56,12 +56,14 @@ bool Server::Login(const device::info::LoginAccount& account) {
 }
 
 bool Server::Logout(const std::string& device_id) {
-  // auto it = _devices.find(device_id);
-  // if(it != _devices.end()){
-  //   NET_DVR_Logout((long)it->second->_login_id);
-  //   delete it->second;
-  //   _devices.erase(it);
-  // }
+  auto device = FindDeviceInfo(device_id);
+  if(device){
+    NET_DVR_Logout((long)device->_login_id);
+  }else{
+    info::InvalidOperation io;
+    io.what = 0;
+    io.why = "device not found";
+  }
 }
 
 bool Server::StartRealPlay(const std::string& device_id,

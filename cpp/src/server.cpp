@@ -3,6 +3,8 @@
 #include <exception>
 #include <random>
 #include <thread>
+#include <algorithm>
+
 #include <thrift/concurrency/ThreadManager.h>
 #include <thrift/concurrency/PosixThreadFactory.h>
 #include <thrift/protocol/TBinaryProtocol.h>
@@ -74,4 +76,20 @@ Server::~Server(){
 int Server::GetRandomPort(int from, int to){
   std::random_device rd;
   return from + rd() % (to - from);
+}
+
+DeviceInfo* Server::FindDeviceInfo(std::string id){
+  for(auto it:_devices){
+    if (it.second->_device_id == id)
+      return it.second;
+  }
+  return nullptr;
+}
+
+MediaInfo* Server::FindMediaInfo(std::string id){
+  for(auto it:_medias){
+    if (it.second->_media_id == id)
+      return it.second;
+  }
+  return nullptr;
 }

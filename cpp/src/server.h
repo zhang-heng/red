@@ -35,7 +35,9 @@ class Server : virtual public device::netsdk::SdkIf {
   bool Logout(const std::string& deviceID) override;
 
   bool StartRealPlay(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info) override;
-  bool StopRealPlay(const std::string& device_id, const std::string& media_id) override;
+  bool StopRealPlay(const std::string& device_id, const std::string& media_id) override {
+
+  };
 
   bool StartVoiceTalk(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info) override {
     // Your implementation goes here
@@ -158,7 +160,9 @@ class Server : virtual public device::netsdk::SdkIf {
   int const workerCount = 20;
   int _listen_port;
   int _client_port;
-  std::map<SESSION_ID ,DeviceInfo*> _devices;
-  std::map<SESSION_ID ,MediaInfo*> _medias;
+  std::map<SESSION_ID, DeviceInfo*> _devices;
+  std::map<SESSION_ID, MediaInfo*> _medias;
   int GetRandomPort(int from, int to);
+  DeviceInfo* FindDeviceInfo(std::string id);
+  MediaInfo* FindMediaInfo(std::string id);
 };
