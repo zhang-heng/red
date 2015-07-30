@@ -3,6 +3,7 @@ namespace cpp  device.netsdk
 
 const string version = "1.0.0"
 
+////////////////////////////////////////////////////
 //媒体类型
 enum MediaType{
 FileHeader  = 1,//头
@@ -11,13 +12,6 @@ VideoFrame  = 3,//视频
 AudioData   = 4,//音频
 TalkData    = 5,//对讲
 PrivatePack = 6,//私有,其它
-}
-
-//媒体包
-struct MediaPackage{
-1: MediaType  type,
-2: i32        reserver,
-3: binary     payload,
 }
 
 //音频类型
@@ -32,6 +26,34 @@ G723_53 = 7,
 G723_63 = 8,
 G726    = 9,
 G722    = 10,
+}
+
+//码流类型
+enum StreamType{
+Main = 1, //主码流
+Sub  = 2, //辅码流
+}
+
+//连接类型
+enum ConnectType{
+Tcp = 1,
+Udp = 2,
+}
+
+////////////////////////////////////////////////////
+//设备信息
+struct DeviceInfo{
+1: i32 n_video_channels,
+2: i32 start_video_channel,
+3: i32 n_audio_channels,
+4: i32 start_audio_channel,
+}
+
+//媒体包
+struct MediaPackage{
+1: MediaType  type,
+2: i32        reserver,
+3: binary     payload,
 }
 
 //音频描述
@@ -52,19 +74,6 @@ struct LoginAccount{
 5: string password,
 }
 
-//码流类型
-enum StreamType{
-Main = 1, //主码流
-Sub  = 2, //辅码流
-}
-
-//连接类型
-enum ConnectType{
-Tcp = 1,
-Udp = 2,
-}
-
-
 //媒体请求信息
 struct PlayInfo{
 1:i32         channel,
@@ -74,12 +83,14 @@ struct PlayInfo{
 5:string      end_time
 }
 
+////////////////////////////////////////////////////
 //异常
 exception InvalidOperation {
-  1: i32 what,
-  2: string why
+1: i32 what,
+2: string why
 }
 
+////////////////////////////////////////////////////
 //请求操作
 service Sdk{
 void Testing(1: i32 Bps), //测试接口
@@ -127,6 +138,7 @@ bool PlayBackSlow        (1:string device_id, 2:string media_id), //慢放
 bool PlayBackSeek        (1:string device_id, 2:string media_id), //改变进度
 }
 
+////////////////////////////////////////////////////
 //通知反馈
 service Notify{
 //**********状态通知**********/

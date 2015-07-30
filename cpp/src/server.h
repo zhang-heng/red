@@ -1,7 +1,30 @@
 #include "Sdk.h"
 #include "client.h"
 
+#include <vector>
 #include <map>
+
+
+#define SESSION_ID void*
+
+class MediaInfo{
+ public:
+  std::string _MediaID;
+  SESSION_ID _HandleID;
+};
+
+
+class DeviceInfo{
+ public:
+  MediaInfo* GetMedia(std::string MediaID);
+  device::netsdk::DeviceInfo _info;
+  std::string _DeviceID;
+  SESSION_ID _LoginID;
+
+ private:
+  std::vector<MediaInfo> _medias;
+};
+
 
 class Server : virtual public device::netsdk::SdkIf {
  public:
@@ -49,7 +72,6 @@ class Server : virtual public device::netsdk::SdkIf {
   int const workerCount = 20;
   int _listen_port;
   int _client_port;
-  std::map<std::string, long> _devices;
-  std::map<long, std::string> _sources;
+  std::vector<DeviceInfo*> _devices;
   int GetRandomPort(int from, int to);
 };

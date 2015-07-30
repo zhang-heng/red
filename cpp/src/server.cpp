@@ -21,6 +21,7 @@ using boost::shared_ptr;
 
 using namespace device::netsdk;
 
+//TServerEventHandlerImpl**********
 class TServerEventHandlerImpl :public TServerEventHandler{
 public:
   TServerEventHandlerImpl(std::function<void()> f) : _f(f){}
@@ -29,6 +30,8 @@ private:
   std::function<void()> _f;
 };
 
+
+//Server**********
 void Server::ServerStarted(){
   std::cout<<"sdk started, tell clojure ..."<<std::endl;
   client = new Client(_client_port);
@@ -66,8 +69,6 @@ Server::Server(int client_port) {
 }
 
 Server::~Server(){
-  _devices.clear();
-  _sources.clear();
 }
 
 int Server::GetRandomPort(int from, int to){
