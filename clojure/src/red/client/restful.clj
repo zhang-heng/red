@@ -1,4 +1,4 @@
-(ns red.client.restfull
+(ns red.client.restful
   (:require [red.utils :refer [now pass-mill correspond-args]])
   (:import [java.util UUID Date]))
 

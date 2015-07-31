@@ -5,8 +5,6 @@
            [org.apache.thrift.transport TServerSocket]))
 
 (thrift/import
- (:types    [device.netsdk MediaPackage]
-            [device.types  MediaType])
  (:services [device.netsdk Notify]))
 
 ;;thrift-clj的接口中将port置为零,自动获取一个随机可用端口,不可查.

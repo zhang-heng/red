@@ -1,5 +1,5 @@
 (ns red.core
-  (:require [red.client.core :refer [check-timeout-task]]))
+  (:require [red.client.restful :refer [check-timeout-task]]))
 
 (defn start-check-task
   "启动维护任务@返回关闭函数"

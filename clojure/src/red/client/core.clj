@@ -1,6 +1,6 @@
 (ns red.client.core
   (:require [red.client.asynchronous-server :refer [run-server read-from write-to disconnect-notify]]
-            [red.client.restfull :refer [get-and-remove-subscribe]]
+            [red.client.restful :refer [get-and-remove-subscribe]]
             [red.device.client.core :refer [open-session!]])
   (:import [java.nio ByteBuffer charset.Charset]
            [java.util.concurrent TimeUnit Executors]

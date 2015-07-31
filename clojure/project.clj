@@ -15,5 +15,10 @@
                  [compojure "1.3.1"]
                  ;;thrift
                  [thrift-clj "0.2.1"]]
-  :main red.core
-  :java-source-paths ["../thrift/gen-java/"])
+  :java-source-paths ["../thrift/gen-java/"]
+  :global-vars {*warn-on-reflection* true
+                *assert* true}
+  :profiles {:dev {:main red.repl}
+             :jar {:main red.server}
+             :uberjar {:main red.server
+                       :aot :all}})
