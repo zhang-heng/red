@@ -14,8 +14,8 @@ bool InitSDK(),  //初始化sdk
 bool CleanSDK(), //释放SDK,退出
 
 //**********登入**********/
-bool Login  (1:info.LoginAccount account), //登入
-bool Logout (1:string deviceID),           //登出
+bool Login  (1:string device_id, 2:info.LoginAccount account), //登入
+bool Logout (1:string device_id),           //登出
 
 //**********维护**********/
 bool xGetVersion(),    //获取版本信息

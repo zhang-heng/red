@@ -1,26 +1,11 @@
 #include "Sdk.h"
 
+#include "server_device.h"
+#include "server_media.h"
 #include "client.h"
 
 #include <vector>
 #include <map>
-
-
-#define SESSION_ID void*
-
-class DeviceInfo{
- public:
-  std::string _device_id;
-  SESSION_ID _login_id;
-  device::info::DeviceInfo _info;
-};
-
-class MediaInfo{
- public:
-  std::string _device_id;
-  std::string _media_id;
-  SESSION_ID _handle_id;
-};
 
 class Server : virtual public device::netsdk::SdkIf {
  public:
@@ -31,13 +16,11 @@ class Server : virtual public device::netsdk::SdkIf {
 
   bool InitSDK() override;
   bool CleanSDK() override;
-  bool Login(const  ::device::info::LoginAccount& account) override;
-  bool Logout(const std::string& deviceID) override;
+  bool Login(const std::string& device_id, const device::info::LoginAccount& account) override;
+  bool Logout(const std::string& device_id) override;
 
   bool StartRealPlay(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info) override;
-  bool StopRealPlay(const std::string& device_id, const std::string& media_id) override {
-
-  };
+  bool StopRealPlay(const std::string& device_id, const std::string& media_id) override;
 
   bool StartVoiceTalk(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info) override {
     // Your implementation goes here
@@ -156,13 +139,11 @@ class Server : virtual public device::netsdk::SdkIf {
 
 
  private:
+  Device* FindDevice(std::string id);
   Client *client;
   int const workerCount = 20;
   int _listen_port;
   int _client_port;
-  std::map<SESSION_ID, DeviceInfo*> _devices;
-  std::map<SESSION_ID, MediaInfo*> _medias;
+  std::map<std::string, Device*> _devices;
   int GetRandomPort(int from, int to);
-  DeviceInfo* FindDeviceInfo(std::string id);
-  MediaInfo* FindMediaInfo(std::string id);
 };

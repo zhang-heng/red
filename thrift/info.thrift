@@ -37,11 +37,10 @@ struct VoiceInfo{
 
 //登录信息
 struct LoginAccount{
-1: string device_id,
-2: string addr,
-3: i32    port,
-4: string user,
-5: string password,
+1: string addr,
+2: i32    port,
+3: string user,
+4: string password,
 }
 
 //媒体请求信息

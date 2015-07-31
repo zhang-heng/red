@@ -78,18 +78,56 @@ int Server::GetRandomPort(int from, int to){
   return from + rd() % (to - from);
 }
 
-DeviceInfo* Server::FindDeviceInfo(std::string id){
-  for(auto it:_devices){
-    if (it.second->_device_id == id)
-      return it.second;
-  }
-  return nullptr;
+Device* Server::FindDevice(std::string id){
+  auto it = _devices.find(id);
+  if(it == _devices.end())
+    return nullptr;
+  return it->second;
 }
 
-MediaInfo* Server::FindMediaInfo(std::string id){
-  for(auto it:_medias){
-    if (it.second->_media_id == id)
-      return it.second;
+bool Server::Login(const std::string& device_id, const device::info::LoginAccount& account){
+  auto device = FindDevice(device_id);
+  if(device){
+    return device->Login(account);
+  }else{
+    device = new Device(device_id, account);
+    _devices.insert(std::pair<std::string, Device*>(device_id, device));
+    return device->Login();
   }
-  return nullptr;
+}
+
+bool Server::Logout(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device)
+    return device->Logout();
+  else{
+    device::info::InvalidOperation io;
+    io.what = 0;
+    io.why = "device_id not found";
+    throw io;
+  }
+}
+
+bool Server::StartRealPlay(const std::string& device_id, const std::string& media_id, const  ::device::info::PlayInfo& play_info){
+  auto device = FindDevice(device_id);
+  if(device)
+    return device->StartRealPlay(media_id, play_info);
+  else{
+    device::info::InvalidOperation io;
+    io.what = 0;
+    io.why = "device_id not found";
+    throw io;
+  }
+}
+
+bool Server::StopRealPlay(const std::string& device_id, const std::string& media_id){
+  auto device = FindDevice(device_id);
+  if(device)
+    return device->StopRealPlay(media_id);
+  else{
+    device::info::InvalidOperation io;
+    io.what = 0;
+    io.why = "device_id not found";
+    throw io;
+  }
 }
