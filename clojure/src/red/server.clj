@@ -1,16 +1,16 @@
 (ns red.server
   (:require [ring.adapter.jetty :refer [run-jetty]]
-            [red.handler :refer [app]])
+            [red.handler :refer [app]]
+            [red.client.core :refer [start-gtsp-server]])
   (:import [org.apache.commons.daemon DaemonContext])
   (:gen-class :implements [org.apache.commons.daemon.Daemon]))
 
 (defonce ^:private server (atom nil))
 
-(defn- run-rest []
-  (run-jetty app {:port 8080, :join? false}))
-
 (defn- run [join?]
-  (let [status (merge {:rest (run-rest)})]
+  (let [status (assoc {}
+                 :rest (run-jetty app {:port 8080, :join? false})
+                 :gtsp (start-gtsp-server "0.0.0.0" 7748))]
     (reset! server status)))
 
 (defn- stop []

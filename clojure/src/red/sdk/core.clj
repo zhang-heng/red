@@ -22,6 +22,8 @@
                      ^Long     thrfit-port
                      ^DateTime start-time])
 
+(declare get-all-executors)
+
 (defn- can-exe-multiplex?*
   "创建执行程序"
   [manufacturer*]
