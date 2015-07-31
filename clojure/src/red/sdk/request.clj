@@ -12,7 +12,8 @@
       (unparse dt)))
 
 (thrift/import
- (:types    [device.netsdk LoginAccount MediaType MediaPackage StreamType])
+ (:types    [device.types  MediaType    StreamType]
+            [device.info   LoginAccount MediaPackage])
  (:clients  [device.netsdk Sdk]))
 
 (defn connect [thrift-port func]
