@@ -25,9 +25,9 @@
 (defn run [join?]
   (log/info "server start running")
   (let [status (assoc {}
-                 :gtsp    (start-gtsp-server "0.0.0.0" 7748)
+                 :gtsp    (start-gtsp-server "0.0.0.0" (env :gtsp-port))
                  :checker (start-check-task)
-                 :restful (run-jetty app {:port 8080, :join? join?}))]
+                 :restful (run-jetty app {:port (env :rest-port), :join? join?}))]
     (reset! server status)))
 
 (defn stop []

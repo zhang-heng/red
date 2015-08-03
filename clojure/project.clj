@@ -29,8 +29,10 @@
 
   :profiles {:dev        {:main red.core
                           :jvm-opts ["-Dlogfile.level=INFO,A1"]
-                          :env {:clj-env :development
-                                :gtsp-port 7748}}
+                          :env {:clj-env           :development
+                                :subscribe-timeout 10
+                                :gtsp-port         7748
+                                :rest-port         8080}}
              :test       {}
              :uberjar    {:main red.server
                           :aot :all

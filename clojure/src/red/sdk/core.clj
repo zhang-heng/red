@@ -165,6 +165,9 @@
   (dosync
    (deref executors)))
 
+(defn have-exe? [manufacturer]
+  true)
+
 (defn create-exe!
   "创建执行程序"
   [{:keys [manufacturer]}]

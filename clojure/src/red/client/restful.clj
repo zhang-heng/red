@@ -1,11 +1,13 @@
 (ns red.client.restful
-  (:require [red.utils :refer [now pass-mill correspond-args]])
+  (:require [clojure.tools.logging :as log]
+            [environ.core :refer [env]]
+            [red.utils :refer [now pass-mill correspond-args]])
   (:import [java.util UUID Date]))
 
 ;;订阅列表
 (defonce subscribes (ref {}))
 
-(defn subscribe
+(defn subscribe!
   "订阅请求"
   [args]
   (let [session-id (UUID/randomUUID)
@@ -24,10 +26,11 @@
 
 (defn check-timeout-task
   "处理请求session的超时"
-  [] (let [timeout (* 30 1000)]
+  [] (let [timeout (* (env :subscribe-timeout 30) 1000)]
        (dosync
         (doseq [m (vals @subscribes)]
           (when (> (pass-mill (:regist-time m)) timeout)
+            (log/info "media subscribe naver used in time, remove:" m)
             (-> (:session-id m) get-and-remove-subscribe))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -39,8 +42,8 @@
         password "pass"
         channel-id 0
         stream-type :main]
-    (subscribe (assoc (correspond-args manufacturer addr port user password channel-id stream-type)
-                 :session-type :realplay))))
+    (subscribe! (assoc (correspond-args manufacturer addr port user password channel-id stream-type)
+                  :session-type :realplay))))
 
 ;;(test-data)
 ;;(check-timeout-task)

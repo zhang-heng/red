@@ -16,6 +16,12 @@
             [device.info   LoginAccount MediaPackage])
  (:clients  [device.netsdk Sdk]))
 
+(defonce *stream-types* {:main StreamType/Main
+                         :sub StreamType/Sub
+                         :sub1 StreamType/Sub
+                         :sub2 StreamType/Sub
+                         :sub3 StreamType/Sub})
+
 (defn connect [thrift-port func]
   (with-open [c (thrift/connect! Sdk ["localhost" thrift-port])]
     (func c)))
