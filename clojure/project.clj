@@ -7,6 +7,11 @@
                  [org.slf4j/slf4j-log4j12 "1.7.10"]
                  [commons-daemon/commons-daemon "1.0.15"]
                  ;;环境配置
+                 [org.clojure/tools.logging "0.3.1"]
+                 [log4j/log4j "1.2.17" :exclusions [javax.mail/mail
+                                                    javax.jms/jms
+                                                    com.sun.jdmk/jmxtools
+                                                    com.sun.jmx/jmxri]]
                  [environ "1.0.0"]
                  [clj-time "0.7.0"]
                  ;;web
@@ -18,7 +23,14 @@
   :java-source-paths ["../thrift/gen-java/"]
   :global-vars {*warn-on-reflection* true
                 *assert* true}
-  :profiles {:dev {:main red.repl}
-             :jar {:main red.server}
-             :uberjar {:main red.server
-                       :aot :all}})
+
+  :profiles {:dev        {:main red.repl
+                          :jvm-opts ["-Dlogfile.path=development"]
+                          :env {:clj-env :development}}
+             :test       {:main red.server
+                          :jvm-opts ["-Dlogfile.path=test"]
+                          :env {:clj-env :test}}
+             :production {:main red.server
+                          :aot :all
+                          :jvm-opts ["-Dlogfile.path=production"]
+                          :env {:clj-env :production}}})
