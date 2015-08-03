@@ -1,4 +1,4 @@
-(ns red.routes.media.voice-talk
+(ns red.routes.api.media.voice-talk
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]))
 
 (defroutes voice-talk-routes

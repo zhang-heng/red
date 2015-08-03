@@ -3,6 +3,13 @@
             [clj-time.coerce :refer [to-long]]
             [clj-time.format :refer [parse unparse formatters with-zone]]))
 
+(defn ?->long [n]
+  (cond
+   (integer? n) n
+   (number? n)  (long n)
+   (string? n)  (try (Long/parseLong n) (catch Exception _ nil))
+   :else nil))
+
 (defn now []
   (time/to-time-zone
    (time/now)

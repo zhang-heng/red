@@ -1,5 +1,5 @@
-(ns red.routes.media.status
+(ns red.routes.api.media.status
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]))
 
 (defroutes status-routes
-  (GET "/status" [] ""))
+  (GET "/status" [] "status"))

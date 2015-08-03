@@ -20,17 +20,19 @@
                  [compojure "1.3.1"]
                  ;;thrift
                  [thrift-clj "0.2.1"]]
+  :plugins [[lein-environ "1.0.0"]]
+
   :java-source-paths ["../thrift/gen-java/"]
+
   :global-vars {*warn-on-reflection* true
                 *assert* true}
 
-  :profiles {:dev        {:main red.repl
-                          :jvm-opts ["-Dlogfile.path=development"]
-                          :env {:clj-env :development}}
-             :test       {:main red.server
-                          :jvm-opts ["-Dlogfile.path=test"]
-                          :env {:clj-env :test}}
-             :production {:main red.server
+  :profiles {:dev        {:main red.core
+                          :jvm-opts ["-Dlogfile.level=INFO,A1"]
+                          :env {:clj-env :development
+                                :gtsp-port 7748}}
+             :test       {}
+             :uberjar    {:main red.server
                           :aot :all
-                          :jvm-opts ["-Dlogfile.path=production"]
+                          :jvm-opts ["-Dlogfile.level=WARN,A1,A3"]
                           :env {:clj-env :production}}})

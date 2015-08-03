@@ -1,4 +1,4 @@
-(ns red.routes.media.playback
+(ns red.routes.api.media.playback
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]))
 
 (defroutes playback-routes

@@ -1,7 +1,16 @@
 (ns red.core
-  (:require [red.client.restful :refer [check-timeout-task]]))
+  (:require [clojure.tools.logging :as log]
+            [red.client.restful :refer [check-timeout-task]]
+            [ring.adapter.jetty :refer [run-jetty]]
+            [red.handler :refer [app]]
+            [red.client.core :refer [start-gtsp-server]]
+            [environ.core :refer [env]])
+  (:import [org.eclipse.jetty.server Server])
+  (:gen-class))
 
-(defn start-check-task
+(defonce ^:private server (atom nil))
+
+(defn- start-check-task
   "启动维护任务@返回关闭函数"
   []
   (let [running (promise)
@@ -12,3 +21,23 @@
               (.join task)
               (.stop task))
           (catch Exception _))))
+
+(defn run [join?]
+  (log/info "server start running")
+  (let [status (assoc {}
+                 :gtsp    (start-gtsp-server "0.0.0.0" 7748)
+                 :checker (start-check-task)
+                 :restful (run-jetty app {:port 8080, :join? join?}))]
+    (reset! server status)))
+
+(defn stop []
+  (when-let [{:keys [gtsp checker restful]} (deref server)]
+    (checker)
+    (.stop ^Server restful)
+    (gtsp)))
+
+(defn -main []
+  (run true))
+
+;;(run false)
+;;(stop)
