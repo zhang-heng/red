@@ -113,7 +113,7 @@
   [^Ref  connection
    ^Fn   disconnect-notify]
   (dosync
-   (alter connection update-in [:disconnect-notify] disconnect-notify)))
+   (alter connection update-in [:disconnect-notify] (constantly disconnect-notify))))
 
 (defn read-from
   "从连接读取数据"
