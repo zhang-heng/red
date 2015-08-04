@@ -28,7 +28,7 @@
                 *assert* true}
 
   :profiles {:dev        {:main red.core
-                          :jvm-opts ["-Dlogfile.level=INFO,A1"]
+                          :jvm-opts ["-Dlogfile.level=DEBUG,console"]
                           :env {:clj-env           :development
                                 :subscribe-timeout 10
                                 :gtsp-port         7748
@@ -36,5 +36,5 @@
              :test       {}
              :uberjar    {:main red.server
                           :aot :all
-                          :jvm-opts ["-Dlogfile.level=WARN,A1,A3"]
+                          :jvm-opts ["-Dlogfile.level=INFO,console,A3"]
                           :env {:clj-env :production}}})

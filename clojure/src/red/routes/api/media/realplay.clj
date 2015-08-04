@@ -4,7 +4,7 @@
             [red.client.restful :refer [subscribe!]]
             [red.sdk.request  :refer [*stream-types*]]
             [red.sdk.core :refer [have-exe?]]
-            [red.utils :refer [correspond-args ?->long try-do]]
+            [red.utils :refer [correspond-args ?->long try-do is-ip-addr?]]
             [environ.core :refer [env]]
             [clojure.tools.logging :as log]))
 
@@ -12,9 +12,10 @@
   (let [port        (?->long port)
         channel-id  (?->long channel-id)
         stream-type (keyword stream-type)]
-    (try-do [(have-exe? manufacturer) (str manufacturer "not found")
-             (and port (< 0 port) (< port 65535)) "The port must be valid"
-             channel-id "the channel-id must be a number"
+    (try-do [(have-exe? manufacturer)                        (str manufacturer "not found")
+             (is-ip-addr? addr)                              "the addr not valid"
+             (and port (< 0 port) (< port 65535))            "The port must be valid"
+             channel-id                                      "the channel-id must be a number"
              (some #(= % stream-type) (keys *stream-types*)) "the stream-type not found"]
             (log/info "request a new realplay session:" manufacturer addr port user password channel-id stream-type)
             (response {:session-id (subscribe! (assoc (correspond-args manufacturer addr port user password channel-id stream-type)

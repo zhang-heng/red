@@ -74,3 +74,8 @@
                 (log/warn ex#)
                 (.printStackTrace ex#)
                 (exception ex#))))))
+
+(defn is-ip-addr? [addr]
+  (if-let [ret (re-find #"^(\d+).(\d+).(\d+).(\d+)$" addr)]
+    (every? #(and (<= 0 %) (<= % 255)) (->> (drop 1 ret) (map ?->long)))
+    false))
