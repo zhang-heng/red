@@ -1,19 +1,15 @@
 (ns red.client.core
-  (:require [red.client.asynchronous-server :refer [run-server read-from write-to disconnect-notify]]
+  (:require [clojure.tools.logging :as log]
+            [red.client.asynchronous-server :refer [run-server read-from write-to disconnect-notify
+                                                    get-socket-info ]]
             [red.client.restful :refer [get-and-remove-subscribe]]
-            [red.device.client.core :refer [open-session!]])
+            [red.device.client.core :refer [open-session!]]
+            [red.utils :refer [string->uuid buffer->string]])
   (:import [java.nio ByteBuffer charset.Charset]
+           [java.nio.channels AsynchronousSocketChannel]
            [java.util.concurrent TimeUnit Executors]
            [java.net InetSocketAddress]
            [java.util UUID Date]))
-
-(defn- buffer->uuid [byte-buffer]
-  (try
-    (-> (Charset/forName "ASCII")
-        (.decode byte-buffer)
-        (str)
-        (UUID/fromString))
-    (catch Exception _ nil)))
 
 (defn- mk-send-handler [connection]
   (fn [buffer] (write-to connection buffer)))
@@ -26,25 +22,36 @@
 
 (defn- session-handler [connection session-buffer]
   (dosync
-   (when-let [subscribe (-> session-buffer buffer->uuid get-and-remove-subscribe)]
-     (let [{:keys [disconnector reader]} (open-session! subscribe (mk-send-handler) (mk-close-handler))
-           {:keys [user]} (deref connection)]
-       (disconnect-notify connection disconnector)
-       (ref-set user reader)
-       (read-from connection 4 header-handler)))))
+   (let [socket-info (-> connection deref :socket get-socket-info)
+         closer      (-> connection deref :closer)
+         string-uuid (buffer->string session-buffer)]
+     (if-let [subscribe (-> (string->uuid string-uuid)
+                            (get-and-remove-subscribe))]
+       (let [{:keys [disconnector reader]} (open-session! subscribe (mk-send-handler) (mk-close-handler))
+             {:keys [user]}                (deref connection)]
+         (disconnect-notify connection disconnector)
+         (ref-set user reader)
+         (read-from connection 4 header-handler))
+       (do (log/infof "received %s:%d a uuid not invalid: %s, close!"
+                      (:remote-addr socket-info) (:remote-port socket-info) string-uuid)
+           (closer))))))
 
 (defn- payload-handler [connection payload-buffer]
   (let [{:keys [user]} (deref connection)]
     (@user payload-buffer)
     (read-from connection 4 header-handler)))
 
-(defn- header-handler [connection size-buffer]
-  (let [l (.getInt size-buffer)]
+(defn- header-handler
+  [connection ^bytebuffer size-buffer]
+  (let [l (.getint size-buffer)]
     (read-from connection l payload-handler)))
 
 (defn- accept-handler
   [connection]
-  (read-from connection 36 session-handler))
+  (let [{:keys [socket]} (deref connection)
+        {:keys [local-addr local-port remote-addr remote-port]} (get-socket-info socket)]
+    (log/info "new connection come in now: %s:%d <- %s:%d" local-addr local-port remote-addr remote-port)
+    (read-from connection 36 session-handler)))
 
 (defn ^clojure.lang.Fn
   start-gtsp-server

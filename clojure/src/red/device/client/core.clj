@@ -2,8 +2,10 @@
   "主动连接: socket (1->1) client (n->1) source (n->1) device (n*->1) exe"
   (:require [red.device.client.source :refer [get-all-sources get-source!]]
             [red.utils :refer [now]])
-  (:import (clojure.lang Ref PersistentArrayMap)
-           (org.joda.time DateTime)))
+  (:import [clojure.lang Ref PersistentArrayMap]
+           [org.joda.time DateTime]
+           [java.nio ByteBuffer]
+           [java.util UUID]))
 
 (defrecord Client [^PersistentArrayMap subscribe      ;;请求描述
                    ^Ref                device->flow   ;;来自设备流量统计
@@ -16,7 +18,7 @@
 
 (defn- mk-client->device
   [client->device client->flow]
-  (fn [buffer]
+  (fn [^ByteBuffer buffer]
     (dosync (alter client->flow + (.limit buffer))
             (client->device  buffer))))
 
@@ -28,7 +30,7 @@
 
 (defn- mk-device->client
   [device->client device->flow]
-  (fn [buffer]
+  (fn [^ByteBuffer buffer]
     (dosync
      (alter device->flow + (.limit buffer))
      (device->client buffer))))
@@ -59,6 +61,12 @@
   (dosync
    (reduce (fn [c {clients :clients}] (clojure.set/union c))
            #{} (get-all-sources))))
+
+(defn get-client-by-id [^UUID id]
+  (dosync
+   (some #(= id
+             (get-in [:subscribe :session-id] (deref %)))
+         (get-all-clients))))
 
 (defn open-session!
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"

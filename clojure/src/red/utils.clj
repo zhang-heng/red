@@ -2,7 +2,10 @@
   (:require [clj-time.core :as time]
             [clj-time.coerce :refer [to-long]]
             [clj-time.format :refer [parse unparse formatters with-zone]]
-            [ring.util.response :refer [response status]]))
+            [ring.util.response :refer [response status]])
+  (:import [java.nio charset.Charset]
+           [java.util UUID Date]
+           [java.io StringWriter PrintWriter]))
 
 (defn ?->long [n]
   (cond
@@ -79,3 +82,21 @@
   (if-let [ret (re-find #"^(\d+).(\d+).(\d+).(\d+)$" addr)]
     (every? #(and (<= 0 %) (<= % 255)) (->> (drop 1 ret) (map ?->long)))
     false))
+
+(defn string->uuid [string]
+  (try
+    (UUID/fromString string)
+    (catch Exception _ nil)))
+
+(defn buffer->string [byte-buffer]
+  (try
+    (-> (Charset/forName "ASCII")
+        (.decode byte-buffer)
+        str)
+    (catch Exception _ nil)))
+
+(defn stack-trace [^Throwable e]
+  (let [sw (StringWriter.)
+        pw (PrintWriter. sw)]
+    (.printStackTrace e pw)
+    (.toString sw)))

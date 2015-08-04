@@ -1,10 +1,10 @@
 (ns red.routes.api.media.realplay
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]
-            [ring.util.response :refer [response status redirect]]
-            [red.client.restful :refer [subscribe!]]
+            [ring.util.response :refer [response status redirect not-found]]
+            [red.client.restful :refer [subscribe! get-session-in-subscribes get-and-remove-subscribe]]
             [red.sdk.request  :refer [*stream-types*]]
             [red.sdk.core :refer [have-exe?]]
-            [red.utils :refer [correspond-args ?->long try-do is-ip-addr?]]
+            [red.utils :refer [correspond-args ?->long try-do is-ip-addr? string->uuid]]
             [environ.core :refer [env]]
             [clojure.tools.logging :as log]))
 
@@ -12,15 +12,28 @@
   (let [port        (?->long port)
         channel-id  (?->long channel-id)
         stream-type (keyword stream-type)]
+
     (try-do [(have-exe? manufacturer)                        (str manufacturer "not found")
              (is-ip-addr? addr)                              "the addr not valid"
              (and port (< 0 port) (< port 65535))            "The port must be valid"
              channel-id                                      "the channel-id must be a number"
              (some #(= % stream-type) (keys *stream-types*)) "the stream-type not found"]
+
             (log/info "request a new realplay session:" manufacturer addr port user password channel-id stream-type)
             (response {:session-id (subscribe! (assoc (correspond-args manufacturer addr port user password channel-id stream-type)
                                                  :session-type :realplay))
                        :media-port (env :gtsp-port)}))))
+
+(defn session-status [session]
+  (let [subscribe (get-session-in-subscribes session)
+        ]
+    ()
+    (not-found {:msg "session-id not found"})))
+
+(defn session-drop [session]
+  (let [subscribe (get-and-remove-subscribe session)]
+    ()
+    (not-found {:msg "session-id not found"})))
 
 (defroutes realplay-routes
   (context "/realplay" []
@@ -34,5 +47,8 @@
 
            ;;状态
            (context "/:session-id" [session-id]
-                    (GET "/status" [] "status")
-                    (DELETE "/drop" [] "drop"))))
+                    (let [session (string->uuid session-id)]
+                      (GET "/status" []
+                           (session-status session))
+                      (DELETE "/drop" [] "drop"
+                              (session-status session))))))

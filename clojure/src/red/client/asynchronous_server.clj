@@ -1,5 +1,6 @@
 (ns red.client.asynchronous-server
-  (:require [red.utils :refer [correspond-args]])
+  (:require [clojure.tools.logging :as log]
+            [red.utils :refer [correspond-args stack-trace]])
   (:import [clojure.lang Ref Fn PersistentArrayMap Atom PersistentVector PersistentQueue]
            [java.nio.channels AsynchronousServerSocketChannel AsynchronousSocketChannel
             CompletionHandler AsynchronousChannelGroup]
@@ -24,17 +25,17 @@
                        ^clojure.lang.Ref          user])            ;;用户数据,供调用层写状态
 
 (defn- mk-close-fn [connection]
-  (let [{:keys [socket disconnect-notify]} (deref connection)]
-    (fn []
+  (fn []
+    (let [{:keys [^AsynchronousSocketChannel socket disconnect-notify]} (deref connection)]
       (dosync (alter connections disj socket))
       (.close socket)
       (when disconnect-notify
         (disconnect-notify)))))
 
-(defn- mk-stop-fn [server]
+(defn- mk-stop-fn [^AsynchronousServerSocketChannel server]
   (fn []
     (.close server)
-    (doseq [socket (deref connections)]
+    (doseq [^AsynchronousSocketChannel socket (deref connections)]
       (.close socket))
     (dosync (ref-set connections #{}))))
 
@@ -43,26 +44,27 @@
 (defmethod completion* :accept
   [_ {:keys [accept-handler] :as ^PersistentArrayMap info}]
   (proxy [CompletionHandler] []
-    (completed [^AsynchronousSocketChannel socket
+    (completed [^AsynchronousSocketChannel       socket
                 ^AsynchronousServerSocketChannel server]
       (try
         (let [connection (ref nil)
               closer (mk-close-fn connection)
-              write-completion (completion* :write info)
-              read-completion (completion* :read info)]
+              write-completion (completion* :write connection)
+              read-completion (completion* :read connection)]
           (.accept server server this) ;; 继续监听新的连接
           (dosync
            (alter connections conj socket) ;; 用于统一关闭
-           (ref-set info (Connection. socket closer
-                                      write-completion read-completion
-                                      nil nil
-                                      false (PersistentQueue/EMPTY)
-                                      (ref nil)))
+           (ref-set connection
+                    (Connection. socket closer
+                                 write-completion read-completion
+                                 nil nil
+                                 false (PersistentQueue/EMPTY)
+                                 (ref nil)))
            (accept-handler connection)))
-        (catch Exception e (prn e))))
+        (catch Exception e (log/info "tcp_server accept: " (stack-trace e)))))
 
     (failed [e server]
-      (prn e))))
+      (log/info "tcp_server accept failed: " e))))
 
 (defmethod completion* :read [_ ^Ref connection]
   (proxy [CompletionHandler] []
@@ -70,15 +72,16 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [socket closer read-handler]} (deref connection)]
+         (let [{:keys [^AsynchronousSocketChannel socket closer read-handler]} (deref connection)]
            (if (neg? i)
              (closer)
              (if (.hasRemaining byte-buffer)
                (.read socket byte-buffer byte-buffer this)
-               (read-handler connection byte-buffer)))))
-        (catch Exception e (prn e))))
+               (do (.flip byte-buffer)
+                   (read-handler connection byte-buffer))))))
+        (catch Exception e (log/info "tcp_server read: " (stack-trace e)))))
     (failed [e byte-buffer]
-      (prn e))))
+      (log/info "tcp_server read failed: " e))))
 
 (defmethod completion* :write [_ ^Ref connection]
   (proxy [CompletionHandler] []
@@ -86,7 +89,7 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [closer scoket send-queue writing?]} connection]
+         (let [{:keys [closer ^AsynchronousSocketChannel scoket send-queue writing?]} (deref connection)]
            (if (neg? i)
              (closer)
              (if (.hasRemaining byte-buffer)
@@ -98,9 +101,9 @@
                    (alter connection update-in [:send-queue] pop)
                    (send-off (agent nil)
                              (fn [_] (.write scoket next-buffer next-buffer this)))))))))
-        (catch Exception e (prn e))))
+        (catch Exception e (log/info "tcp_server write: " (stack-trace e)))))
     (failed [e byte-buffer]
-      (prn e))))
+      (log/info "tcp_server write failed: " e))))
 
 
 
@@ -118,9 +121,9 @@
    ^Long l
    ^Fn   finish-handler]
   (dosync
-   (let [{:keys [read-completion socket]} (deref connection)
+   (let [{:keys [read-completion ^AsynchronousSocketChannel socket]} (deref connection)
          byte-buffer (ByteBuffer/allocate l)]
-     (alter connection update-in [:read-handler] finish-handler)
+     (alter connection update-in [:read-handler] (constantly finish-handler))
      (send-off (agent nil) (fn [_] (.read socket byte-buffer byte-buffer read-completion))))))
 
 (defn write-to
@@ -128,14 +131,23 @@
   [^Ref connection
    ^ByteBuffer byte-buffer]
   (dosync
-   (let [{:keys [writing? write-queue scoket write-completion]} (deref connection)]
+   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel scoket write-completion]} (deref connection)]
      (if writing?
        (alter connection update-in [:write-queue] conj byte-buffer)
        (send-off (agent nil) (fn [_] (.write scoket byte-buffer byte-buffer write-completion)))))))
 
+(defn get-socket-info
+  [^AsynchronousSocketChannel socket]
+  (let [^InetSocketAddress local  (.getLocalAddress socket)
+        ^InetSocketAddress remote (.getRemoteAddress socket)]
+    {:local-addr (.getHostString local)
+     :local-port (.getPort local)
+     :remote-addr (.getHostString remote)
+     :remote-port (.getPort remote)}))
+
 (defn run-server
   "启动服务"
-  [host port accept-handler]
+  [^String host ^long port accept-handler]
   (let [server (-> execut-pool
                    AsynchronousChannelGroup/withThreadPool
                    AsynchronousServerSocketChannel/open
