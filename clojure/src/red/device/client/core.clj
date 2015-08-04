@@ -72,6 +72,5 @@
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"
   [subscribe write-handle close-handle]
   (dosync
-   (-> subscribe
-       get-source!
+   (-> (get-source! subscribe)
        (mk-client subscribe write-handle close-handle))))

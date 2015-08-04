@@ -1,5 +1,6 @@
 (ns red.sdk.core
-  (:require [red.utils :refer [now]]
+  (:require [clojure.tools.logging :as log]
+            [red.utils :refer [now]]
             [environ.core :refer [env]]
             [red.sdk.callback :refer [start-thrift!]]
             [red.sdk.launcher :refer [launch!]]
@@ -11,7 +12,7 @@
 ;;exe复用个数
 (defonce _MUX 2)
 
-(defonce executors (ref {}))
+(defonce executors (ref #{}))
 
 (defrecord Executor [^UUID     executor-id
                      ^String   manufacturer
@@ -96,10 +97,9 @@
                         (mk-device->connected executor-id)
                         (mk-device->offline executor-id)
                         (mk-device->media-finish executor-id)
-                        (mk-device->media-data executor-id)
-                        (mk-lanuched executor-id))
+                        (mk-device->media-data executor-id))
 
-         sdk-path     (env :sdk-path)
+         sdk-path     (format "%s/%s" (System/getProperty "user.dir") (env :sdk-path))
          working-path (format "%s/%s" sdk-path manufacturer)
          exe-path     (format "%s/%s.exe" working-path manufacturer)
          proc-closer  (launch! (mk-crashed executor-id) (mk-out-printer manufacturer)
@@ -107,7 +107,8 @@
                                thrfit-port)
          proc-port    (promise)
          executor (Executor. executor-id manufacturer devices proc-closer proc-port thrift-closer thrfit-port (now))]
-     (alter executors assoc  executor))))
+     (alter executors conj executor)
+     executor)))
 
 (defn login
   "args: executor device"

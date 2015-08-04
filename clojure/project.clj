@@ -30,7 +30,8 @@
   :profiles {:dev        {:main red.core
                           :jvm-opts ["-Dlogfile.level=DEBUG,console"]
                           :env {:clj-env           :development
-                                :subscribe-timeout 10
+                                :sdk-path          "../bin/sdk"
+                                :subscribe-timeout 60
                                 :gtsp-port         7748
                                 :rest-port         8080}}
              :test       {}

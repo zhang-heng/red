@@ -27,7 +27,7 @@
          string-uuid (buffer->string session-buffer)]
      (if-let [subscribe (-> (string->uuid string-uuid)
                             (get-and-remove-subscribe))]
-       (let [{:keys [disconnector reader]} (open-session! subscribe (mk-send-handler) (mk-close-handler))
+       (let [{:keys [disconnector reader]} (open-session! subscribe (mk-send-handler connection) (mk-close-handler connection))
              {:keys [user]}                (deref connection)]
          (disconnect-notify connection disconnector)
          (ref-set user reader)
@@ -50,7 +50,7 @@
   [connection]
   (let [{:keys [socket]} (deref connection)
         {:keys [local-addr local-port remote-addr remote-port]} (get-socket-info socket)]
-    (log/info "new connection come in now: %s:%d <- %s:%d" local-addr local-port remote-addr remote-port)
+    (log/infof "new connection come in now: %s:%d <- %s:%d" local-addr local-port remote-addr remote-port)
     (read-from connection 36 session-handler)))
 
 (defn ^clojure.lang.Fn

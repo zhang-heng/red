@@ -30,5 +30,5 @@
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
                                                       :protocol :compact)]
-    (io! (thrift/serve! server))
+    (send-off (agent nil) (fn [_] (io! (thrift/serve! server))))
     {:thrfit-closer (mk-stop-server server) :thrfit-port port}))

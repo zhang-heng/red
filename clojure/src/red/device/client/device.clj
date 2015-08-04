@@ -1,5 +1,6 @@
 (ns red.device.client.device
-  (:require [red.sdk.core :refer [create-exe! get-all-executors
+  (:require [clojure.tools.logging :as log]
+            [red.sdk.core :refer [create-exe! get-all-executors
                                   login logout client->device client->close open-source]]
             [red.utils :refer [now]])
   (:import (clojure.lang Ref PersistentArrayMap)
@@ -86,7 +87,7 @@
                           (mk-client->close executor device-id)
                           (mk-client->device executor device-id client->flow)
                           client->flow device->flow (now))]
-     (login device-info)
+     (login executor device-info)
      (alter devices conj device))))
 
 (defn- added-device?*
