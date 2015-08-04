@@ -42,8 +42,8 @@
     (read-from connection 4 header-handler)))
 
 (defn- header-handler
-  [connection ^bytebuffer size-buffer]
-  (let [l (.getint size-buffer)]
+  [connection ^ByteBuffer size-buffer]
+  (let [l (.getInt size-buffer)]
     (read-from connection l payload-handler)))
 
 (defn- accept-handler
