@@ -1,6 +1,6 @@
 (ns red.client.core
   (:require [clojure.tools.logging :as log]
-            [red.client.asynchronous-server :refer [run-server read-from write-to disconnect-notify
+            [red.client.asynchronous-server :refer [run-server read-from write-to set-disconnect-notify
                                                     get-socket-info ]]
             [red.client.restful :refer [get-and-remove-subscribe]]
             [red.device.client.core :refer [open-session!]]
@@ -20,7 +20,9 @@
 
 (declare session-handler header-handler payload-handler)
 
-(defn- session-handler [connection session-buffer]
+(defn- session-handler
+  "接收到guid数据的处理"
+  [connection session-buffer]
   (dosync
    (let [socket-info (-> connection deref :socket get-socket-info)
          closer      (-> connection deref :closer)
@@ -29,27 +31,35 @@
                             (get-and-remove-subscribe))]
        (let [{:keys [disconnector reader]} (open-session! subscribe (mk-send-handler connection) (mk-close-handler connection))
              {:keys [user]}                (deref connection)]
-         (disconnect-notify connection disconnector)
+         (set-disconnect-notify connection disconnector)
          (ref-set user reader)
          (read-from connection 4 header-handler))
        (do (log/infof "received %s:%d a uuid not invalid: %s, close!"
                       (:remote-addr socket-info) (:remote-port socket-info) string-uuid)
            (closer))))))
 
-(defn- payload-handler [connection payload-buffer]
-  (let [{:keys [user]} (deref connection)]
-    (@user payload-buffer)
+(defn- payload-handler
+  "接收到负载数据的处理"
+  [connection payload-buffer]
+  (let [{:keys [user closer]} (deref connection)
+        {:keys [remote-addr remote-port]} (-> connection deref :socket get-socket-info)]
+    (if (fn? @user)
+      (@user payload-buffer)
+      (do (log/errorf "receive frome %s:%s, but none of handle fun, close!")
+          (closer)))
     (read-from connection 4 header-handler)))
 
 (defn- header-handler
+  "接收到头数据的处理"
   [connection ^ByteBuffer size-buffer]
   (let [l (.getInt size-buffer)]
     (read-from connection l payload-handler)))
 
 (defn- accept-handler
+  "处理网络请求"
   [connection]
-  (let [{:keys [socket]} (deref connection)
-        {:keys [local-addr local-port remote-addr remote-port]} (get-socket-info socket)]
+  (let [{:keys [local-addr local-port remote-addr remote-port]}
+        (-> connection deref :socket get-socket-info)]
     (log/infof "new connection come in now: %s:%d <- %s:%d" local-addr local-port remote-addr remote-port)
     (read-from connection 36 session-handler)))
 

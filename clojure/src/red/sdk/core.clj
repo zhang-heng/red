@@ -166,8 +166,10 @@
   (dosync
    (deref executors)))
 
-(defn have-exe? [manufacturer]
-  true)
+(defn have-exe?
+  "通过初始化扫描文件目录,获取sdk厂商列表"
+  [manufacturer]
+  (some? (#{"hik" "dahua"} manufacturer)))
 
 (defn create-exe!
   "创建执行程序"
