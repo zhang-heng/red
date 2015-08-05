@@ -30,7 +30,7 @@
   [manufacturer*]
   (dosync
    (some (fn [{:keys [devices manufacturer] :as executor}]
-           (when (and (= (manufacturer manufacturer*))
+           (when (and (= manufacturer manufacturer*)
                       (< (count (deref devices)) _MUX))
              executor))
          (get-all-executors))))

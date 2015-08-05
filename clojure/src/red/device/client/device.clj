@@ -25,7 +25,7 @@
 
 (defn- mk-client->device
   [executor device-id client->flow]
-  (fn [source-id buffer]
+  (fn [source-id ^ByteBuffer buffer]
     (dosync
      (alter client->flow + (.limit buffer))
      (client->device executor device-id source-id buffer))))
@@ -87,14 +87,14 @@
                           (mk-client->close executor device-id)
                           (mk-client->device executor device-id client->flow)
                           client->flow device->flow (now))]
-     (login executor device-info)
-     (alter devices conj device))))
+     (alter devices conj device)
+     device)))
 
 (defn- added-device?*
   "设备是否已添加"
   [device-info]
   (dosync
-   (some (fn [{info :subscribe :as device}]
+   (some (fn [{info :device-info :as device}]
            (when (= device-info info)
              device))
          (get-all-devices))))
@@ -102,14 +102,14 @@
 (defn get-all-devices
   "获取所有设备数据" []
   (dosync
-   (reduce (fn [c {devices :devices}] (clojure.set/union c))
+   (reduce (fn [c {devices :devices}] (clojure.set/union c (deref devices)))
            #{} (get-all-executors))))
 
 (defn add-device!
   "添加设备"
   [subscribe]
   (dosync
-   (let [device-info (select-keys [:addr :port :password :user] subscribe)]
-     (if-let [source (added-device?* device-info)]
-       source
+   (let [device-info (select-keys subscribe [:addr :port :password :user :manufacturer])]
+     (if-let [device (added-device?* device-info)]
+       device
        (creat-device! device-info)))))

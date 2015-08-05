@@ -21,11 +21,11 @@
 (declare get-all-sources)
 
 (defn- mk-client->device
-  [client->device client->flow user]
+  [client->device client->flow]
   (fn [buffer]
     (dosync
      (alter client->flow + )
-     (client->device user buffer))))
+     (client->device buffer))))
 
 (defn- mk-client->close
   [client->close user]
@@ -52,7 +52,7 @@
   "新建媒体源"
   [subscribe]
   (dosync
-   (let [{:keys [sources client->device client->close] :as device} (add-device! [subscribe])
+   (let [{:keys [sources client->device client->close] :as device} (add-device! subscribe)
          clients      (ref {})
          source-id    (UUID/randomUUID)
          device->flow (ref 0)
@@ -62,7 +62,8 @@
                          device->flow (mk-device->client clients device->flow) (mk-device-close clients)
                          client->flow (mk-client->device client->device source-id) (mk-client->close client->close source-id)
                          (now))]
-     (alter sources assoc source-id source))))
+     (alter sources conj source)
+     source)))
 
 (defn- can-cource-multiplex?*
   "源能否复用"
@@ -76,7 +77,7 @@
 
 (defn get-all-sources []
   (dosync
-   (reduce (fn [c {sources :sources}] (clojure.set/union c))
+   (reduce (fn [c {sources :sources}] (clojure.set/union c (deref sources)))
            #{} (get-all-devices))))
 
 (defn get-source!

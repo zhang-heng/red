@@ -1,6 +1,7 @@
 (ns red.device.client.core
   "主动连接: socket (1->1) client (n->1) source (n->1) device (n*->1) exe"
-  (:require [red.device.client.source :refer [get-all-sources get-source!]]
+  (:require [clojure.tools.logging :as log]
+            [red.device.client.source :refer [get-all-sources get-source!]]
             [red.utils :refer [now]])
   (:import [clojure.lang Ref PersistentArrayMap]
            [org.joda.time DateTime]
@@ -74,3 +75,20 @@
   (dosync
    (-> (get-source! subscribe)
        (mk-client subscribe write-handle close-handle))))
+
+(defn testx []
+  (open-session!
+   {:session-id (UUID/randomUUID)
+    :password "admin"
+    :port 3777,
+    :addr "192.168.8.85",
+    :stream-type :main,
+    :regist-time (now)
+    :channel-id 1,
+    :manufacturer "hik"
+    :session-type :realplay,
+    :user "admin"}
+   #(prn %)
+   #(prn 'close)))
+
+;;(testx)

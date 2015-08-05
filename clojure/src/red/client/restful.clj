@@ -37,19 +37,3 @@
           (when (> (pass-mill (:regist-time m)) timeout)
             (log/info "media subscribe naver used in time, remove:" m)
             (-> (:session-id m) get-and-remove-subscribe))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (defn test-data []
-;;   (let [manufacturer "gt"
-;;         addr  "192.168.8.63"
-;;         port "8095"
-;;         user  "user"
-;;         password "pass"
-;;         channel-id 0
-;;         stream-type :main]
-;;     (subscribe! (assoc (correspond-args manufacturer addr port user password channel-id stream-type)
-;;                   :session-type :realplay))))
-
-;;(test-data)
-;;(check-timeout-task)
-;;subscribes

@@ -25,8 +25,7 @@
                        :media-port (env :gtsp-port)}))))
 
 (defn session-status [session]
-  (let [subscribe (get-session-in-subscribes session)
-        ]
+  (let [subscribe (get-session-in-subscribes session)]
     ()
     (not-found {:msg "session-id not found"})))
 
