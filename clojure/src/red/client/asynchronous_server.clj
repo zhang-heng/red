@@ -22,6 +22,8 @@
                        ^PersistentQueue           write-queue       ;;写入队列
                        ^clojure.lang.Ref          user])            ;;用户数据,供调用层写状态
 
+(declare get-socket-info)
+
 (defn- mk-close-fn
   "创建关闭函数"
   [connection]
