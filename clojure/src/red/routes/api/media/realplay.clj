@@ -1,9 +1,9 @@
 (ns red.routes.api.media.realplay
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]
             [ring.util.response :refer [response status redirect not-found]]
-            [red.client.restful :refer [subscribe! get-session-in-subscribes get-and-remove-subscribe]]
-            [red.sdk.request  :refer [*stream-types*]]
-            [red.sdk.core :refer [have-exe?]]
+            [red.media-server.restful :refer [subscribe! get-session-in-subscribes get-and-remove-subscribe]]
+            [red.device.sdk.request  :refer [*stream-types*]]
+            [red.device.sdk.core :refer [have-exe?]]
             [red.utils :refer [correspond-args ?->long try-do is-ip-addr? string->uuid]]
             [environ.core :refer [env]]
             [clojure.tools.logging :as log]))

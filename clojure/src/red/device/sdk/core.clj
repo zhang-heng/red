@@ -1,10 +1,10 @@
-(ns red.sdk.core
+(ns red.device.sdk.core
   (:require [clojure.tools.logging :as log]
             [red.utils :refer [now]]
             [environ.core :refer [env]]
-            [red.sdk.callback :refer [start-thrift!]]
-            [red.sdk.launcher :refer [launch!]]
-            [red.sdk.request :as req])
+            [red.device.sdk.callback :refer [start-thrift!]]
+            [red.device.sdk.launcher :refer [launch!]]
+            [red.device.sdk.request :as req])
   (:import [clojure.lang Ref PersistentArrayMap Fn]
            [java.util UUID]
            [org.joda.time DateTime]))

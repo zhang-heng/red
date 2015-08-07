@@ -1,4 +1,4 @@
-(ns red.client.restful
+(ns red.media-server.restful
   (:require [clojure.tools.logging :as log]
             [environ.core :refer [env]]
             [red.utils :refer [now pass-mill correspond-args]])

@@ -1,8 +1,8 @@
-(ns red.client.core
+(ns red.media-server.core
   (:require [clojure.tools.logging :as log]
-            [red.client.asynchronous-server :refer [run-server read-from write-to set-disconnect-notify
+            [red.media-server.asynchronous-server :refer [run-server read-from write-to set-disconnect-notify
                                                     get-socket-info ]]
-            [red.client.restful :refer [get-and-remove-subscribe]]
+            [red.media-server.restful :refer [get-and-remove-subscribe]]
             [red.device.client.core :refer [open-session!]]
             [red.utils :refer [string->uuid buffer->string]])
   (:import [java.nio ByteBuffer charset.Charset]

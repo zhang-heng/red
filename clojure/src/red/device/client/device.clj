@@ -1,6 +1,6 @@
 (ns red.device.client.device
   (:require [clojure.tools.logging :as log]
-            [red.sdk.core :refer [create-exe! get-all-executors
+            [red.device.sdk.core :refer [create-exe! get-all-executors
                                   login logout client->device client->close open-source]]
             [red.utils :refer [now]])
   (:import (clojure.lang Ref PersistentArrayMap)
@@ -8,18 +8,21 @@
            (java.nio ByteBuffer)
            (org.joda.time DateTime)))
 
-(defrecord Device [^Ref                sources
-                   ^Ref                device-id
-                   ^PersistentArrayMap device-info
-                   ^clojure.lang.Fn    device->connected    ;;登陆成功
-                   ^clojure.lang.Fn    device->offline      ;;掉线通知
-                   ^clojure.lang.Fn    device->media-finish ;;媒体结束通知
-                   ^clojure.lang.Fn    device->media-data   ;;媒体数据通知
-                   ^clojure.lang.Fn    client->close
-                   ^clojure.lang.Fn    client->device
-                   ^Ref                client->flow
-                   ^Ref                device->flow
-                   ^DateTime           start-time])
+(defrecord DeviceInfo [^String addr
+                       ^Long   port
+                       ^String user
+                       ^String password])
+
+(defrecord Device [^UUID             device-id            ;;设备标识
+                   ^DeviceInfo       device-info          ;;设备信息
+                   ^Ref              sources              ;;媒体源信息
+                   ^Ref              client->flow         ;;字节统计
+                   ^Ref              device->flow         ;;字节统计
+                   ^clojure.lang.Fn  device->connected    ;;登陆成功通知
+                   ^clojure.lang.Fn  device->offline      ;;掉线通知
+                   ^clojure.lang.Fn  device->media-finish ;;媒体结束通知
+                   ^clojure.lang.Fn  device->media-data   ;;媒体数据通知
+                   ^DateTime         start-time])
 
 (declare get-all-devices)
 

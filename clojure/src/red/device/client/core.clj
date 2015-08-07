@@ -80,7 +80,7 @@
   (open-session!
    {:session-id (UUID/randomUUID)
     :password "admin"
-    :port 3777,
+    :port 3778,
     :addr "192.168.8.85",
     :stream-type :main,
     :regist-time (now)

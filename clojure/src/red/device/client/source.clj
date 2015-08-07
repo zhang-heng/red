@@ -5,6 +5,9 @@
            (java.util UUID)
            (org.joda.time DateTime)))
 
+
+(defrecord SourceInfo [])
+
 (defrecord Source [^Ref                clients
                    ^PersistentArrayMap subscribe
                    ^UUID               source-id
@@ -84,6 +87,9 @@
   "获取源,即生成执行程序并建立联系"
   [subscribe]
   (dosync
-   (if-let [source (can-cource-multiplex?* subscribe)]
-     source
-     (create-source! subscribe))))
+   (let [subscribe (select-keys subscribe [:manufacturer :addr :port :user :password
+                                           :stream-type :channel-id :session-type
+                                           :start-time :end-time])]
+     (if-let [source (can-cource-multiplex?* subscribe)]
+       source
+       (create-source! subscribe)))))

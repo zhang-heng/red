@@ -1,4 +1,4 @@
-(ns red.client.asynchronous-server
+(ns red.media-server.asynchronous-server
   (:require [clojure.tools.logging :as log]
             [red.utils :refer [correspond-args stack-trace]])
   (:import [clojure.lang Ref Fn PersistentArrayMap Atom PersistentVector PersistentQueue]

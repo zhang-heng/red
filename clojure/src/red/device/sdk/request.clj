@@ -1,4 +1,4 @@
-(ns red.sdk.request
+(ns red.device.sdk.request
   (:import [java.nio ByteBuffer]
            [org.joda.time DateTime])
   (:require [thrift-clj.core :as thrift]

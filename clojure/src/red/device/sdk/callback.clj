@@ -1,4 +1,4 @@
-(ns red.sdk.callback
+(ns red.device.sdk.callback
   (:require [thrift-clj.core :as thrift]
             [thrift-clj.transports :as t])
   (:import [org.apache.thrift.server TThreadPoolServer TThreadPoolServer$Args]
