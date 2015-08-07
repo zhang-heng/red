@@ -43,7 +43,7 @@ bool StopRealPlay  (1:string device_id, 2:string media_id),     //关闭预览
 //**********对讲**********/
 bool StartVoiceTalk (1:string device_id, 2:string media_id, 3:info.PlayInfo play_info), //启动对讲
 bool StopVoiceTalk  (1:string device_id, 2:string media_id),    //关闭对讲
-oneway void SendVoiceData (1:string media_id, 2:string buffer), //发送对讲音频
+oneway void SendVoiceData (1:string media_id, 2:binary buffer), //发送对讲音频
 
 //**********回放**********/
 bool PlayBackByTime (1:string device_id, 2:string media_id, 3:info.PlayInfo play_info), //按时间点播

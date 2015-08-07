@@ -5,42 +5,20 @@
 ;;source
 ;;client
 
-(defprotocol ITransport
-  (get-session-id [this])
-  (get-gen-time   [this])
-  (client->data   [this byte-buffer])
-  (client->flow   [this])
-  (client->close  [this])
-  (device->data   [this byte-buffer])
-  (device->flow   [this])
-  (device->close  [this]))
+(defprotocol IClient
+  (client->flow   [this]
+    (dosync (deref (:client->flow this))))
+  (client->login  [this device-id])
+  (client->logout [this device-id])
+  (client->data   [this byte-buffer & id])
+  (client->close  [this & id]))
 
-(defprotocol IControl
-  (device->connected [this])
-  (device->offline [this])
-  (device->media-finish [this]))
-
-
-(deftype Source [^clojure.lang.Ref clients
-                 ^java.util.UUID source-id
-                 ^clojure.lang.Ref header-data
-                 ^clojure.lang.Ref last-data-time
-                 ^clojure.lang.Ref device->flow
-                 ^clojure.lang.Ref client->flow
-                 ^clojure.lang.PersistentArrayMap source-info
-                 ^org.joda.time.DateTime start-time]
-  ITransport
-  (get-session-id [this] "source session")
-  (get-gen-time   [this])
-  (client->data   [this byte-buffer])
-  (client->flow   [this])
-  (client->close  [this])
-  (device->data   [this byte-buffer])
-  (device->flow   [this])
-  (device->close  [this])
-
-  clojure.lang.Counted
-  (count [_] (count (refer clients)))
-
-  Object
-  (toString [_] (str "")))
+(defprotocol IDevice
+  (device->flow         [this]
+    (dosync (:device->flow this)))
+  (device->lanuched     [this])
+  (device->connected    [this device-id])
+  (device->offline      [this device-id])
+  (device->media-data   [this media-type byte-buffer & id])
+  (device->media-finish [this & id])
+  (device->close        [this]))
