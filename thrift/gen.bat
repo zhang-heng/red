@@ -1,5 +1,5 @@
 #!/bin/sh
 rm -rf gen-*
 
-thrift -gen java netSDK.thrift
-thrift -gen cpp  netSDK.thrift
+thrift -r -gen java netSDK.thrift
+thrift -r -gen cpp  netSDK.thrift

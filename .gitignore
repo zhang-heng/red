@@ -22,6 +22,8 @@ pom.xml.asc
 *.out
 *.toc
 *.pyg
+*.sdf
+*.suo
 
 gen-*
 

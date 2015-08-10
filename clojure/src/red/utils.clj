@@ -31,6 +31,10 @@
   [& args]
   (reduce (fn [c k] (assoc c (keyword k) k)) {} args))
 
+(defmacro connect [port method & args]
+  `(with-open [c# (thrift/connect! Sdk ["localhost" ~port])]
+     (let [method# (symbol "Sdk" (str ~method))]
+       (method# c# ~@args))))
 
 
 ;;
