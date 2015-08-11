@@ -1,12 +1,14 @@
 (ns red.device.sdk.core
-  (:require [clojure.tools.logging :as log]
+  (:require [thrift-clj.core :as thrift]
+            [clojure.tools.logging :as log]
             [red.utils :refer [now]]
             [environ.core :refer [env]]
             [red.device.sdk.callback :refer [start-thrift!]]
-            [red.device.sdk.launcher :refer [launch!]]
-            [red.device.sdk.request :as req]
-            [red.transobj :refer :all])
-  (:import [clojure.lang Ref PersistentArrayMap Fn]
+            [red.device.sdk.launcher :refer [launch! check-proc-status]])
+  (:import [red.device.sdk.callback Thrift]
+           [red.device.sdk.launcher Proc]
+           [device.netsdk Sdk$Iface Notify$Iface]
+           [clojure.lang Ref PersistentArrayMap Fn]
            [java.util UUID]
            [org.joda.time DateTime]))
 
@@ -15,246 +17,185 @@
 
 (defonce executors (ref #{}))
 
-(defn login
+(thrift/import
+ (:types    [device.types  MediaType    StreamType]
+            [device.info   LoginAccount MediaPackage])
+ (:clients  [device.netsdk Sdk]))
+
+(defonce stream-types* {:main StreamType/Main
+                        :sub  StreamType/Sub
+                        :sub1 StreamType/Sub
+                        :sub2 StreamType/Sub
+                        :sub3 StreamType/Sub})
+
+(defmacro request [port method & args]
+  `(if (pos? ~port)
+     (with-open [c# (thrift/connect! Sdk ["localhost" ~port])]
+       (let [method# (symbol "Sdk" (str ~method))]
+         (method# c# ~@args)))
+     (log/error "sdk thrift port not found")))
+
+(defn- can-exe-multiplex?*
+  "创建执行程序"
+  [manufacturer*]
+  (dosync
+   (some (fn [{:keys [devices manufacturer] :as executor}]
+           (when (and (= manufacturer manufacturer*)
+                      (< (count (deref devices)) _MUX))
+             executor))
+         (deref executors))))
+
+(defn- login
   "设备登陆
   1.发生在执行程序建立之时,资源未必准备好,当资源启动成功,将未登录设备全数加载;
   2.在执行程序正常运行时,做直接请求"
   [{:keys [proc-thrift] :as executor}
    {{:keys [addr port user password]} :device-info :as device}]
-  (req/login (deref proc-thrift 0 nil) addr port user password))
+  (request (deref proc-thrift 0 nil) Login addr port user password))
+
+(defn get-all-executors []
+  (dosync
+   (deref executors)))
 
 (defrecord Executor [^UUID     id           ;;执行程序唯一标识,方便检索
                      ^String   manufacturer ;;厂商
                      ^Ref      devices ;;进程所管理的设备 (ref {id device ...})
                      ^Ref      device->flow ;;来自设备的流量统计
                      ^Ref      client->flow ;;来自客户端的流量统计
-                     ^Fn       proc-closer  ;;关闭进程方法
-                     ^Object   proc-thrift ;;promise,当进程创建完毕并返回thrift参数
-                     ^Fn       thrfit-closer ;;关闭本端thrift方法
-                     ^Long     thrfit-port   ;;本端thrift端口
+                     ^Object   proc         ;;
+                     ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
+                     ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                      ^DateTime start-time]
-  IClient
-  (client->flow [this]
+  Sdk$Iface
+  (Login [this device-id account]
+    (some?
+     (dosync
+      (if-let [device (get (deref devices) device-id)]
+        (login this device)
+        (log/error "device not found")))))
+
+  (Logout [this device-id]
+    (some? (request (deref thrift-sdk 0 nil) Logout device-id)))
+
+  (StartRealPlay [this device-id source-id info]
+    (some? (request (deref thrift-sdk 0 nil) StartRealPlay device-id source-id info)))
+
+  (StopRealPlay [this device-id source-id]
+    (some? (request (deref thrift-sdk 0 nil) StopRealPlay device-id source-id)))
+
+  (StartVoiceTalk [this device-id source-id info]
+    (some? (request (deref thrift-sdk 0 nil) StartVoiceTalk device-id source-id info)))
+
+  (StopVoiceTalk [this device-id source-id]
+    (some? (request (deref thrift-sdk 0 nil) StopVoiceTalk device-id source-id)))
+
+  (SendVoiceData [this device-id source-id data]
+    (some? (request (deref thrift-sdk 0 nil) SendVoiceData device-id source-id data)))
+
+  (PlayBackByTime [this device-id source-id info]
+    (some? (request (deref thrift-sdk 0 nil) PlayBackByTime device-id source-id info)))
+
+  (StopPlayBack [this device-id source-id]
+    (some? (request (deref thrift-sdk 0 nil) StopPlayBack device-id source-id)))
+
+  Notify$Iface
+  (Lanuched [this port]
     (dosync
-     (deref client->flow)))
-
-  (client->login [this device-id]
-    (dosync
-     (when-let [device (get (deref devices) device-id)]
-       (login this device))))
-
-  (client->logout [this device-id]
-    (req/logout (deref proc-thrift 0 nil) device-id))
-
-  (client->data [this byte-buffer & [source-id device-id]]
-    (req/voicedata-send (deref proc-thrift 0 nil) device-id source-id byte-buffer))
-
-  (client->close [this & [source-id device-id]]
-    (dosync
-     ;; (req/voicedata-send (deref proc-thrift 0 nil) device-id source-id byte-buffer)
-     ))
-
-  IDevice
-  (device->flow [this])
-  (device->lanuched [this]
-    (dosync
+     (deliver thrift-sdk)
      (doseq [pdevice (deref devices)]
-       (login this (val pdevice)))))
+       (.Lanuched ^Notify$Iface (val pdevice) port))))
 
-  (device->connected [this device-id]
+  (Connected [this device-id]
     (dosync
-     (if-let [device (get (deref devices) device-id)]
-       ()
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.Connected device device-id)
        (log/error "a device connected, but could not found in list"))))
-  (device->offline [this device-id])
-  (device->media-data [this media-type byte-buffer & id])
-  (device->media-finish [this & id])
-  (device->close [this])
+
+  (Offline [this device-id]
+    (dosync
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.Offline device device-id)
+       (log/error "a device connected, but could not found in list"))))
+
+  (MediaStarted [this device-id media-id]
+    (dosync
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.MediaStarted device device-id media-id)
+       (log/error "a device connected, but could not found in list"))))
+
+  (MediaFinish [this device-id media-id]
+    (dosync
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.MediaFinish device device-id media-id)
+       (log/error "a device connected, but could not found in list"))))
+
+  (MediaData [this device-id media-id data]
+    (dosync
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.MediaData device device-id media-id data)
+       (log/error "a device connected, but could not found in list"))))
 
   Object
-  (toString [_] (map #(str (val %)) (deref devices))))
+  (toString [_] (map (fn [device] (str (val device))) devices)))
 
+(defn- mk-crashed [^Executor executor]
+  (fn []
+    (log/warn executor "crashed")
+    (dosync
+     (let [{:keys [devices proc thrift-notify]} executor
+           ^Proc   proc          (deref proc 100)
+           ^Thrift thrift-notify (deref thrift-notify 100)]
+       ;;从表中剔除此对象
+       (alter executors dissoc executor)
+       (future
+         (do ;;释放资源
+           ;;关闭进程对象
+           (.close proc)
+           ;;关闭thrift本地监听
+           (.close thrift-notify)))
+       ;;通知所有设备
+       (doseq [{:keys [device->offline]} (deref devices)]
+         (device->offline))))))
 
+(defn- mk-out-printer [^Executor executor]
+  (fn [string]
+    (let [{:keys [manufacturer proc]} executor
+          pid (.get-pid ^Proc @proc)]
+      (log/debug "<" manufacturer ", " pid ">: " string))))
 
+(defn- create-process*thrift
+  [manufacturer]
+  (dosync
+   (let [executor-id   (UUID/randomUUID)
+         devices       (ref #{})
+         proc          (promise)
+         thrift-notify (promise)
+         thrift-sdk    (promise)
+         sdk-path      (format "%s/%s" (System/getProperty "user.dir") (env :sdk-path))
+         working-path  (format "%s/%s" sdk-path manufacturer)
+         exe-path      (format "%s/%s.exe" working-path manufacturer)
+         executor      (Executor. executor-id manufacturer devices (ref 0) (ref 0) proc thrift-notify thrift-sdk (now))]
+     ;;将当前对象添加入列表
+     (alter executors conj executor)
 
+     (future
+       (do ;;;启动资源
+         ;;启动本地thrift监听
+         (deliver thrift-notify (start-thrift! executor))
+         ;;启动sdk进程
+         (deliver proc (launch! (mk-crashed executor) (mk-out-printer executor)
+                                exe-path working-path
+                                (.get-port ^Thrift @thrift-notify)))))
+     executor)))
 
+(defn have-exe?
+  "通过初始化扫描文件目录,获取sdk厂商列表"
+  [manufacturer]
+  (some? (#{"hik" "dahua"} manufacturer)))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-;; (defrecord Executor [^UUID     executor-id
-;;                      ^String   manufacturer
-;;                      ^Ref      devices
-;;                      ^Fn       proc-closer
-;;                      ^Object   proc-thrift
-;;                      ^Fn       thrfit-closer
-;;                      ^Long     thrfit-port
-;;                      ^DateTime start-time])
-
-;; (declare get-all-executors)
-
-;; (defn- can-exe-multiplex?*
-;;   "创建执行程序"
-;;   [manufacturer*]
-;;   (dosync
-;;    (some (fn [{:keys [devices manufacturer] :as executor}]
-;;            (when (and (= manufacturer manufacturer*)
-;;                       (< (count (deref devices)) _MUX))
-;;              executor))
-;;          (get-all-executors))))
-
-;; (defn- find-device [executor-id device-id]
-;;   (dosync
-;;    (when-let [{:keys [devices]}
-;;               (get (get-all-executors) executor-id)]
-;;      (get (deref devices) device-id))))
-
-;; (defn- mk-crashed [executor-id]
-;;   (fn []
-;;     (dosync
-;;      (when-let [{:keys [devices proc-closer thrift-closer]} (get (get-all-executors) executor-id)]
-;;        (proc-closer)
-;;        (thrift-closer)
-;;        (alter executors dissoc executor-id)
-;;        (doseq [{:keys [device->offline]} (deref devices)]
-;;          (device->offline))))))
-
-;; (defn- mk-lanuched [executor-id]
-;;   (fn [port]
-;;     (dosync
-;;      (when-let [{:keys [proc-thrift]} (get (get-all-executors) executor-id)]
-;;        (deliver proc-thrift port)
-;;        (req/init port)))))
-
-;; (defn- mk-device->connected [executor-id]
-;;   (fn [device-id]
-;;     (dosync
-;;      (when-let [{:keys [device->connected]} (find-device executor-id device-id)]
-;;        (device->connected)))))
-
-;; (defn- mk-device->offline [executor-id]
-;;   (fn [device-id]
-;;     (dosync
-;;      (when-let [{:keys [device->offline]} (find-device executor-id device-id)]
-;;        (device->offline)))))
-
-;; (defn- mk-device->media-finish [executor-id]
-;;   (fn [device-id source-id]
-;;     (dosync
-;;      (when-let [{:keys [device->media-finish]} (find-device executor-id device-id)]
-;;        (device->media-finish source-id)))))
-
-;; (defn- mk-device->media-data [executor-id]
-;;   (fn [device-id source-id buffer]
-;;     (dosync
-;;      (when-let [{:keys [device->media-data]}
-;;                 (find-device executor-id device-id)]
-;;        (device->media-data source-id buffer)))))
-
-;; (defn- mk-out-printer [manufacturer]
-;;   (fn [pid string]
-;;     (prn "<" manufacturer ", " pid ">: " string)))
-
-;; (defn- create-process*thrift
-;;   [manufacturer]
-;;   (dosync
-;;    (let [executor-id           (UUID/randomUUID)
-;;          devices               (ref #{})
-;;          {:keys [thrift-closer thrfit-port]}
-;;          (start-thrift! (mk-lanuched executor-id)
-;;                         (mk-device->connected executor-id)
-;;                         (mk-device->offline executor-id)
-;;                         (mk-device->media-finish executor-id)
-;;                         (mk-device->media-data executor-id))
-
-;;          sdk-path     (format "%s/%s" (System/getProperty "user.dir") (env :sdk-path))
-;;          working-path (format "%s/%s" sdk-path manufacturer)
-;;          exe-path     (format "%s/%s.exe" working-path manufacturer)
-;;          proc-closer  (launch! (mk-crashed executor-id) (mk-out-printer manufacturer)
-;;                                exe-path working-path
-;;                                thrfit-port)
-;;          proc-port    (promise)
-;;          executor (Executor. executor-id manufacturer devices proc-closer proc-port thrift-closer thrfit-port (now))]
-;;      (alter executors conj executor)
-;;      executor)))
-
-;; (defn login
-;;   "args: executor device"
-;;   [{:keys [proc-thrift]}
-;;    {{:keys [addr port user password]} :device-info
-;;     device->offline :device->offline}]
-;;   (if-let [thrift-port (deref proc-thrift 3000 nil)]
-;;     (req/login thrift-port addr port user password)
-;;     (device->offline)))
-
-;; (defn logout
-;;   "args: executor device"
-;;   [{:keys [proc-thrift]}
-;;    {:keys [device-id]}]
-;;   (req/logout proc-thrift device-id))
-
-;; (defn client->device
-;;   "args: executor device source-id buffer"
-;;   [{:keys [proc-thrift]}
-;;    {:keys [device-id]}
-;;    source-id
-;;    buffer]
-;;   (req/voicedata-send proc-thrift source-id device-id))
-
-;; (defn client->close
-;;   "args: executor device source-id buffer"
-;;   [{:keys [proc-thrift]}
-;;    {:keys [device-id sources]}
-;;    source-id]
-;;   (dosync
-;;    (when-let [{{:keys [session-type]} :subscribe} (get (deref sources) source-id)]
-;;      (case session-type
-;;        :realplay   (req/realplay-stop proc-thrift device-id source-id)
-;;        :playback   (req/playback-stop proc-thrift device-id source-id)
-;;        :voick-talk (req/voicetalk-stop proc-thrift device-id source-id)))))
-
-;; (defn open-source
-;;   "args: executor device source-id buffer"
-;;   [{:keys [proc-thrift]}
-;;    {:keys [device-id sources]}
-;;    source-id]
-;;   (dosync
-;;    (when-let [{{:keys [session-type channel
-;;                        stream-type start-time end-time]} :subscribe}
-;;               (get (deref sources) source-id)]
-;;      (case session-type
-;;        :realplay   (req/realplay-start proc-thrift device-id source-id
-;;                                        channel stream-type)
-;;        :playback   (req/playback-bytime proc-thrift device-id source-id
-;;                                         channel start-time end-time)
-;;        :voick-talk (req/voicetalk-start proc-thrift device-id source-id
-;;                                         channel)))))
-
-;; (defn get-all-executors []
-;;   (dosync
-;;    (deref executors)))
-
-;; (defn have-exe?
-;;   "通过初始化扫描文件目录,获取sdk厂商列表"
-;;   [manufacturer]
-;;   (some? (#{"hik" "dahua"} manufacturer)))
-
-;; (defn create-exe!
-;;   "创建执行程序"
-;;   [{:keys [manufacturer]}]
-;;   (if-let [executor (can-exe-multiplex?* manufacturer)]
-;;     executor
-;;     (create-process*thrift manufacturer)))
+(defn create-exe!
+  "创建执行程序"
+  [{:keys [manufacturer]}]
+  (if-let [executor (can-exe-multiplex?* manufacturer)]
+    executor
+    (create-process*thrift manufacturer)))

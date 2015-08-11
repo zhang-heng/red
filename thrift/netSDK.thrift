@@ -43,7 +43,7 @@ bool StopRealPlay  (1:string device_id, 2:string media_id),     //关闭预览
 //**********对讲**********/
 bool StartVoiceTalk (1:string device_id, 2:string media_id, 3:info.PlayInfo play_info), //启动对讲
 bool StopVoiceTalk  (1:string device_id, 2:string media_id),    //关闭对讲
-oneway void SendVoiceData (1:string media_id, 2:binary buffer), //发送对讲音频
+oneway void SendVoiceData (1:string device_id, 2:string media_id, 3:binary buffer), //发送对讲音频
 
 //**********回放**********/
 bool PlayBackByTime (1:string device_id, 2:string media_id, 3:info.PlayInfo play_info), //按时间点播
@@ -62,7 +62,7 @@ bool PlayBackSeek        (1:string device_id, 2:string media_id), //改变进度
 //通知反馈
 service Notify{
 //**********状态通知**********/
-oneway void Lanuched(), //启动完成
+oneway void Lanuched(1:i32 thrift_port), //启动完成
 oneway void Connected    (1:string device_id), //连接成功
 oneway void Offline      (1:string device_id), //断线通知
 //**********媒体通知**********/

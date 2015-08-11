@@ -1,7 +1,8 @@
 (ns red.device.sdk.callback
   (:require [thrift-clj.core :as thrift]
             [thrift-clj.transports :as t])
-  (:import [org.apache.thrift.server TThreadPoolServer TThreadPoolServer$Args]
+  (:import [device.netsdk Notify$Iface]
+           [org.apache.thrift.server TThreadPoolServer TThreadPoolServer$Args]
            [org.apache.thrift.transport TServerSocket]))
 
 (thrift/import
@@ -15,20 +16,28 @@
     {:server (TThreadPoolServer. (wrap-args (TThreadPoolServer$Args. t) iface opts))
      :port (.. t getServerSocket getLocalPort)}))
 
-(defn- mk-stop-server [server]
-  (fn []
+(defprotocol IThrfit
+  (get-port [this])
+  (close [this]
+    (io!)))
+
+(defrecord Thrift [server port]
+  IThrfit
+  (get-port [this]
+    port)
+  (close [this]
     (try (thrift/stop! server)
          (catch Exception e (prn e)))))
 
-(defn start-thrift! [lanuched device->connected device->offline device->media-finish device->media-data]
+(defn start-thrift! [lanuched ^Notify$Iface notifier]
   (let [handler (thrift/service Notify
-                                (Lanuched    [] (lanuched))
-                                (Connected   [device-id] (device->connected device-id))
-                                (Offline     [device-id] (device->offline device-id))
-                                (MediaFinish [device-id source-id] (device->media-finish device-id source-id))
-                                (MediaData   [device-id source-id media] (device->media-data device-id source-id media)))
+                                (Lanuched    [port] (.Lanuched notifier port))
+                                (Connected   [device-id] (.Connected notifier device-id))
+                                (Offline     [device-id] (.Offline notifier device-id))
+                                (MediaFinish [device-id media-id] (.MediaFinish notifier device-id media-id))
+                                (MediaData   [device-id media-id data] (.MediaData notifier device-id media-id data)))
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
                                                       :protocol :compact)]
-    (send-off (agent nil) (fn [_] (io! (thrift/serve! server))))
-    {:thrfit-closer (mk-stop-server server) :thrfit-port port}))
+    (io! (thrift/serve! server))
+    (Thrift. server port)))
