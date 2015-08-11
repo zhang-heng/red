@@ -1,118 +1,119 @@
 (ns red.device.client.device
   (:require [clojure.tools.logging :as log]
-            [red.device.sdk.core :refer [create-exe! get-all-executors
-                                  login logout client->device client->close open-source]]
+            [red.device.sdk.core :refer [create-exe!]]
             [red.utils :refer [now]])
-  (:import (clojure.lang Ref PersistentArrayMap)
-           (java.util UUID)
-           (java.nio ByteBuffer)
-           (org.joda.time DateTime)))
+  (:import [red.device.sdk.core Executor]
+           [device.netsdk Sdk$Iface Notify$Iface]
+           [device.info LoginAccount]
+           [clojure.lang Ref PersistentArrayMap]
+           [java.util UUID]
+           [java.nio ByteBuffer]
+           [org.joda.time DateTime]))
 
-(defrecord DeviceInfo [^String addr
-                       ^Long   port
-                       ^String user
-                       ^String password])
+(defrecord Device [^UUID         id
+                   ^Executor     executor
+                   ^LoginAccount account      ;;设备账号
+                   ^String       manufacturer ;;厂商
+                   ^Ref          sources      ;;媒体请求列表
+                   ^Ref          device->flow ;;来自设备的流量统计
+                   ^Ref          client->flow ;;来自客户端的流量统计
+                   ^DateTime     start-time]
+  Sdk$Iface
+  (Login [this device-id account]
+    (.Login executor device-id account))
 
-(defrecord Device [^UUID             device-id            ;;设备标识
-                   ^DeviceInfo       device-info          ;;设备信息
-                   ^Ref              sources              ;;媒体源信息
-                   ^Ref              client->flow         ;;字节统计
-                   ^Ref              device->flow         ;;字节统计
-                   ^clojure.lang.Fn  device->connected    ;;登陆成功通知
-                   ^clojure.lang.Fn  device->offline      ;;掉线通知
-                   ^clojure.lang.Fn  device->media-finish ;;媒体结束通知
-                   ^clojure.lang.Fn  device->media-data   ;;媒体数据通知
-                   ^DateTime         start-time])
+  (Logout [this device-id]
+    (.Logout executor device-id))
 
-(declare get-all-devices)
+  (StartRealPlay [this device-id source-id info]
+    (.StartRealPlay executor device-id source-id info))
 
-(defn- mk-client->device
-  [executor device-id client->flow]
-  (fn [source-id ^ByteBuffer buffer]
+  (StopRealPlay [this device-id source-id]
+    (.StopRealPlay executor device-id source-id))
+
+  (StartVoiceTalk [this device-id source-id info]
+    (.StartVoiceTalk executor device-id source-id info))
+
+  (StopVoiceTalk [this device-id source-id]
+    (.StopVoiceTalk executor device-id source-id))
+
+  (SendVoiceData [this device-id source-id data]
     (dosync
-     (alter client->flow + (.limit buffer))
-     (client->device executor device-id source-id buffer))))
+     (alter client->flow + (.limit data)))
+    (.SendVoiceData executor device-id source-id data))
 
-(defn- mk-client->close
-  [executor device-id]
-  (fn [source-id]
+  (PlayBackByTime [this device-id source-id info]
+    (.PlayBackByTime executor device-id source-id info))
+
+  (StopPlayBack [this device-id source-id]
+    (.StopPlayBack executor device-id source-id))
+
+  Notify$Iface
+  (Lanuched [this _]
+    (.Login this id account))
+
+  (Connected [this _]
     (dosync
-     (client->close executor device-id source-id))))
+     (doseq [source (deref sources)]
+       (.Connected ^Notify$Iface (val source) _))))
 
-(defn- mk-device->connected
-  [devices executor]
-  (fn [device-id]
+  (Offline [this _]
     (dosync
-     (when-let [{:keys [sources]} (get (deref devices) device-id)]
-       (doseq [{:keys [source-id]} sources]
-         (open-source executor device-id source-id))))))
+     (doseq [source (deref sources)]
+       (.Offline ^Notify$Iface (val source) _))))
 
-(defn- mk-device->offline
-  [devices]
-  (fn [device-id]
+  (MediaStarted [this _ source-id]
     (dosync
-     (when-let [{:keys [sources]} (get (deref devices) device-id)]
-       (doseq [{:keys [device->close]} sources]
-         (device->close))))))
+     (when-let [source (get (deref sources) source-id)]
+       (.MediaStarted ^Notify$Iface source _ source-id))))
 
-(defn- mk-device->media-finish
-  [devices]
-  (fn [device-id source-id]
+  (MediaFinish [this _ source-id]
     (dosync
-     (when-let [{:keys [sources]} (get (deref devices) device-id)]
-       (when-let [{:keys [device->close device->client]}
-                  (get (deref sources) source-id)]
-         (device->client (ByteBuffer/allocate 0))
-         (device->close))))))
+     (when-let [source (get (deref sources) source-id)]
+       (.MediaFinish ^Notify$Iface source _ source-id))))
 
-(defn- mk-device->media-data
-  [devices]
-  (fn [device-id source-id buffer]
+  (MediaData [this _ source-id {^ByteBuffer payload :payload :as data}]
     (dosync
-     (when-let [{:keys [sources]} (get (deref devices) device-id)]
-       (when-let [{:keys [device->close device->client]}
-                  (get (deref sources) source-id)]
-         (device->client buffer))))))
+     (alter device->flow + (.limit payload))
+     (when-let [source (get (deref sources) source-id)]
+       (.MediaData ^Notify$Iface source _ source-id data))))
 
-(defn- creat-device! [device-info]
+  Object
+  (toString [_]
+    (let [{:keys [addr port user password]} account]
+      (str user ":" password "@" addr ":" port
+           (map (fn [source] (str (val source))) sources)))))
+
+(defn- creat-device!
+  [manufacturer ^LoginAccount account]
   (dosync
-   (let [{:keys [devices] :as executor} (create-exe! device-info)
-         sources (ref #{})
-         device-id (UUID/randomUUID)
-         client->flow (ref 0)
-         device->flow (ref 0)
-         device  (Device. sources device-id
-                          device-info
-                          (mk-device->connected devices executor)
-                          (mk-device->offline devices)
-                          (mk-device->media-finish devices)
-                          (mk-device->media-data devices)
-                          (mk-client->close executor device-id)
-                          (mk-client->device executor device-id client->flow)
-                          client->flow device->flow (now))]
-     (alter devices conj device)
+   (let [id           (UUID/randomUUID)
+         executor     (create-exe! manufacturer)
+         device       (Device. id executor account manufacturer (ref {}) (ref 0) (ref 0) (now))]
+     (alter (:devices device) assoc id device)
      device)))
-
-(defn- added-device?*
-  "设备是否已添加"
-  [device-info]
-  (dosync
-   (some (fn [{info :device-info :as device}]
-           (when (= device-info info)
-             device))
-         (get-all-devices))))
 
 (defn get-all-devices
   "获取所有设备数据" []
   (dosync
-   (reduce (fn [c {devices :devices}] (clojure.set/union c (deref devices)))
+   (reduce (fn [c {devices :devices}]
+             (clojure.set/union c (vals (deref devices))))
            #{} (get-all-executors))))
+
+(defn- added-device?*
+  "设备是否已添加"
+  [manufacturer* ^LoginAccount account*]
+  (dosync
+   (some (fn [{:keys [account manufacturer] :as device}]
+           (when (and (= manufacturer* manufacturer)
+                      (= account*      account))
+             device))
+         (get-all-devices))))
 
 (defn add-device!
   "添加设备"
-  [subscribe]
+  [manufacturer ^LoginAccount account]
   (dosync
-   (let [device-info (select-keys subscribe [:addr :port :password :user :manufacturer])]
-     (if-let [device (added-device?* device-info)]
-       device
-       (creat-device! device-info)))))
+   (if-let [device (added-device?* manufacturer account)]
+     device
+     (creat-device! manufacturer account))))

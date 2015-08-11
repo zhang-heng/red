@@ -15,7 +15,7 @@
 ;;exe复用个数
 (defonce _MUX 2)
 
-(defonce executors (ref #{}))
+(defonce ^:private executors (ref #{}))
 
 (thrift/import
  (:types    [device.types  MediaType    StreamType]
@@ -62,7 +62,7 @@
                      ^Ref      devices ;;进程所管理的设备 (ref {id device ...})
                      ^Ref      device->flow ;;来自设备的流量统计
                      ^Ref      client->flow ;;来自客户端的流量统计
-                     ^Object   proc         ;;
+                     ^Object   proc         ;;进程对象
                      ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
                      ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                      ^DateTime start-time]
@@ -75,28 +75,28 @@
         (log/error "device not found")))))
 
   (Logout [this device-id]
-    (some? (request (deref thrift-sdk 0 nil) Logout device-id)))
+    (some? (request @thrift-sdk Logout device-id)))
 
   (StartRealPlay [this device-id source-id info]
-    (some? (request (deref thrift-sdk 0 nil) StartRealPlay device-id source-id info)))
+    (some? (request @thrift-sdk StartRealPlay device-id source-id info)))
 
   (StopRealPlay [this device-id source-id]
-    (some? (request (deref thrift-sdk 0 nil) StopRealPlay device-id source-id)))
+    (some? (request @thrift-sdk StopRealPlay device-id source-id)))
 
   (StartVoiceTalk [this device-id source-id info]
-    (some? (request (deref thrift-sdk 0 nil) StartVoiceTalk device-id source-id info)))
+    (some? (request @thrift-sdk StartVoiceTalk device-id source-id info)))
 
   (StopVoiceTalk [this device-id source-id]
-    (some? (request (deref thrift-sdk 0 nil) StopVoiceTalk device-id source-id)))
+    (some? (request @thrift-sdk StopVoiceTalk device-id source-id)))
 
   (SendVoiceData [this device-id source-id data]
-    (some? (request (deref thrift-sdk 0 nil) SendVoiceData device-id source-id data)))
+    (some? (request @thrift-sdk SendVoiceData device-id source-id data)))
 
   (PlayBackByTime [this device-id source-id info]
-    (some? (request (deref thrift-sdk 0 nil) PlayBackByTime device-id source-id info)))
+    (some? (request @thrift-sdk PlayBackByTime device-id source-id info)))
 
   (StopPlayBack [this device-id source-id]
-    (some? (request (deref thrift-sdk 0 nil) StopPlayBack device-id source-id)))
+    (some? (request @thrift-sdk StopPlayBack device-id source-id)))
 
   Notify$Iface
   (Lanuched [this port]
@@ -195,7 +195,7 @@
 
 (defn create-exe!
   "创建执行程序"
-  [{:keys [manufacturer]}]
+  [manufacturer]
   (if-let [executor (can-exe-multiplex?* manufacturer)]
     executor
     (create-process*thrift manufacturer)))
