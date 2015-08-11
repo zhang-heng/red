@@ -1,95 +1,121 @@
 (ns red.device.client.source
   (:require [red.device.client.device :refer [add-device! get-all-devices]]
             [red.utils :refer [now]])
-  (:import (clojure.lang Ref PersistentArrayMap)
-           (java.util UUID)
-           (org.joda.time DateTime)))
+  (:import [red.device.client.device Device]
+           [device.types MediaType]
+           [device.info LoginAccount PlayInfo]
+           [device.netsdk Sdk$Iface Notify$Iface]
+           [clojure.lang Ref PersistentArrayMap]
+           [java.util UUID]
+           [clojure.lang Keyword]
+           [org.joda.time DateTime]))
 
+(defrecord Source [^UUID     id
+                   ^Device   device
+                   ^Keyword  source-type ; :playback :realplay :voicetalk
+                   ^PlayInfo info
+                   ^Ref      clients
+                   ^Ref      header-data
+                   ^Ref      device->flow
+                   ^Ref      client->flow
+                   ^DateTime start-time]
+  Sdk$Iface
+  (StartRealPlay [this info _ _]
+    (.StartRealPlay device info id _))
 
-(defrecord SourceInfo [])
+  (StopRealPlay [this _ _]
+    (.StopRealPlay device id _))
 
-(defrecord Source [^Ref                clients
-                   ^PersistentArrayMap subscribe
-                   ^UUID               source-id
-                   ^Ref                header-data
-                   ^Ref                last-data-time
-                   ^Ref                device->flow
-                   ^clojure.lang.Fn    device->client
-                   ^clojure.lang.Fn    device->close
-                   ^Ref                client->flow
-                   ^clojure.lang.Fn    client->device
-                   ^clojure.lang.Fn    client->close
-                   ^DateTime           start-time])
+  (StartVoiceTalk [this info _ _]
+    (.StartVoiceTalk device info id _))
 
-(declare get-all-sources)
+  (StopVoiceTalk [this _ _]
+    (.StopVoiceTalk device id _))
 
-(defn- mk-client->device
-  [client->device client->flow]
-  (fn [buffer]
+  (SendVoiceData [this data _ _]
+    (.SendVoiceData device data id _))
+
+  (PlayBackByTime [this info _ _]
+    (.PlayBackByTime device info id _))
+
+  (StopPlayBack [this _ _]
+    (.StopPlayBack device id _))
+
+  Notify$Iface
+
+  (Connected [this _]
     (dosync
-     (alter client->flow + )
-     (client->device buffer))))
+     (case source-type
+       :playback  (.PlayBackByTime this info id _)
+       :realplay  (.StartRealPlay  this info id _)
+       :voicetalk (.StartVoiceTalk this info id _))))
 
-(defn- mk-client->close
-  [client->close user]
-  (fn []
+  (Offline [this _]
     (dosync
-     (client->close user))))
+     (doseq [pclient (deref clients)]
+       (.Offline ^Notify$Iface (val pclient) _))))
 
-(defn- mk-device->client
-  [clients device->flow]
-  (fn [buffer]
+  (MediaStarted [this _ _]
     (dosync
-     (alter device->flow +)
-     (doseq [{:keys [device->client]} (deref clients)]
-       (device->client buffer)))))
+     (doseq [pclient (deref clients)]
+       (.MediaStarted ^Notify$Iface (val pclient) _ _))))
 
-(defn- mk-device-close
-  [clients]
-  (fn []
+  (MediaFinish [this _ _]
     (dosync
-     (doseq [{:keys [device->close]} (deref clients)]
-       (device->close)))))
+     (doseq [pclient (deref clients)]
+       (.MediaFinish ^Notify$Iface (val pclient) _ _))))
+
+  (MediaData [this {:keys [^ByteBuffer payload type] :as data} _ _]
+    (dosync
+     (when (= type MediaType/FileHeader)
+       (ref-set header-data data))
+     (doseq [pclient (deref clients)]
+       (.MediaData ^Notify$Iface (val pclient) data _ _))))
+
+  Object
+  (toString [_]))
 
 (defn- create-source!
   "新建媒体源"
-  [subscribe]
+  [manufacturer ^LoginAccount account
+   media-type   ^PlayInfo     info]
   (dosync
-   (let [{:keys [sources client->device client->close] :as device} (add-device! subscribe)
-         clients      (ref {})
-         source-id    (UUID/randomUUID)
-         device->flow (ref 0)
-         client->flow (ref 0)
-         source (Source. clients subscribe source-id
-                         (ref nil) (ref now)
-                         device->flow (mk-device->client clients device->flow) (mk-device-close clients)
-                         client->flow (mk-client->device client->device source-id) (mk-client->close client->close source-id)
-                         (now))]
-     (alter sources conj source)
+   (let [device  (add-device! manufacturer account)
+         id      (UUID/randomUUID)
+         clients (ref {})
+         source  (Source. id device media-type info clients (ref nil) (ref 0) (ref 0) (now))]
+     ;;将本source 添加入设备
+     (alter (:sources device) assoc id source)
      source)))
-
-(defn- can-cource-multiplex?*
-  "源能否复用"
-  [{:keys [session-type] :as subscribe}]
-  (dosync
-   (when (= :realplay session-type)
-     (some (fn [{subscribed :subscribe :as source}]
-             (when (= subscribe subscribed)
-               source))
-           (get-all-sources)))))
 
 (defn get-all-sources []
   (dosync
-   (reduce (fn [c {sources :sources}] (clojure.set/union c (deref sources)))
+   (reduce (fn [c {sources :sources}]
+             (clojure.set/union c (vals (deref sources))))
            #{} (get-all-devices))))
+
+(defn- can-source-multiplex?*
+  "源能否复用"
+  [manufacturer ^LoginAccount account
+   media-type   ^PlayInfo     info]
+  (dosync
+   (some (fn [{{manufacturer* :manufacturer
+               {account* :account} :executor} :device
+               info* :info
+               media-type* :source-type
+               :as source}]
+           (when (and (= :realplay media-type media-type*)
+                      (= manufacturer manufacturer*)
+                      (= account account*)
+                      (= info info*))
+             source))
+         (get-all-sources))))
 
 (defn get-source!
   "获取源,即生成执行程序并建立联系"
-  [subscribe]
+  [manufacturer ^LoginAccount account
+   media-type   ^PlayInfo     info]
   (dosync
-   (let [subscribe (select-keys subscribe [:manufacturer :addr :port :user :password
-                                           :stream-type :channel-id :session-type
-                                           :start-time :end-time])]
-     (if-let [source (can-cource-multiplex?* subscribe)]
-       source
-       (create-source! subscribe)))))
+   (if-let [source (can-source-multiplex?* manufacturer account media-type info)]
+     source
+     (create-source! manufacturer account media-type info))))

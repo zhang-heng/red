@@ -49,9 +49,8 @@
   "设备登陆
   1.发生在执行程序建立之时,资源未必准备好,当资源启动成功,将未登录设备全数加载;
   2.在执行程序正常运行时,做直接请求"
-  [{:keys [proc-thrift] :as executor}
-   {{:keys [addr port user password]} :device-info :as device}]
-  (request (deref proc-thrift 0 nil) Login addr port user password))
+  [{:keys [proc-thrift]} {:keys [account]}]
+  (request (deref proc-thrift 0 nil) Login account))
 
 (defn get-all-executors []
   (dosync
@@ -67,7 +66,7 @@
                      ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                      ^DateTime start-time]
   Sdk$Iface
-  (Login [this device-id account]
+  (Login [this account device-id]
     (some?
      (dosync
       (if-let [device (get (deref devices) device-id)]
@@ -77,26 +76,22 @@
   (Logout [this device-id]
     (some? (request @thrift-sdk Logout device-id)))
 
-  (StartRealPlay [this device-id source-id info]
-    (some? (request @thrift-sdk StartRealPlay device-id source-id info)))
+  (StartRealPlay [this info source-id device-id]
+    (some? (request @thrift-sdk StartRealPlay info source-id device-id)))
+  (StopRealPlay [this source-id device-id]
+    (some? (request @thrift-sdk StopRealPlay source-id device-id)))
 
-  (StopRealPlay [this device-id source-id]
-    (some? (request @thrift-sdk StopRealPlay device-id source-id)))
-
-  (StartVoiceTalk [this device-id source-id info]
+  (StartVoiceTalk [this info source-id device-id]
     (some? (request @thrift-sdk StartVoiceTalk device-id source-id info)))
+  (StopVoiceTalk [this source-id device-id]
+    (some? (request @thrift-sdk StopVoiceTalk source-id device-id)))
+  (SendVoiceData [this data source-id device-id]
+    (some? (request @thrift-sdk SendVoiceData data source-id device-id)))
 
-  (StopVoiceTalk [this device-id source-id]
-    (some? (request @thrift-sdk StopVoiceTalk device-id source-id)))
-
-  (SendVoiceData [this device-id source-id data]
-    (some? (request @thrift-sdk SendVoiceData device-id source-id data)))
-
-  (PlayBackByTime [this device-id source-id info]
-    (some? (request @thrift-sdk PlayBackByTime device-id source-id info)))
-
-  (StopPlayBack [this device-id source-id]
-    (some? (request @thrift-sdk StopPlayBack device-id source-id)))
+  (PlayBackByTime [this info source-id device-id]
+    (some? (request @thrift-sdk PlayBackByTime info source-id device-id)))
+  (StopPlayBack [this source-id device-id]
+    (some? (request @thrift-sdk StopPlayBack source-id device-id)))
 
   Notify$Iface
   (Lanuched [this port]
@@ -117,22 +112,22 @@
        (.Offline device device-id)
        (log/error "a device connected, but could not found in list"))))
 
-  (MediaStarted [this device-id media-id]
+  (MediaStarted [this media-id device-id]
     (dosync
      (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.MediaStarted device device-id media-id)
+       (.MediaStarted device media-id device-id)
        (log/error "a device connected, but could not found in list"))))
 
-  (MediaFinish [this device-id media-id]
+  (MediaFinish [this media-id device-id]
     (dosync
      (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.MediaFinish device device-id media-id)
+       (.MediaFinish device media-id device-id)
        (log/error "a device connected, but could not found in list"))))
 
-  (MediaData [this device-id media-id data]
+  (MediaData [this data media-id device-id]
     (dosync
      (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.MediaData device device-id media-id data)
+       (.MediaData device data media-id device-id)
        (log/error "a device connected, but could not found in list"))))
 
   Object

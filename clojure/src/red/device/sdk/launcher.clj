@@ -13,10 +13,6 @@
     (.setAccessible f true)
     (long (.get f process))))
 
-(defn- check-cpu [^Proc proc])
-
-(defn- check-mem [^Proc proc])
-
 (defprotocol IProc
   (get-pid [this])
   (get-cpu [this])
@@ -39,6 +35,10 @@
 
   Object
   (toString [_]))
+
+(defn- check-cpu [^Proc proc])
+
+(defn- check-mem [^Proc proc])
 
 (defn check-proc-status [^Proc proc]
   (dosync
