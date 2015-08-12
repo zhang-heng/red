@@ -29,7 +29,7 @@
     (try (thrift/stop! server)
          (catch Exception e (prn e)))))
 
-(defn start-thrift! [lanuched ^Notify$Iface notifier]
+(defn start-thrift! [^Notify$Iface notifier]
   (let [handler (thrift/service Notify
                                 (Lanuched    [port] (.Lanuched notifier port))
                                 (Connected   [device-id] (.Connected notifier device-id))

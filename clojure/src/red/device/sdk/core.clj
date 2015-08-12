@@ -1,7 +1,7 @@
 (ns red.device.sdk.core
   (:require [thrift-clj.core :as thrift]
             [clojure.tools.logging :as log]
-            [red.utils :refer [now]]
+            [red.utils :refer [now stack-trace]]
             [environ.core :refer [env]]
             [red.device.sdk.callback :refer [start-thrift!]]
             [red.device.sdk.launcher :refer [launch! check-proc-status]])
@@ -184,13 +184,17 @@
      (alter executors conj executor)
 
      (future
-       (do ;;;启动资源
-         ;;启动本地thrift监听
-         (deliver thrift-notify (start-thrift! executor))
-         ;;启动sdk进程
-         (deliver proc (launch! (mk-crashed executor) (mk-out-printer executor)
-                                exe-path working-path
-                                (.get-port ^Thrift @thrift-notify)))))
+       (try
+         (do ;;;启动资源
+           ;;启动本地thrift监听
+           (log/info "start waitting thrift connection from sdk process.")
+           (deliver thrift-notify (start-thrift! executor))
+           (log/info "launch process ")
+           ;;启动sdk进程
+           (deliver proc (launch! (mk-crashed executor) (mk-out-printer executor)
+                                  exe-path working-path
+                                  (.get-port ^Thrift @thrift-notify))))
+         (catch Exception e (log/error "start local resource error: " (stack-trace e)))))
      executor)))
 
 (defn have-exe?
@@ -213,3 +217,6 @@
 (defn clean []
   (dosync
    (ref-set executors #{})))
+
+;; (clean)
+;; (create-exe! "dahua")
