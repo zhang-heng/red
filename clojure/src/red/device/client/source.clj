@@ -1,5 +1,6 @@
 (ns red.device.client.source
-  (:require [red.device.client.device :refer [add-device! get-all-devices add-source]]
+  (:require [clojure.tools.logging :as log]
+            [red.device.client.device :refer [add-device! get-all-devices add-source]]
             [red.utils :refer [now]])
   (:import [red.device.client.device Device]
            [device.types MediaType]
@@ -10,15 +11,15 @@
            [clojure.lang Keyword]
            [org.joda.time DateTime]))
 
-(defrecord Source [^UUID     id
-                   ^Device   device
-                   ^Keyword  source-type ; :playback :realplay :voicetalk
-                   ^PlayInfo info
-                   ^Ref      clients
-                   ^Ref      header-data
-                   ^Ref      device->flow
-                   ^Ref      client->flow
-                   ^DateTime start-time]
+(deftype Source [^UUID     id
+                 ^Device   device
+                 ^Keyword  source-type  ; :playback :realplay :voicetalk
+                 ^PlayInfo info
+                 ^Ref      clients
+                 ^Ref      header-data
+                 ^Ref      device->flow
+                 ^Ref      client->flow
+                 ^DateTime start-time]
   Sdk$Iface
   (StartRealPlay [this info _ _]
     (.StartRealPlay device info id _))
@@ -71,17 +72,27 @@
      (doseq [pclient (deref clients)]
        (.MediaData ^Notify$Iface (val pclient) data _ _))))
 
+  clojure.lang.IDeref
+  (deref [_] clients)
+
   Object
-  (toString [_]))
+  (toString [_]
+    (let [{:keys [channel stream_type connect_type start_time end_time]} info]
+      (format "____source: %s %d %s %s %s %s \n%s"
+              source-type channel stream_type connect_type start_time end_time
+              (->> @clients
+                   (map #(str %))
+                   (clojure.string/join ","))))))
 
 (defn- create-source!
   "新建媒体源"
   [manufacturer ^LoginAccount account
    media-type   ^PlayInfo     info]
   (dosync
+   (log/info "create-source")
    (let [device  (add-device! manufacturer account)
          id      (UUID/randomUUID)
-         clients (ref {})
+         clients (ref #{})
          source  (Source. id device media-type info clients (ref nil) (ref 0) (ref 0) (now))]
      ;;将本source 添加入设备
      (add-source device source)
@@ -89,8 +100,8 @@
 
 (defn get-all-sources []
   (dosync
-   (reduce (fn [c {sources :sources}]
-             (clojure.set/union c (vals (deref sources))))
+   (reduce (fn [c device]
+             (clojure.set/union c (deref (deref device))))
            #{} (get-all-devices))))
 
 (defn- can-source-multiplex?*
@@ -111,9 +122,9 @@
          (get-all-sources))))
 
 (defn add-client
-  [{:keys [clients] :as source}
-   {:keys [id]      :as client}]
-  (alter clients assoc id client))
+  [source client]
+  (dosync
+   (alter @source conj client)))
 
 (defn get-source!
   "获取源,即生成执行程序并建立联系"

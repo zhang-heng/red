@@ -10,14 +10,14 @@
            [java.nio ByteBuffer]
            [org.joda.time DateTime]))
 
-(defrecord Device [^UUID         id
-                   ^Executor     executor
-                   ^LoginAccount account      ;;设备账号
-                   ^String       manufacturer ;;厂商
-                   ^Ref          sources      ;;媒体请求列表
-                   ^Ref          device->flow ;;来自设备的流量统计
-                   ^Ref          client->flow ;;来自客户端的流量统计
-                   ^DateTime     start-time]
+(deftype Device [^UUID         id
+                 ^Executor     executor
+                 ^LoginAccount account      ;;设备账号
+                 ^String       manufacturer ;;厂商
+                 ^Ref          sources      ;;媒体请求列表
+                 ^Ref          device->flow ;;来自设备的流量统计
+                 ^Ref          client->flow ;;来自客户端的流量统计
+                 ^DateTime     start-time]
   Sdk$Iface
   (Login [this account _]
     (.Login executor account id))
@@ -78,26 +78,33 @@
      (when-let [source (get (deref sources) source-id)]
        (.MediaData ^Notify$Iface source data source-id _))))
 
+  clojure.lang.IDeref
+  (deref [_] sources)
+
   Object
   (toString [_]
-    (let [{:keys [addr port user password]} account]
-      (str user ":" password "@" addr ":" port
-           (map (fn [source] (str (val source))) sources)))))
+    (let [{:keys [addr port]} account]
+      (format "__device: %s:%d \n%s"
+              addr port
+              (->> @sources
+                   (map #(str %))
+                   (clojure.string/join ","))))))
 
 (defn- creat-device!
   [manufacturer ^LoginAccount account]
   (dosync
+   (log/info "creat-device")
    (let [id           (UUID/randomUUID)
          executor     (create-exe! manufacturer)
-         device       (Device. id executor account manufacturer (ref {}) (ref 0) (ref 0) (now))]
+         device       (Device. id executor account manufacturer (ref #{}) (ref 0) (ref 0) (now))]
      (add-device executor device)
      device)))
 
 (defn get-all-devices
   "获取所有设备数据" []
   (dosync
-   (reduce (fn [c {devices :devices}]
-             (clojure.set/union c (vals (deref devices))))
+   (reduce (fn [c executor]
+             (clojure.set/union c (deref (deref executor))))
            #{} (get-all-executors))))
 
 (defn- added-device?*
@@ -111,9 +118,9 @@
          (get-all-devices))))
 
 (defn add-source
-  [{:keys [sources] :as device}
-   {:keys [id]      :as source}]
-  (alter sources assoc id source))
+  [device source]
+  (dosync
+   (alter @device conj source)))
 
 (defn add-device!
   "添加设备"

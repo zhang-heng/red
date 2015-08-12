@@ -50,15 +50,15 @@
   (dosync
    (deref executors)))
 
-(defrecord Executor [^UUID     id           ;;执行程序唯一标识,方便检索
-                     ^String   manufacturer ;;厂商
-                     ^Ref      devices ;;进程所管理的设备 (ref {id device ...})
-                     ^Ref      device->flow ;;来自设备的流量统计
-                     ^Ref      client->flow ;;来自客户端的流量统计
-                     ^Object   proc         ;;进程对象
-                     ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
-                     ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
-                     ^DateTime start-time]
+(deftype Executor [^UUID     id           ;;执行程序唯一标识,方便检索
+                   ^String   manufacturer ;;厂商
+                   ^Ref      devices ;;进程所管理的设备 (ref {id device ...})
+                   ^Ref      device->flow ;;来自设备的流量统计
+                   ^Ref      client->flow ;;来自客户端的流量统计
+                   ^Object   proc         ;;进程对象
+                   ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
+                   ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
+                   ^DateTime start-time]
   Sdk$Iface
   (Login [this account device-id]
     (some?
@@ -124,8 +124,16 @@
        (.MediaData device data media-id device-id)
        (log/error "a device connected, but could not found in list"))))
 
+  clojure.lang.IDeref
+  (deref [_] devices)
+
   Object
-  (toString [_] (map (fn [device] (str (val device))) devices)))
+  (toString [_]
+    (format "exe: %s \n%s"
+            manufacturer
+            (->> @devices
+                 (map #(str %))
+                 (clojure.string/join ",")))))
 
 (defn- mk-crashed [^Executor executor]
   (fn []
@@ -155,6 +163,7 @@
 (defn- create-process*thrift
   [manufacturer]
   (dosync
+   (log/info "create-process*thrift")
    (let [executor-id   (UUID/randomUUID)
          devices       (ref #{})
          proc          (promise)
@@ -183,9 +192,9 @@
   (some? (#{"hik" "dahua"} manufacturer)))
 
 (defn add-device
-  [{:keys [devices] :as executor}
-   {:keys [id]      :as device}]
-  (alter devices assoc id device))
+  [executor device]
+  (dosync
+   (alter @executor conj device)))
 
 (defn create-exe!
   "创建执行程序"
@@ -193,3 +202,7 @@
   (if-let [executor (can-exe-multiplex?* manufacturer)]
     executor
     (create-process*thrift manufacturer)))
+
+(defn clean []
+  (dosync
+   (ref-set executors #{})))

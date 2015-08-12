@@ -12,13 +12,13 @@
            [java.nio ByteBuffer]
            [java.util UUID]))
 
-(defrecord Client [^UUID     session
-                   ^Source   source
-                   ^Ref      device->flow
-                   ^Ref      client->flow
-                   ^Fn       write-handle
-                   ^Fn       close-handle
-                   ^DateTime start-time]
+(deftype Client [^UUID     session
+                 ^Source   source
+                 ^Ref      device->flow
+                 ^Ref      client->flow
+                 ^Fn       write-handle
+                 ^Fn       close-handle
+                 ^DateTime start-time]
   Notify$Iface
   (Offline [this _]
     (write-handle (ByteBuffer/allocate 0))
@@ -38,8 +38,11 @@
                    (.flip))]
       (write-handle header)
       (write-handle payload)))
+
   Object
-  (toString [_] ))
+  (toString [_]
+    (format "______client: %s"
+            session)))
 
 (defonce stream-types* {:main StreamType/Main
                         :sub  StreamType/Sub
@@ -54,6 +57,7 @@
    device->client device->close
    session-id]
   (dosync
+   (log/info "creat client")
    (let [client (Client. session-id
                          source
                          (ref 0)
@@ -100,3 +104,25 @@
          (create-client manufacturer account session-type info
                         write-handle close-handle
                         session-id)))))
+
+(def test-session
+  {:manufacturer "dahua"
+   :addr         "192.168.8.85"
+   :port         37777
+   :user         "admin"
+   :password     "admin"
+   :session-type :realplay
+   :channel-id   1
+   :session-id (UUID/randomUUID)})
+
+(defn test-write-handle [byte-buffer]
+  (log/info byte-buffer))
+
+(defn test-close-handle []
+  (log/info "close"))
+
+(str (open-session! test-session test-write-handle test-close-handle))
+
+(log/info (str "exes: \n" (clojure.string/join "\n" (map str (red.device.sdk.core/get-all-executors)))))
+
+;;(red.device.sdk.core/clean)
