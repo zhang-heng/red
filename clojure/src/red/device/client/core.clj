@@ -12,13 +12,14 @@
            [java.nio ByteBuffer]
            [java.util UUID]))
 
-(deftype Client [^UUID     session
-                 ^Source   source
-                 ^Ref      device->flow
-                 ^Ref      client->flow
-                 ^Fn       write-handle
-                 ^Fn       close-handle
-                 ^DateTime start-time]
+(deftype Client [^UUID               session
+                 ^Source             source
+                 ^PersistentArrayMap connection
+                 ^Ref                device->flow
+                 ^Ref                client->flow
+                 ^Fn                 write-handle
+                 ^Fn                 close-handle
+                 ^DateTime           start-time]
   Notify$Iface
   (Offline [this _]
     (write-handle (ByteBuffer/allocate 0))
@@ -41,8 +42,9 @@
 
   Object
   (toString [_]
-    (format "______client: %s"
-            session)))
+    (let [{:keys [remote-addr remote-port]}  connection]
+      (format "______client: %s:%d %s"
+              remote-addr remote-port session))))
 
 (defonce stream-types* {:main StreamType/Main
                         :sub  StreamType/Sub
@@ -53,13 +55,15 @@
 (defn- create-client
   "生成与客户端的相关数据"
   [source
+   connection
    manufacturer account session-type info
    device->client device->close
    session-id]
   (dosync
-   (log/info "creat client")
+   (log/info "creat client ")
    (let [client (Client. session-id
                          source
+                         connection
                          (ref 0)
                          (ref 0)
                          device->client
@@ -91,17 +95,18 @@
 
 (defn open-session!
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"
-  [{:keys [manufacturer addr port user password
-           session-type channel-id stream-type start-time end-time
-           session-id]}
+  [connection {:keys [manufacturer addr port user password
+                      session-type channel-id stream-type start-time end-time
+                      session-id]}
    write-handle close-handle]
   (dosync
-   (let [stream-type (get stream-types* stream-type StreamType/Main)
-         connect-type ConnectType/Tcp
-         account (LoginAccount. addr port user password)
-         info    (PlayInfo. channel-id stream-type connect-type start-time end-time)]
+   (let [connect-type ConnectType/Tcp
+         stream-type  (get stream-types* stream-type StreamType/Main)
+         account      (LoginAccount. addr port user password)
+         info         (PlayInfo. channel-id stream-type connect-type start-time end-time)]
      (-> (get-source! manufacturer account session-type info)
-         (create-client manufacturer account session-type info
+         (create-client connection
+                        manufacturer account session-type info
                         write-handle close-handle
                         session-id)))))
 
@@ -121,8 +126,13 @@
 (defn test-close-handle []
   (log/info "close"))
 
-(str (open-session! test-session test-write-handle test-close-handle))
+(def connection {:local-addr "127.0.0.1"
+                 :local-port 123
+                 :remote-addr "127.0.0.1"
+                 :remote-port 456})
 
+(open-session! connection test-session test-write-handle test-close-handle)
 (log/info (str "exes: \n" (clojure.string/join "\n" (map str (red.device.sdk.core/get-all-executors)))))
+
 
 ;;(red.device.sdk.core/clean)

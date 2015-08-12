@@ -10,14 +10,22 @@
            [java.nio ByteBuffer]
            [org.joda.time DateTime]))
 
+(defprotocol IDevice
+  (can-multiplex? [this manufacturer account]))
+
 (deftype Device [^UUID         id
                  ^Executor     executor
-                 ^LoginAccount account      ;;设备账号
                  ^String       manufacturer ;;厂商
+                 ^LoginAccount account      ;;设备账号
                  ^Ref          sources      ;;媒体请求列表
                  ^Ref          device->flow ;;来自设备的流量统计
                  ^Ref          client->flow ;;来自客户端的流量统计
                  ^DateTime     start-time]
+  IDevice
+  (can-multiplex? [this manufacturer* account*]
+    (and (= manufacturer* manufacturer)
+         (= account*      account)))
+
   Sdk$Iface
   (Login [this account _]
     (.Login executor account id))
@@ -83,12 +91,12 @@
 
   Object
   (toString [_]
-    (let [{:keys [addr port]} account]
+    (let [{:keys [addr port]} (bean account)]
       (format "__device: %s:%d \n%s"
               addr port
               (->> @sources
                    (map #(str %))
-                   (clojure.string/join ","))))))
+                   (clojure.string/join ",\n"))))))
 
 (defn- creat-device!
   [manufacturer ^LoginAccount account]
@@ -96,7 +104,7 @@
    (log/info "creat-device")
    (let [id           (UUID/randomUUID)
          executor     (create-exe! manufacturer)
-         device       (Device. id executor account manufacturer (ref #{}) (ref 0) (ref 0) (now))]
+         device       (Device. id executor manufacturer account (ref #{}) (ref 0) (ref 0) (now))]
      (add-device executor device)
      device)))
 
@@ -109,11 +117,10 @@
 
 (defn- added-device?*
   "设备是否已添加"
-  [manufacturer* ^LoginAccount account*]
+  [manufacturer account]
   (dosync
-   (some (fn [{:keys [account manufacturer] :as device}]
-           (when (and (= manufacturer* manufacturer)
-                      (= account*      account))
+   (some (fn [device]
+           (when (can-multiplex? device manufacturer account)
              device))
          (get-all-devices))))
 

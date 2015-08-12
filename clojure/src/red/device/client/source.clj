@@ -11,15 +11,28 @@
            [clojure.lang Keyword]
            [org.joda.time DateTime]))
 
-(deftype Source [^UUID     id
-                 ^Device   device
-                 ^Keyword  source-type  ; :playback :realplay :voicetalk
-                 ^PlayInfo info
-                 ^Ref      clients
-                 ^Ref      header-data
-                 ^Ref      device->flow
-                 ^Ref      client->flow
-                 ^DateTime start-time]
+(defprotocol ISource
+  (can-multiplex? [this manufacturer account source-type info]))
+
+(deftype Source [^UUID         id
+                 ^Device       device
+                 ^String       manufacturer ;;厂商
+                 ^LoginAccount account      ;;设备账号
+                 ^Keyword      source-type ;; :playback :realplay :voicetalk
+                 ^PlayInfo     info
+                 ^Ref          clients
+                 ^Ref          header-data
+                 ^Ref          device->flow
+                 ^Ref          client->flow
+                 ^DateTime     start-time]
+  ISource
+  (can-multiplex? [this manufacturer* account* source-type* info*]
+    "可复用的媒体,意味着实时流,且所有参数全相等"
+    (and (= :realplay source-type source-type*)
+         (= manufacturer manufacturer*)
+         (= account account*)
+         (= info info*)))
+
   Sdk$Iface
   (StartRealPlay [this info _ _]
     (.StartRealPlay device info id _))
@@ -77,23 +90,26 @@
 
   Object
   (toString [_]
-    (let [{:keys [channel stream_type connect_type start_time end_time]} info]
+    (let [{:keys [channel stream_type connect_type start_time end_time]} (bean info)]
       (format "____source: %s %d %s %s %s %s \n%s"
               source-type channel stream_type connect_type start_time end_time
               (->> @clients
                    (map #(str %))
-                   (clojure.string/join ","))))))
+                   (clojure.string/join ",\n"))))))
 
 (defn- create-source!
   "新建媒体源"
   [manufacturer ^LoginAccount account
    media-type   ^PlayInfo     info]
   (dosync
-   (log/info "create-source")
+   (let [{:keys [addr port]} (bean account)
+         {:keys [channel stream_type connect_type start_time end_time]} (bean info)]
+     (log/infof "create-source: %s:%d %d %s %s %s %s"
+                addr port channel stream_type connect_type start_time end_time))
    (let [device  (add-device! manufacturer account)
          id      (UUID/randomUUID)
          clients (ref #{})
-         source  (Source. id device media-type info clients (ref nil) (ref 0) (ref 0) (now))]
+         source  (Source. id device manufacturer account media-type info clients (ref nil) (ref 0) (ref 0) (now))]
      ;;将本source 添加入设备
      (add-source device source)
      source)))
@@ -109,15 +125,8 @@
   [manufacturer ^LoginAccount account
    media-type   ^PlayInfo     info]
   (dosync
-   (some (fn [{{manufacturer* :manufacturer
-               {account* :account} :executor} :device
-               info* :info
-               media-type* :source-type
-               :as source}]
-           (when (and (= :realplay media-type media-type*)
-                      (= manufacturer manufacturer*)
-                      (= account account*)
-                      (= info info*))
+   (some (fn [source]
+           (when (can-multiplex? source manufacturer account media-type info)
              source))
          (get-all-sources))))
 

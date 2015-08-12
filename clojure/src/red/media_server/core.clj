@@ -29,7 +29,8 @@
          string-uuid (buffer->string session-buffer)]
      (if-let [subscribe (-> (string->uuid string-uuid)
                             (get-and-remove-subscribe))]
-       (let [client (open-session! subscribe (mk-send-handler connection) (mk-close-handler connection))
+       (let [client (open-session! (get-socket-info connection)
+                                   subscribe (mk-send-handler connection) (mk-close-handler connection))
              {:keys [user]} (deref connection)]
          ;;设置关闭操作
          (set-disconnect-notify connection #(dissoc-client! client))

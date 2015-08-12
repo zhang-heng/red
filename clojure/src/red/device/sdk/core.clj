@@ -29,16 +29,6 @@
          (method# c# ~@args)))
      (log/error "sdk thrift port not found")))
 
-(defn- can-exe-multiplex?*
-  "创建执行程序"
-  [manufacturer*]
-  (dosync
-   (some (fn [{:keys [devices manufacturer] :as executor}]
-           (when (and (= manufacturer manufacturer*)
-                      (< (count (deref devices)) _MUX))
-             executor))
-         (deref executors))))
-
 (defn- login
   "设备登陆
   1.发生在执行程序建立之时,资源未必准备好,当资源启动成功,将未登录设备全数加载;
@@ -50,6 +40,9 @@
   (dosync
    (deref executors)))
 
+(defprotocol IExecutorx
+  (can-multiplex? [this manufacturer]))
+
 (deftype Executor [^UUID     id           ;;执行程序唯一标识,方便检索
                    ^String   manufacturer ;;厂商
                    ^Ref      devices ;;进程所管理的设备 (ref {id device ...})
@@ -59,6 +52,11 @@
                    ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
                    ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                    ^DateTime start-time]
+  IExecutorx
+  (can-multiplex? [this manufacturer*]
+    (and (= manufacturer manufacturer*)
+         (< (count (deref devices)) _MUX)))
+
   Sdk$Iface
   (Login [this account device-id]
     (some?
@@ -133,7 +131,16 @@
             manufacturer
             (->> @devices
                  (map #(str %))
-                 (clojure.string/join ",")))))
+                 (clojure.string/join ",\n")))))
+
+(defn- can-exe-multiplex?*
+  "执行程序可否复用"
+  [manufacturer]
+  (dosync
+   (some (fn [executor]
+           (when (can-multiplex? executor manufacturer)
+             executor))
+         (deref executors))))
 
 (defn- mk-crashed [^Executor executor]
   (fn []
