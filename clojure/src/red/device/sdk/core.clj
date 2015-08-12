@@ -182,6 +182,11 @@
   [manufacturer]
   (some? (#{"hik" "dahua"} manufacturer)))
 
+(defn add-device
+  [{:keys [devices] :as executor}
+   {:keys [id]      :as device}]
+  (alter devices assoc id device))
+
 (defn create-exe!
   "创建执行程序"
   [manufacturer]

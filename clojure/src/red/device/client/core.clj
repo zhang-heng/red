@@ -1,7 +1,7 @@
 (ns red.device.client.core
   "主动连接: socket (1->1) client (n->1) source (n->1) device (n*->1) exe"
   (:require [clojure.tools.logging :as log]
-            [red.device.client.source :refer [get-all-sources get-source!]]
+            [red.device.client.source :refer [get-all-sources get-source! add-client]]
             [red.utils :refer [now]])
   (:import [red.device.client.source Source]
            [device.netsdk Sdk$Iface Notify$Iface]
@@ -49,7 +49,7 @@
 
 (defn- create-client
   "生成与客户端的相关数据"
-  [{:keys [clients] :as source}
+  [source
    manufacturer account session-type info
    device->client device->close
    session-id]
@@ -61,7 +61,7 @@
                          device->client
                          device->close
                          (now))]
-     (alter clients conj client)
+     (add-client source client)
      client)))
 
 (defn get-all-clients []

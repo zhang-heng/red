@@ -1,6 +1,6 @@
 (ns red.device.client.device
   (:require [clojure.tools.logging :as log]
-            [red.device.sdk.core :refer [create-exe! get-all-executors]]
+            [red.device.sdk.core :refer [create-exe! get-all-executors add-device]]
             [red.utils :refer [now]])
   (:import [red.device.sdk.core Executor ]
            [device.netsdk Sdk$Iface Notify$Iface]
@@ -90,7 +90,7 @@
    (let [id           (UUID/randomUUID)
          executor     (create-exe! manufacturer)
          device       (Device. id executor account manufacturer (ref {}) (ref 0) (ref 0) (now))]
-     (alter (:devices device) assoc id device)
+     (add-device executor device)
      device)))
 
 (defn get-all-devices
@@ -109,6 +109,11 @@
                       (= account*      account))
              device))
          (get-all-devices))))
+
+(defn add-source
+  [{:keys [sources] :as device}
+   {:keys [id]      :as source}]
+  (alter sources assoc id source))
 
 (defn add-device!
   "添加设备"

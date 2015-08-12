@@ -1,5 +1,5 @@
 (ns red.device.client.source
-  (:require [red.device.client.device :refer [add-device! get-all-devices]]
+  (:require [red.device.client.device :refer [add-device! get-all-devices add-source]]
             [red.utils :refer [now]])
   (:import [red.device.client.device Device]
            [device.types MediaType]
@@ -84,7 +84,7 @@
          clients (ref {})
          source  (Source. id device media-type info clients (ref nil) (ref 0) (ref 0) (now))]
      ;;将本source 添加入设备
-     (alter (:sources device) assoc id source)
+     (add-source device source)
      source)))
 
 (defn get-all-sources []
@@ -109,6 +109,11 @@
                       (= info info*))
              source))
          (get-all-sources))))
+
+(defn add-client
+  [{:keys [clients] :as source}
+   {:keys [id]      :as client}]
+  (alter clients assoc id client))
 
 (defn get-source!
   "获取源,即生成执行程序并建立联系"
