@@ -4,6 +4,7 @@
 #include <sstream>
 
 #include "server.h"
+#include <thread>
 
 bool isNum(std::string str){
   std::stringstream sin(str);

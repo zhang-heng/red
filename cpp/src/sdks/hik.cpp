@@ -1,25 +1,34 @@
-#include "HCNetSDK.h"
 #include "../server.h"
+
+#if (defined(WIN32) || defined(WIN64))
+#include <windows.h>
+#endif
+
+#include "HCNetSDK.h"
+
+#if (defined(WIN32) || defined(WIN64))
+#pragma comment(lib,"HCNetSDK.lib")
+#endif
 
 using namespace device;
 using namespace device::netsdk;
 
-bool Server::InitSDK() {}
-bool Server::CleanSDK() {}
+bool Server::InitSDK() {
+	auto ret = NET_DVR_Init();
+	if (!ret) {
+		info::InvalidOperation io;
+		io.what = ret;
+		io.why = "Fail to init sdk";
+		throw io;
+	}
+	return ret;
+}
 
-bool Device::Login(){}
-bool Device::Logout(){}
+bool Server::CleanSDK() { return true;}
 
-// bool Server::InitSDK() {
-//   auto ret = NET_DVR_Init();
-//   if (!ret) {
-//     info::InvalidOperation io;
-//     io.what = ret;
-//     io.why = "Fail to init sdk";
-//     throw io;
-//   }
-//   return ret;
-// }
+bool Device::Login(){return true;}
+bool Device::Logout(){return true;}
+
 
 
 // bool Server::Login(const std::string& deviceID, const device::info::LoginAccount& account){

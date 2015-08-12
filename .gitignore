@@ -24,6 +24,12 @@ pom.xml.asc
 *.pyg
 *.sdf
 *.suo
+*.obj
+*.tlog
+*.pdb
+*.vcxproj.user
+*.lastbuildstate
+*.props
 
 gen-*
 

@@ -6,7 +6,7 @@ using namespace apache::thrift::protocol;
 using namespace apache::thrift::transport;
 
 using namespace device::netsdk;
-
+ 
 Client::Client(int port) : client(nullptr){
   boost::shared_ptr<TTransport> socket(new TSocket("localhost", port));
   transport = boost::shared_ptr<TTransport>((new TBufferedTransport(socket)));
@@ -25,8 +25,8 @@ Client::~Client(){
   if(client) delete client;
 }
 
-void Client::send_lanuched (){
-  client->Lanuched();
+void Client::send_lanuched (int port){
+  client->Lanuched(port);
 }
 
 void Client::send_connected (std::string device_id){
@@ -37,16 +37,16 @@ void Client::send_offline (std::string device_id){
   client->Offline(device_id);
 }
 
-void Client::send_media_started (std::string device_id, std::string media_id){
-  client->MediaStarted(device_id, media_id);
+void Client::send_media_started (std::string media_id, std::string device_id){
+  client->MediaStarted(media_id, device_id);
 }
 
-void Client::send_media_finish (std::string device_id, std::string media_id){
-  client->MediaFinish(device_id, media_id);
+void Client::send_media_finish (std::string media_id, std::string device_id){
+  client->MediaFinish(media_id, device_id);
 }
 
-void Client::send_media_data (std::string device_id, std::string media_id, device::info::MediaPackage data){
-  client->MediaData(device_id, media_id, data);
+void Client::send_media_data (device::info::MediaPackage data, std::string media_id, std::string device_id){
+  client->MediaData(data, media_id, device_id);
 }
 
 void Client::send_test_bytes (std::string bytes){

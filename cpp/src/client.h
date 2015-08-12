@@ -16,12 +16,12 @@ class Client{
  public:
   Client(int port);
   ~Client();
-  void send_lanuched      ();
+  void send_lanuched      (int port);
   void send_connected     (std::string device_id);
   void send_offline       (std::string device_id);
-  void send_media_started (std::string device_id, std::string media_id);
-  void send_media_finish  (std::string device_id, std::string media_id);
-  void send_media_data    (std::string device_id, std::string media_id, device::info::MediaPackage data);
+  void send_media_started (std::string media_id, std::string device_id);
+  void send_media_finish  (std::string media_id, std::string device_id);
+  void send_media_data    (device::info::MediaPackage data, std::string media_id, std::string device_id);
   void send_test_bytes    (std::string bytes);
  private:
   boost::shared_ptr<apache::thrift::transport::TTransport> transport;

@@ -1,0 +1,93 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="gen-cpp">
+      <UniqueIdentifier>{4d34654a-359c-4580-85b2-cde5247d4029}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="h">
+      <UniqueIdentifier>{268eb2f9-7721-45e3-89ac-7e48a2b219c5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="cpp">
+      <UniqueIdentifier>{cc746fa9-c90c-4fc6-a634-187fe48766c1}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\thrift\gen-cpp\info_constants.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thrift\gen-cpp\info_types.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thrift\gen-cpp\netSDK_constants.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thrift\gen-cpp\netSDK_types.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thrift\gen-cpp\Notify.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thrift\gen-cpp\Sdk.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thrift\gen-cpp\types_constants.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\thrift\gen-cpp\types_types.cpp">
+      <Filter>gen-cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\client.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\main.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\server.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\server_device.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\server_media.cpp">
+      <Filter>cpp</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\src\client.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\server.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\server_device.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\src\server_media.h">
+      <Filter>h</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\info_constants.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\info_types.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\netSDK_constants.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\netSDK_types.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\Notify.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\Sdk.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\types_constants.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\thrift\gen-cpp\types_types.h">
+      <Filter>gen-cpp</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>
