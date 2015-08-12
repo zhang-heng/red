@@ -3,13 +3,17 @@
   (:require [clojure.tools.logging :as log]
             [red.device.client.source :refer [get-all-sources get-source!]]
             [red.utils :refer [now]])
-  (:import [device.netsdk Sdk$Iface Notify$Iface]
+  (:import [red.device.client.source Source]
+           [device.netsdk Sdk$Iface Notify$Iface]
+           [device.types StreamType ConnectType]
+           [device.info LoginAccount PlayInfo]
            [clojure.lang Ref PersistentArrayMap Fn]
            [org.joda.time DateTime]
            [java.nio ByteBuffer]
            [java.util UUID]))
 
 (defrecord Client [^UUID     session
+                   ^Source   source
                    ^Ref      device->flow
                    ^Ref      client->flow
                    ^Fn       write-handle
@@ -20,7 +24,8 @@
     (write-handle (ByteBuffer/allocate 0))
     (close-handle))
 
-  (MediaStarted [this _ _])
+  (MediaStarted [this _ _]
+    (log/info "media start: " this))
 
   (MediaFinish [this _ _]
     (write-handle (ByteBuffer/allocate 0))
@@ -34,74 +39,64 @@
       (write-handle header)
       (write-handle payload)))
   Object
-  (toString [_]))
+  (toString [_] ))
+
+(defonce stream-types* {:main StreamType/Main
+                        :sub  StreamType/Sub
+                        :sub1 StreamType/Sub
+                        :sub2 StreamType/Sub
+                        :sub3 StreamType/Sub})
+
+(defn- create-client
+  "生成与客户端的相关数据"
+  [{:keys [clients] :as source}
+   manufacturer account session-type info
+   device->client device->close
+   session-id]
+  (dosync
+   (let [client (Client. session-id
+                         source
+                         (ref 0)
+                         (ref 0)
+                         device->client
+                         device->close
+                         (now))]
+     (alter clients conj client)
+     client)))
+
+(defn get-all-clients []
+  (dosync
+   (reduce (fn [c {clients :clients}]
+             (clojure.set/union c (vals (deref clients))))
+           #{} (get-all-sources))))
+
+(defn get-client-by-id [^UUID id]
+  (dosync
+   (some #(= id
+             (get-in [:session-id] (deref %)))
+         (get-all-clients))))
+
+(defn get-client-by-id+ [^UUID id]
+  (dosync
+   (-> (get-client-by-id id))))
 
 
+(defn dissoc-client! [^Client client])
 
-;; (defrecord Client [^PersistentArrayMap subscribe      ;;请求描述
-;;                    ^Ref                device->flow   ;;来自设备流量统计
-;;                    ^Ref                client->flow   ;;发送至设备的流量统计
-;;                    ^clojure.lang.Fn    device->client ;;设备发往客户端的操作
-;;                    ^clojure.lang.Fn    device->close  ;;来自设备关闭通知
-;;                    ^clojure.lang.Fn    client->dev
-;;                    ^clojure.lang.Fn    client->close
-;;                    ^DateTime           start-time])
-
-;; (defn- mk-client->device
-;;   [client->device client->flow]
-;;   (fn [^ByteBuffer buffer]
-;;     (dosync (alter client->flow + (.limit buffer))
-;;             (client->device  buffer))))
-
-;; (defn- mk-client->close
-;;   [client->close source]
-;;   (fn []
-;;     (dosync
-;;      (client->close))))
-
-;; (defn- mk-device->client
-;;   [device->client device->flow]
-;;   (fn [^ByteBuffer buffer]
-;;     (dosync
-;;      (alter device->flow + (.limit buffer))
-;;      (device->client buffer))))
-
-;; (defn- mk-device-close
-;;   [device->close]
-;;   (fn []
-;;     (dosync
-;;      device->close)))
-
-;; (defn- mk-client
-;;   "生成与客户端的相关数据"
-;;   [{:keys [clients client->device client->close] :as source}
-;;    subscribe device->client device->close]
-;;   (dosync
-;;    (let [device->flow (ref 0)
-;;          client->flow (ref 0)
-;;          client (Client. subscribe device->flow client->flow
-;;                          (mk-device->client device->client device->flow)
-;;                          (mk-device-close device->close)
-;;                          (mk-client->device client->device client->flow )
-;;                          (mk-client->close client->close source )
-;;                          (now))]
-;;      (alter clients conj client)
-;;      client)))
-
-;; (defn get-all-clients []
-;;   (dosync
-;;    (reduce (fn [c {clients :clients}] (clojure.set/union c))
-;;            #{} (get-all-sources))))
-
-;; (defn get-client-by-id [^UUID id]
-;;   (dosync
-;;    (some #(= id
-;;              (get-in [:subscribe :session-id] (deref %)))
-;;          (get-all-clients))))
+(defn client->data [^Client client byte-buffer])
 
 (defn open-session!
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"
-  [subscribe write-handle close-handle]
+  [{:keys [manufacturer addr port user password
+           session-type channel-id stream-type start-time end-time
+           session-id]}
+   write-handle close-handle]
   (dosync
-   (-> (get-source! subscribe)
-       (mk-client subscribe write-handle close-handle))))
+   (let [stream-type (get stream-types* stream-type StreamType/Main)
+         connect-type ConnectType/Tcp
+         account (LoginAccount. addr port user password)
+         info    (PlayInfo. channel-id stream-type connect-type start-time end-time)]
+     (-> (get-source! manufacturer account session-type info)
+         (create-client manufacturer account session-type info
+                        write-handle close-handle
+                        session-id)))))

@@ -1,9 +1,9 @@
 (ns red.media-server.core
   (:require [clojure.tools.logging :as log]
             [red.media-server.asynchronous-server :refer [run-server read-from write-to set-disconnect-notify
-                                                    get-socket-info ]]
+                                                          get-socket-info ]]
             [red.media-server.restful :refer [get-and-remove-subscribe]]
-            [red.device.client.core :refer [open-session!]]
+            [red.device.client.core :refer [open-session! dissoc-client! client->data]]
             [red.utils :refer [string->uuid buffer->string]])
   (:import [java.nio ByteBuffer charset.Charset]
            [java.nio.channels AsynchronousSocketChannel]
@@ -29,10 +29,13 @@
          string-uuid (buffer->string session-buffer)]
      (if-let [subscribe (-> (string->uuid string-uuid)
                             (get-and-remove-subscribe))]
-       (let [{:keys [disconnector reader]} (open-session! subscribe (mk-send-handler connection) (mk-close-handler connection))
-             {:keys [user]}                (deref connection)]
-         (set-disconnect-notify connection disconnector)
-         (ref-set user reader)
+       (let [client (open-session! subscribe (mk-send-handler connection) (mk-close-handler connection))
+             {:keys [user]} (deref connection)]
+         ;;设置关闭操作
+         (set-disconnect-notify connection #(dissoc-client! client))
+         ;;将client 设为 socket 私有变量
+         (ref-set user client)
+         ;;接收头信息
          (read-from connection 4 header-handler))
        (do (log/infof "received %s:%d a uuid not invalid: %s, close!"
                       (:remote-addr socket-info) (:remote-port socket-info) string-uuid)
@@ -41,12 +44,11 @@
 (defn- payload-handler
   "接收到负载数据的处理"
   [connection payload-buffer]
-  (let [{:keys [user closer]} (deref connection)
+  (let [{:keys [^Client user closer]} (deref connection)
         {:keys [remote-addr remote-port]} (-> connection deref :socket get-socket-info)]
-    (if (fn? @user)
-      (@user payload-buffer)
-      (do (log/errorf "receive frome %s:%s, but none of handle fun, close!")
-          (closer)))
+    (client->data user payload-buffer)
+    (do (log/errorf "receive frome %s:%s, but none of handle fun, close!")
+        (closer))
     (read-from connection 4 header-handler)))
 
 (defn- header-handler

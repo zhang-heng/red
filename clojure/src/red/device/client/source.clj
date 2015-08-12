@@ -42,7 +42,6 @@
     (.StopPlayBack device id _))
 
   Notify$Iface
-
   (Connected [this _]
     (dosync
      (case source-type

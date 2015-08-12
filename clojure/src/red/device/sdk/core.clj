@@ -22,12 +22,6 @@
             [device.info   LoginAccount MediaPackage])
  (:clients  [device.netsdk Sdk]))
 
-(defonce stream-types* {:main StreamType/Main
-                        :sub  StreamType/Sub
-                        :sub1 StreamType/Sub
-                        :sub2 StreamType/Sub
-                        :sub3 StreamType/Sub})
-
 (defmacro request [port method & args]
   `(if (pos? ~port)
      (with-open [c# (thrift/connect! Sdk ["localhost" ~port])]

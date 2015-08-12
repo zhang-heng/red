@@ -107,9 +107,8 @@
     (failed [e byte-buffer]
       (log/info "tcp_server write failed: " e))))
 
-
 (defn set-disconnect-notify
-  "订阅掉线通知"
+  "订阅断线通知"
   [^Ref  connection
    ^Fn   disconnect-notify]
   (dosync
