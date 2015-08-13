@@ -44,6 +44,7 @@ void Server::ServerStarted(){
 	try{
 		client = new Client(_client_port);
 		client->send_lanuched(_listen_port);
+		client->send_connected("abc");
 	}
 	catch (std::exception e){
 		std::cerr << e.what() << ", can not connect back!" << std::endl;

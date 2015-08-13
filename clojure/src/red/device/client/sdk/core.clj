@@ -9,6 +9,7 @@
            [red.device.client.sdk.launcher Proc]
            [device.netsdk Sdk$Iface Notify$Iface]
            [clojure.lang Ref PersistentArrayMap Fn]
+           [java.nio ByteBuffer]
            [java.util UUID]
            [org.joda.time DateTime]))
 
@@ -125,8 +126,8 @@
     (dosync
      (log/infof "process lanuched: port=%d \n%s" port this)
      (deliver thrift-sdk port)
-     (doseq [device (deref devices)]
-       (.Lanuched ^Notify$Iface device port))))
+     (doseq [^Notify$Iface device (deref devices)]
+       (.Lanuched device port))))
 
   (Connected [this device-id]
     (dosync

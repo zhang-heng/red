@@ -15,7 +15,7 @@
   (sub-remove [this source])
   (close [this]))
 
-(deftype Device [^String         id
+(deftype Device [^String       id
                  ^Executor     executor
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号

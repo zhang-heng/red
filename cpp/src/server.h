@@ -35,72 +35,79 @@ class Server : virtual public device::netsdk::SdkIf {
 
   bool xGetVersion() override {
 	  // Your implementation goes here
-	  printf("xGetVersion\n");
+	  std::cout<<"b"<<std::endl;
 	  return true;
   }
 
   bool xGetStatus() override {
 	  // Your implementation goes here
-	  printf("xGetStatus\n");
-	  return true;
+	  std::cout<<"b"<<std::endl;
+	  return false;
   }
 
   bool xUpdata() override {
 	  // Your implementation goes here
-	  printf("xUpdata\n");
+	  std::cout<<"b"<<std::endl;
 	  return true;
   }
 
   bool xRestart() override {
 	  // Your implementation goes here
-	  printf("xRestart\n");
+	  std::cout<<"b"<<std::endl;
 	  return true;
   }
 
   bool xSetTime() override {
 	  // Your implementation goes here
-	  printf("xSetTime\n");
+	  std::cout<<"b"<<std::endl;
 	  return true;
   }
 
   bool xResetPassword() override {
 	  // Your implementation goes here
-	  printf("xResetPassword\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   bool xPTZControl() override {
 	  // Your implementation goes here
-	  printf("xPTZControl\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   bool xSerialStart() override {
 	  // Your implementation goes here
-	  printf("xSerialStart\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   bool xSerialStop() override {
 	  // Your implementation goes here
-	  printf("xSerialStop\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   void xSerialSend() override {
 	  // Your implementation goes here
-	  printf("xSerialSend\n");
+	  std::cout<<"b"<<std::endl;
   }
 
   bool xDownloadRecordByFile() override {
 	  // Your implementation goes here
-	  printf("xDownloadRecordByFile\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   bool xDownloadRecordByTime() override {
 	  // Your implementation goes here
-	  printf("xDownloadRecordByTime\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   bool xStopDownload() override {
 	  // Your implementation goes here
-	  printf("xStopDownload\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   bool StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) override;
@@ -109,52 +116,54 @@ class Server : virtual public device::netsdk::SdkIf {
 
   bool StartVoiceTalk(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("StartVoiceTalk\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   bool StopVoiceTalk(const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("StopVoiceTalk\n"); return true;
+	  std::cout<<"b"<<std::endl;
+	  return true;
   }
 
   void SendVoiceData(const std::string& device_id, const std::string& media_id, const std::string& buffer) {
 	  // Your implementation goes here
-	  printf("SendVoiceData\n");
+	  std::cout<<"b"<<std::endl;
   }
 
   bool PlayBackByTime(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("PlayBackByTime\n"); return true;
+	  std::cout<<"b"<<std::endl; return true;
   }
 
   bool StopPlayBack(const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("StopPlayBack\n"); return true;
+	  std::cout<<"b"<<std::endl;return true;
   }
 
   bool PlayBackNormalSpeed(const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("PlayBackNormalSpeed\n"); return true;
+	  std::cout<<"b"<<std::endl;return true;
   }
 
   bool PlayBackPause(const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("PlayBackPause\n"); return true;
+	  std::cout<<"b"<<std::endl;return true;
   }
 
   bool PlayBackFast(const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("PlayBackFast\n"); return true;
+	  std::cout<<"b"<<std::endl; return true;
   }
 
   bool PlayBackSlow(const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("PlayBackSlow\n"); return true;
+	  std::cout<<"b"<<std::endl; return true;
   }
 
   bool PlayBackSeek(const std::string& media_id, const std::string& device_id) {
 	  // Your implementation goes here
-	  printf("PlayBackSeek\n"); return true;
+	  std::cout<<"b"<<std::endl;return true;
   }
 
 

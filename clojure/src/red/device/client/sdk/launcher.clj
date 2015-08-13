@@ -1,5 +1,5 @@
 (ns red.device.client.sdk.launcher
-  (:require  [clojure.tools.logging :as log])
+  (:require [clojure.tools.logging :as log])
   (:import [clojure.lang Fn Ref PersistentQueue]
            [java.io InputStreamReader BufferedReader File]))
 
@@ -9,10 +9,23 @@
     (.. (environment)
         (put "LD_LIBRARY_PATH" path))))
 
-(defn- get-proc-pid [^Process process]
+(defn- get-win32-pid [^Process process]
+  (when-let [f (.. process getClass (getDeclaredField "handle"))]
+    (.setAccessible f true)
+    (.getLong f process)))
+
+(defn- get-*nix-pid [^Process process]
   (when-let [f (.. process getClass (getDeclaredField "pid"))]
     (.setAccessible f true)
-    (long (.get f process))))
+    (.getInt f process)))
+
+(defn- get-proc-pid [^Process process]
+  (let [os (.. process getClass getName)]
+    (try (case os
+           "java.lang.Win32Process" (get-win32-pid process)
+           "java.lang.ProcessImpl" (get-win32-pid process)
+           "java.lang.UNIXProcess" (get-*nix-pid process))
+         (catch Exception _ -1))))
 
 (defprotocol IProc
   (get-cpu [this])
@@ -63,4 +76,4 @@
                   true))
          (crasher))
        (Proc. proc pid (ref PersistentQueue/EMPTY) (ref PersistentQueue/EMPTY)))
-     (catch Exception e (prn e)))))
+     (catch Exception e (log/error e)))))

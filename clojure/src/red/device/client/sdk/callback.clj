@@ -1,5 +1,7 @@
 (ns red.device.client.sdk.callback
   (:require [thrift-clj.core :as thrift]
+            [clojure.tools.logging :as log]
+            [red.utils :refer [stack-trace]]
             [thrift-clj.transports :as t])
   (:import [device.netsdk Notify$Iface]
            [org.apache.thrift.server TThreadPoolServer TThreadPoolServer$Args]
@@ -29,14 +31,18 @@
     (try (thrift/stop! server)
          (catch Exception e (prn e)))))
 
+(defn try-do [f]
+  (try (f)
+       (catch Exception e (log/warnf "executor notify handle error: \n%s" (stack-trace e)))))
+
 (defn start-thrift! [^Notify$Iface notifier]
   (let [handler (thrift/service Notify
-                                (Lanuched    [port] (.Lanuched notifier port))
-                                (Connected   [device-id] (.Connected notifier device-id))
-                                (Offline     [device-id] (.Offline notifier device-id))
-                                (MediaFinish [device-id media-id] (.MediaFinish notifier device-id media-id))
-                                (MediaData   [device-id media-id data] (.MediaData notifier device-id media-id data)))
-        {:keys [server port]}  (multi-threaded-server handler 0
+                                (Lanuched    [port] (try-do #(.Lanuched notifier port)))
+                                (Connected   [device-id] (try-do #(.Connected notifier device-id)))
+                                (Offline     [device-id] (try-do #(.Offline notifier device-id)))
+                                (MediaFinish [device-id media-id] (try-do #(.MediaFinish notifier device-id media-id)))
+                                (MediaData   [device-id media-id data] (try-do #(.MediaData notifier device-id media-id data))))
+        {:keys [server port]}  (multi-threaded-server handler 1234
                                                       :bind "localhost"
                                                       :protocol :binary)]
     (io! (thrift/serve! server))
