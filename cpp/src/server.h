@@ -33,11 +33,7 @@ class Server : virtual public device::netsdk::SdkIf {
 
   bool Logout(const std::string& device_id) override;
 
-  bool xGetVersion() override {
-	  // Your implementation goes here
-	  std::cout<<"b"<<std::endl;
-	  return true;
-  }
+  void GetVersion(std::string& _return) override;
 
   bool xGetStatus() override {
 	  // Your implementation goes here

@@ -8,7 +8,7 @@
   <PropertyGroup>
     <IncludePath>../../thrift/gen-cpp;$(third-part-path)/thrift;$(boost-path);$(IncludePath)</IncludePath>
     <IntDir>$(Configuration)\$(TargetName)\</IntDir>
-    <LibraryPath>../../target/;$(third-part-path)/thrift/;$(boost-path)/stage/lib;$(LibraryPath)</LibraryPath>
+    <LibraryPath>../../target/sdk/;$(third-part-path)/thrift/;$(boost-path)/stage/lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <Link>

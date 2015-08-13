@@ -8,6 +8,7 @@
 
 #if (defined(WIN32) || defined(WIN64))
 #pragma comment(lib,"HCNetSDK.lib")
+#pragma warning(disable:4800)
 #endif
 
 using namespace device;
@@ -25,6 +26,10 @@ bool Server::InitSDK() {
 }
 
 bool Server::CleanSDK() { return true;}
+
+void Server::GetVersion(std::string& _return){
+	_return = "";
+}
 
 bool Device::Login(){return true;}
 bool Device::Logout(){return true;}

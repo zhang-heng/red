@@ -18,7 +18,7 @@ bool Login  (1:info.LoginAccount account, 2:string device_id), //登入
 bool Logout (1:string device_id),           //登出
 
 //**********维护**********/
-bool xGetVersion(),    //获取版本信息
+string GetVersion(),    //获取版本信息
 bool xGetStatus(),     //获取设备状态
 bool xUpdata(),        //远程升级
 bool xRestart(),       //重启

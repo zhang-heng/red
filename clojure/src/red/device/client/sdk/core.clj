@@ -30,13 +30,6 @@
          (~method# c# ~@args))
        (log/error "sdk thrift port not found"))))
 
-(defn- login
-  "设备登陆
-  1.发生在执行程序建立之时,资源未必准备好,当资源启动成功,将未登录设备全数加载;
-  2.在执行程序正常运行时,做直接请求"
-  [{:keys [proc-thrift]} {:keys [account]}]
-  (request (deref proc-thrift 0 nil) Login account))
-
 (defn get-all-executors []
   (dosync
    (deref executors)))
@@ -94,6 +87,9 @@
       (log/log header level nil msg)))
 
   Sdk$Iface
+  (GetVersion [this]
+    (log/infof "%s version=%s" manufacturer (request @thrift-sdk GetVersion)))
+
   (InitSDK [this]
     (request @thrift-sdk InitSDK))
 
@@ -101,11 +97,7 @@
     (request @thrift-sdk CleanSDK))
 
   (Login [this account device-id]
-    (some?
-     (dosync
-      (if-let [device (get (deref devices) device-id)]
-        (login this device)
-        (log/error "device not found")))))
+    (some? (request @thrift-sdk Login account device-id)))
 
   (Logout [this device-id]
     (some? (request @thrift-sdk Logout device-id)))
@@ -133,6 +125,7 @@
      (log/infof "process lanuched: port=%d \n%s" port this)
      (deliver thrift-sdk port)
      (.InitSDK this)
+     (.GetVersion this)
      (doseq [^Notify$Iface device (deref devices)]
        (.Lanuched device port))))
 
@@ -243,8 +236,6 @@
   (if-let [executor (can-exe-multiplex?* manufacturer)]
     executor
     (create-process*thrift manufacturer)))
-
-(def ^:private executors (ref #{}))
 
 (defn clean-executors []
   (dosync

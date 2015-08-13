@@ -26,8 +26,8 @@
                  :remote-addr "127.0.0.1"
                  :remote-port 456})
 
-;;(open-session! connection test-session test-write-handle test-close-handle)
-;;(log/info (str "exes: \n" (clojure.string/join "\n" (map str (get-all-executors)))))
+(open-session! connection test-session test-write-handle test-close-handle)
+(clean-executors)
 
+;;(log/info (str "exes: \n" (clojure.string/join "\n" (map str (get-all-executors)))))
 ;;(close-session! (first (get-all-clients)))
-;;(clean-executors)
