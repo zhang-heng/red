@@ -44,6 +44,7 @@
 
   (sub-remove [this client]
     (dosync
+     (log/info "remove client form source")
      (empty? (alter clients disj client)
              (case source-type
                :realplay  (.StopRealPlay  this nil nil)
@@ -53,6 +54,7 @@
 
   (close [this]
     (dosync
+     (log/info "close source")
      (doseq [^Notify$Iface client (deref clients)]
        (alter clients disj client)
        (.Offline client nil))

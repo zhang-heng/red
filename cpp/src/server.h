@@ -21,6 +21,10 @@ class Server : virtual public device::netsdk::SdkIf {
   void ServerStarted();
   ~Server();
 
+  void TestBytes(const std::string& buffer) {
+    return;
+  }
+
   bool InitSDK() override;
 
   bool CleanSDK() override;

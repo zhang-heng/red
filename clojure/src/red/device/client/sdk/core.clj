@@ -23,11 +23,11 @@
  (:clients  [device.netsdk Sdk]))
 
 (defmacro request [port method & args]
-  `(if (pos? ~port)
-     (with-open [c# (thrift/connect! Sdk ["localhost" ~port])]
-       (let [method# (symbol "Sdk" (str ~method))]
-         (method# c# ~@args)))
-     (log/error "sdk thrift port not found")))
+  (let [method# (symbol "Sdk" (str method))]
+    `(if (pos? ~port)
+       (with-open [c# (thrift/connect! Sdk ["localhost" ~port] :protocol :binary)]
+         (~method# c# ~@args))
+       (log/error "sdk thrift port not found"))))
 
 (defn- login
   "设备登陆
@@ -62,11 +62,13 @@
 
   (sub-remove [this device]
     (dosync
+     (log/info "remove device form executor")
      (empty? (alter devices disj device)
              (.close this))))
 
   (close [this]
     (dosync
+     (log/info "close executor")
      ;;通知每个设备掉线
      (doseq [^Notify$Iface device (deref devices)]
        (alter devices disj device)
@@ -122,9 +124,9 @@
   (Lanuched [this port]
     (dosync
      (log/infof "process lanuched: port=%d \n%s" port this)
-     (deliver thrift-sdk)
-     (doseq [pdevice (deref devices)]
-       (.Lanuched ^Notify$Iface (val pdevice) port))))
+     (deliver thrift-sdk port)
+     (doseq [device (deref devices)]
+       (.Lanuched ^Notify$Iface device port))))
 
   (Connected [this device-id]
     (dosync

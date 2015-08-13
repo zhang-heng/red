@@ -30,11 +30,13 @@
 
   (sub-remove [this source]
     (dosync
+     (log/info "remove source form device")
      (empty? (alter sources disj source)
              (.close this))))
 
   (close [this]
     (dosync
+     (log/info "close device")
      (doseq [^Notify$Iface source (deref sources)]
        (alter sources disj source)
        (.Offline source nil))

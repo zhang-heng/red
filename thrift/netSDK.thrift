@@ -8,7 +8,7 @@ const string version = "1.0.0"
 
 //请求操作
 service Sdk{
-
+oneway void TestBytes(1:binary bytes),
 //********初始化库*********/
 bool InitSDK(),  //初始化sdk
 bool CleanSDK(), //释放SDK,退出

@@ -38,6 +38,6 @@
                                 (MediaData   [device-id media-id data] (.MediaData notifier device-id media-id data)))
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
-                                                      :protocol :compact)]
+                                                      :protocol :binary)]
     (io! (thrift/serve! server))
     (Thrift. server port)))
