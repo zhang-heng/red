@@ -30,7 +30,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(third-part-path)/dahua/;$(IncludePath)</IncludePath>
-    <OutDir>../../target/dahua/</OutDir>
+    <OutDir>../../target/sdk/dahua/</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

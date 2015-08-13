@@ -30,7 +30,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(third-part-path)/hik/;../../thrift/gen-cpp;$(third-part-path)/thrift;$(IncludePath)</IncludePath>
-    <OutDir>../../target/hik/</OutDir>
+    <OutDir>../../target/sdk/hik/</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
