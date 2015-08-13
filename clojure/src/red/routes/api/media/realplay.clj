@@ -2,8 +2,8 @@
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]
             [ring.util.response :refer [response status redirect not-found]]
             [red.media-server.restful :refer [subscribe! get-session-in-subscribes get-and-remove-subscribe]]
-            [red.device.sdk.request  :refer [*stream-types*]]
-            [red.device.sdk.core :refer [have-exe?]]
+            [red.device.client.sdk.core :refer [have-exe?]]
+            [red.device.client.core :refer [stream-types*]]
             [red.utils :refer [correspond-args ?->long try-do is-ip-addr? string->uuid]]
             [environ.core :refer [env]]
             [clojure.tools.logging :as log]))
@@ -17,7 +17,7 @@
              (is-ip-addr? addr)                              "the addr not valid"
              (and port (< 0 port) (< port 65535))            "The port must be valid"
              channel-id                                      "the channel-id must be a number"
-             (some #(= % stream-type) (keys *stream-types*)) "the stream-type not found"]
+             (some #(= % stream-type) (keys stream-types*)) "the stream-type not found"]
 
             (log/info "request a new realplay session:" manufacturer addr port user password channel-id stream-type)
             (response {:session-id (subscribe! (assoc (correspond-args manufacturer addr port user password channel-id stream-type)

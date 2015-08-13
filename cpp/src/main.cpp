@@ -18,6 +18,7 @@ bool isNum(std::string str){
 }
 
 int main(int argc, char* argv[]){
+  std::cout<< "sdk proc working on!" <<std::endl;
   if(argc == 2){
     std::string port_str(argv[1]);
     int port = 0;

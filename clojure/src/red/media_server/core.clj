@@ -3,7 +3,7 @@
             [red.media-server.asynchronous-server :refer [run-server read-from write-to set-disconnect-notify
                                                           get-socket-info ]]
             [red.media-server.restful :refer [get-and-remove-subscribe]]
-            [red.device.client.core :refer [open-session! dissoc-client! client->data]]
+            [red.device.client.core :refer [open-session! close-session! client->data]]
             [red.utils :refer [string->uuid buffer->string]])
   (:import [java.nio ByteBuffer charset.Charset]
            [java.nio.channels AsynchronousSocketChannel]
@@ -33,7 +33,7 @@
                                    subscribe (mk-send-handler connection) (mk-close-handler connection))
              {:keys [user]} (deref connection)]
          ;;设置关闭操作
-         (set-disconnect-notify connection #(dissoc-client! client))
+         (set-disconnect-notify connection #(close-session! client))
          ;;将client 设为 socket 私有变量
          (ref-set user client)
          ;;接收头信息

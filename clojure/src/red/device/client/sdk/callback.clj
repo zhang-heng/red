@@ -1,4 +1,4 @@
-(ns red.device.sdk.callback
+(ns red.device.client.sdk.callback
   (:require [thrift-clj.core :as thrift]
             [thrift-clj.transports :as t])
   (:import [device.netsdk Notify$Iface]

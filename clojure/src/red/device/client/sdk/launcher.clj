@@ -1,4 +1,5 @@
-(ns red.device.sdk.launcher
+(ns red.device.client.sdk.launcher
+  (:require  [clojure.tools.logging :as log])
   (:import [clojure.lang Fn Ref PersistentQueue]
            [java.io InputStreamReader BufferedReader File]))
 
@@ -14,7 +15,6 @@
     (long (.get f process))))
 
 (defprotocol IProc
-  (get-pid [this])
   (get-cpu [this])
   (get-mem [this])
   (close [this]))
@@ -24,7 +24,6 @@
                  ^Ref     mem
                  ^Ref     cpu]
   IProc
-  (get-pid [this] pid)
   (get-cpu [this] )
   (get-mem [this])
   (close [this]
@@ -47,6 +46,8 @@
 (defn launch!
   "启动进程"
   [printer crasher path working-path & args]
+  (log/debugf "launch: \n path=%s \n working-path=%s \n args=%s"
+              path working-path args)
   (io!
    (try
      (let [command       (->> (map str args)

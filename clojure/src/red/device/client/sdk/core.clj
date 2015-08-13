@@ -1,12 +1,12 @@
-(ns red.device.sdk.core
+(ns red.device.client.sdk.core
   (:require [thrift-clj.core :as thrift]
             [clojure.tools.logging :as log]
             [red.utils :refer [now stack-trace]]
             [environ.core :refer [env]]
-            [red.device.sdk.callback :refer [start-thrift!]]
-            [red.device.sdk.launcher :refer [launch! check-proc-status]])
-  (:import [red.device.sdk.callback Thrift]
-           [red.device.sdk.launcher Proc]
+            [red.device.client.sdk.callback :refer [start-thrift!]]
+            [red.device.client.sdk.launcher :refer [launch! check-proc-status]])
+  (:import [red.device.client.sdk.callback Thrift]
+           [red.device.client.sdk.launcher Proc]
            [device.netsdk Sdk$Iface Notify$Iface]
            [clojure.lang Ref PersistentArrayMap Fn]
            [java.util UUID]
@@ -42,8 +42,9 @@
 
 (defprotocol IExecutor
   (can-multiplex? [this manufacturer])
-  (remove [this device])
-  (close [this]))
+  (sub-remove [this device])
+  (close [this])
+  (exe-log [this msg]))
 
 (deftype Executor [^String   id           ;;执行程序唯一标识,方便检索
                    ^String   manufacturer ;;厂商
@@ -59,7 +60,7 @@
     (and (= manufacturer manufacturer*)
          (< (count (deref devices)) _MUX)))
 
-  (remove [this device]
+  (sub-remove [this device]
     (dosync
      (empty? (alter devices disj device)
              (.close this))))
@@ -68,17 +69,26 @@
     (dosync
      ;;通知每个设备掉线
      (doseq [^Notify$Iface device (deref devices)]
+       (alter devices disj device)
        (.Offline device nil))
      ;;从表中剔除此对象
-     (alter executors dissoc this)
+     (alter executors disj this)
      ;;释放资源
      (future
-       (let [^Proc   proc   (deref proc 100)
-             ^Thrift thrift (deref thrift-notify 100)]
-         ;;关闭进程对象
-         (.close proc)
-         ;;关闭thrift本地监听
-         (.close thrift)))))
+       (try
+         (let [^Proc   proc   (deref proc 100 nil)
+               ^Thrift thrift (deref thrift-notify 100 nil)]
+           ;;关闭进程对象
+           (.close proc)
+           ;;关闭thrift本地监听
+           (.close thrift))
+         (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e)))))))
+
+  (exe-log [this msg]
+    (let [level :debug
+          pid   (:pid (deref proc))
+          header (format "%s<%d>" manufacturer pid)]
+      (log/log header level nil msg)))
 
   Sdk$Iface
   (Login [this account device-id]
@@ -111,6 +121,7 @@
   Notify$Iface
   (Lanuched [this port]
     (dosync
+     (log/infof "process lanuched: port=%d \n%s" port this)
      (deliver thrift-sdk)
      (doseq [pdevice (deref devices)]
        (.Lanuched ^Notify$Iface (val pdevice) port))))
@@ -167,19 +178,19 @@
 
 (defn- mk-crashed [^Executor executor]
   (fn []
-    (log/warn executor "crashed. close all in exe resources")
-    (.close executor)))
+    (exe-log executor "crashed. close all in exe resources")
+    (exe-log executor (str executor))
+    (try (.close executor)
+         (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e))))))
 
 (defn- mk-out-printer [^Executor executor]
-  (fn [string]
-    (let [{:keys [manufacturer proc]} executor
-          pid (.get-pid ^Proc @proc)]
-      (log/debug "<" manufacturer ", " pid ">: " string))))
+  (fn [msg]
+    (exe-log executor msg)))
 
 (defn- create-process*thrift
   [manufacturer]
   (dosync
-   (log/info "create-process*thrift")
+   (log/info "create executor:" manufacturer)
    (let [executor-id   (str (UUID/randomUUID))
          devices       (ref #{})
          proc          (promise)
@@ -196,14 +207,14 @@
        (try
          (do ;;;启动资源
            ;;启动本地thrift监听
-           (log/info "start waitting thrift connection from sdk process.")
+           (log/debug "start waitting thrift connection from sdk process.")
            (deliver thrift-notify (start-thrift! executor))
-           (log/info "launch process ")
+           (log/debug "launch process ")
            ;;启动sdk进程
-           (deliver proc (launch! (mk-crashed executor) (mk-out-printer executor)
+           (deliver proc (launch! (mk-out-printer executor) (mk-crashed executor)
                                   exe-path working-path
                                   (.get-port ^Thrift @thrift-notify))))
-         (catch Exception e (log/error "start local resource error: " (stack-trace e)))))
+         (catch Exception e (log/errorf "start local resource error: \n%s" (stack-trace e)))))
      executor)))
 
 (defn have-exe?
@@ -222,3 +233,11 @@
   (if-let [executor (can-exe-multiplex?* manufacturer)]
     executor
     (create-process*thrift manufacturer)))
+
+(def ^:private executors (ref #{}))
+
+(defn clean-executors []
+  (dosync
+   (doseq [^Executor executor (deref executors)]
+     (.close executor))
+   (ref-set executors #{})))

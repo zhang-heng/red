@@ -1,8 +1,8 @@
 (ns red.device.client.device
   (:require [clojure.tools.logging :as log]
-            [red.device.sdk.core :refer [create-exe! get-all-executors add-device]]
+            [red.device.client.sdk.core :refer [create-exe! get-all-executors add-device]]
             [red.utils :refer [now]])
-  (:import [red.device.sdk.core Executor ]
+  (:import [red.device.client.sdk.core Executor ]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.info LoginAccount]
            [clojure.lang Ref PersistentArrayMap]
@@ -12,7 +12,7 @@
 
 (defprotocol IDevice
   (can-multiplex? [this manufacturer account])
-  (remove [this source])
+  (sub-remove [this source])
   (close [this]))
 
 (deftype Device [^String         id
@@ -28,7 +28,7 @@
     (and (= manufacturer* manufacturer)
          (= account*      account)))
 
-  (remove [this source]
+  (sub-remove [this source]
     (dosync
      (empty? (alter sources disj source)
              (.close this))))
@@ -36,8 +36,9 @@
   (close [this]
     (dosync
      (doseq [^Notify$Iface source (deref sources)]
+       (alter sources disj source)
        (.Offline source nil))
-     (.remove executor this)))
+     (.sub-remove executor this)))
 
   Sdk$Iface
   (Login [this account _]
@@ -76,28 +77,32 @@
   (Connected [this _]
     (dosync
      (doseq [source (deref sources)]
-       (.Connected ^Notify$Iface (val source) _))))
+       (.Connected ^Notify$Iface source _))))
 
   (Offline [this _]
     (dosync
      (doseq [source (deref sources)]
-       (.Offline ^Notify$Iface (val source) _))))
+       (alter sources disj source)
+       (.Offline ^Notify$Iface source _))))
 
   (MediaStarted [this source-id _]
     (dosync
-     (when-let [source (get (deref sources) source-id)]
-       (.MediaStarted ^Notify$Iface source source-id _))))
+     ;; (when-let [source (get (deref sources) source-id)]
+     ;;   (.MediaStarted ^Notify$Iface source source-id _))
+     ))
 
   (MediaFinish [this source-id _]
     (dosync
-     (when-let [source (get (deref sources) source-id)]
-       (.MediaFinish ^Notify$Iface source _ source-id))))
+     ;; (when-let [source (get (deref sources) source-id)]
+     ;;   (.MediaFinish ^Notify$Iface source _ source-id))
+     ))
 
   (MediaData [this {^ByteBuffer payload :payload :as data} source-id _]
     (dosync
      (alter device->flow + (.limit payload))
-     (when-let [source (get (deref sources) source-id)]
-       (.MediaData ^Notify$Iface source data source-id _))))
+     ;; (when-let [source (get (deref sources) source-id)]
+     ;;   (.MediaData ^Notify$Iface source data source-id _))
+     ))
 
   clojure.lang.IDeref
   (deref [_] sources)
@@ -114,7 +119,9 @@
 (defn- creat-device!
   [manufacturer ^LoginAccount account]
   (dosync
-   (log/info "creat-device")
+   (let [{:keys [addr port]} (bean account)]
+     (log/infof "create device: %s:%d" addr port))
+
    (let [id           (str (UUID/randomUUID))
          executor     (create-exe! manufacturer)
          device       (Device. id executor manufacturer account (ref #{}) (ref 0) (ref 0) (now))]

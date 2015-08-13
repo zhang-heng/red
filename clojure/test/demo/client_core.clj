@@ -1,6 +1,6 @@
 (ns demo.client-core
   (:require [clojure.tools.logging :as log]
-            [red.device.sdk.core :refer [get-all-executors]]
+            [red.device.client.sdk.core :refer [get-all-executors clean-executors]]
             [red.device.client.core :refer [open-session! close-session! get-all-clients]]
             [clojure.test :refer :all])
   (:import [java.util UUID]))
@@ -30,3 +30,4 @@
 ;;(log/info (str "exes: \n" (clojure.string/join "\n" (map str (get-all-executors)))))
 
 ;;(close-session! (first (get-all-clients)))
+;;(clean-executors)
