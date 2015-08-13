@@ -30,6 +30,8 @@ pom.xml.asc
 *.vcxproj.user
 *.lastbuildstate
 *.props
+*.unsuccessfulbuild
+*.opensdf
 
 gen-*
 
