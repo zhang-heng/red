@@ -40,10 +40,12 @@
   (dosync
    (deref executors)))
 
-(defprotocol IExecutorx
-  (can-multiplex? [this manufacturer]))
+(defprotocol IExecutor
+  (can-multiplex? [this manufacturer])
+  (remove [this device])
+  (close [this]))
 
-(deftype Executor [^UUID     id           ;;执行程序唯一标识,方便检索
+(deftype Executor [^String   id           ;;执行程序唯一标识,方便检索
                    ^String   manufacturer ;;厂商
                    ^Ref      devices ;;进程所管理的设备 (ref {id device ...})
                    ^Ref      device->flow ;;来自设备的流量统计
@@ -52,10 +54,31 @@
                    ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
                    ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                    ^DateTime start-time]
-  IExecutorx
+  IExecutor
   (can-multiplex? [this manufacturer*]
     (and (= manufacturer manufacturer*)
          (< (count (deref devices)) _MUX)))
+
+  (remove [this device]
+    (dosync
+     (empty? (alter devices disj device)
+             (.close this))))
+
+  (close [this]
+    (dosync
+     ;;通知每个设备掉线
+     (doseq [^Notify$Iface device (deref devices)]
+       (.Offline device nil))
+     ;;从表中剔除此对象
+     (alter executors dissoc this)
+     ;;释放资源
+     (future
+       (let [^Proc   proc   (deref proc 100)
+             ^Thrift thrift (deref thrift-notify 100)]
+         ;;关闭进程对象
+         (.close proc)
+         ;;关闭thrift本地监听
+         (.close thrift)))))
 
   Sdk$Iface
   (Login [this account device-id]
@@ -144,22 +167,8 @@
 
 (defn- mk-crashed [^Executor executor]
   (fn []
-    (log/warn executor "crashed")
-    (dosync
-     (let [{:keys [devices proc thrift-notify]} executor
-           ^Proc   proc          (deref proc 100)
-           ^Thrift thrift-notify (deref thrift-notify 100)]
-       ;;从表中剔除此对象
-       (alter executors dissoc executor)
-       (future
-         (do ;;释放资源
-           ;;关闭进程对象
-           (.close proc)
-           ;;关闭thrift本地监听
-           (.close thrift-notify)))
-       ;;通知所有设备
-       (doseq [{:keys [device->offline]} (deref devices)]
-         (device->offline))))))
+    (log/warn executor "crashed. close all in exe resources")
+    (.close executor)))
 
 (defn- mk-out-printer [^Executor executor]
   (fn [string]
@@ -171,7 +180,7 @@
   [manufacturer]
   (dosync
    (log/info "create-process*thrift")
-   (let [executor-id   (UUID/randomUUID)
+   (let [executor-id   (str (UUID/randomUUID))
          devices       (ref #{})
          proc          (promise)
          thrift-notify (promise)
@@ -213,10 +222,3 @@
   (if-let [executor (can-exe-multiplex?* manufacturer)]
     executor
     (create-process*thrift manufacturer)))
-
-(defn clean []
-  (dosync
-   (ref-set executors #{})))
-
-;; (clean)
-;; (create-exe! "dahua")

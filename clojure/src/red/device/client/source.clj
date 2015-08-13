@@ -12,9 +12,12 @@
            [org.joda.time DateTime]))
 
 (defprotocol ISource
-  (can-multiplex? [this manufacturer account source-type info]))
+  (can-multiplex? [this manufacturer account source-type info])
+  (client->device [this data])
+  (remove [this client])
+  (close [this]))
 
-(deftype Source [^UUID         id
+(deftype Source [^String       id
                  ^Device       device
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
@@ -33,14 +36,35 @@
          (= account account*)
          (= info info*)))
 
+  (client->device [this data]
+    (case source-type
+      :realplay  nil
+      :playback  nil
+      :voicetalk (.SendVoiceData this data nil nil)))
+
+  (remove [this client]
+    (case source-type
+      :realplay  (.StopRealPlay  this nil nil)
+      :playback  (.StopPlayBack  this nil nil)
+      :voicetalk (.StopVoiceTalk this nil nil))
+    (dosync
+     (empty? (alter clients disj client)
+             (.close this))))
+
+  (close [this]
+    (dosync
+     (doseq [^Notify$Iface client (deref clients)]
+       (.Offline client nil))
+     (.remove device this)))
+
   Sdk$Iface
-  (StartRealPlay [this info _ _]
+  (StartRealPlay [this _ _ _]
     (.StartRealPlay device info id _))
 
   (StopRealPlay [this _ _]
     (.StopRealPlay device id _))
 
-  (StartVoiceTalk [this info _ _]
+  (StartVoiceTalk [this _ _ _]
     (.StartVoiceTalk device info id _))
 
   (StopVoiceTalk [this _ _]
@@ -49,7 +73,7 @@
   (SendVoiceData [this data _ _]
     (.SendVoiceData device data id _))
 
-  (PlayBackByTime [this info _ _]
+  (PlayBackByTime [this _ _ _]
     (.PlayBackByTime device info id _))
 
   (StopPlayBack [this _ _]
@@ -107,7 +131,7 @@
      (log/infof "create-source: %s:%d %d %s %s %s %s"
                 addr port channel stream_type connect_type start_time end_time))
    (let [device  (add-device! manufacturer account)
-         id      (UUID/randomUUID)
+         id      (str (UUID/randomUUID))
          clients (ref #{})
          source  (Source. id device manufacturer account media-type info clients (ref nil) (ref 0) (ref 0) (now))]
      ;;将本source 添加入设备

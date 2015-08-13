@@ -11,9 +11,11 @@
            [org.joda.time DateTime]))
 
 (defprotocol IDevice
-  (can-multiplex? [this manufacturer account]))
+  (can-multiplex? [this manufacturer account])
+  (remove [this source])
+  (close [this]))
 
-(deftype Device [^UUID         id
+(deftype Device [^String         id
                  ^Executor     executor
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
@@ -25,6 +27,17 @@
   (can-multiplex? [this manufacturer* account*]
     (and (= manufacturer* manufacturer)
          (= account*      account)))
+
+  (remove [this source]
+    (dosync
+     (empty? (alter sources disj source)
+             (.close this))))
+
+  (close [this]
+    (dosync
+     (doseq [^Notify$Iface source (deref sources)]
+       (.Offline source nil))
+     (.remove executor this)))
 
   Sdk$Iface
   (Login [this account _]
@@ -102,7 +115,7 @@
   [manufacturer ^LoginAccount account]
   (dosync
    (log/info "creat-device")
-   (let [id           (UUID/randomUUID)
+   (let [id           (str (UUID/randomUUID))
          executor     (create-exe! manufacturer)
          device       (Device. id executor manufacturer account (ref #{}) (ref 0) (ref 0) (now))]
      (add-device executor device)

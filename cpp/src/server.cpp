@@ -40,10 +40,10 @@ private:
 
 //Server**********
 void Server::ServerStarted(){
-	std::cout<<"sdk started, tell clojure ..."<<std::endl;
-	try	{
+	std::cout<<"sdk started, tell clojure sdk port is " <<  _listen_port <<std::endl;
+	try{
 		client = new Client(_client_port);
-		client->send_lanuched(_client_port);
+		client->send_lanuched(_listen_port);
 	}
 	catch (std::exception e){
 		std::cerr << e.what() << ", can not connect back!" << std::endl;

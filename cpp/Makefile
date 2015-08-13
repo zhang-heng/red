@@ -1,7 +1,7 @@
 OBJ_DIR = .obj
 
 COMPILE = g++ -O2 -s -std=c++11 -m32 -pthread
-TARGET = ../bin/sdk
+TARGET = ../target
 
 all: hik.exe dahua.exe
 
@@ -43,6 +43,7 @@ hik_links = $(main_links) -lhcnetsdk -lHCCore -lhpr
 $(shell mkdir -p $(TARGET)/hik)
 hik.exe :$(main_objs)
 	$(COMPILE) src/sdks/hik.cpp $(main_objs) $(hik_include) $(hik_links_path) $(hik_links) -o $(TARGET)/hik/hik.exe
+	$(shell cp $(libs_path)/hik/*.so $(TARGET)/hik/)
 
 #**********dahua**********
 dahua_include = -I $(libs_path)/dahua $(main_include)
@@ -51,3 +52,4 @@ dahua_links = $(main_links) -ldhnetsdk -ldhdvr
 $(shell mkdir -p $(TARGET)/dahua)
 dahua.exe :$(main_objs)
 	$(COMPILE) src/sdks/dahua.cpp $(main_objs) $(dahua_include) $(dahua_links_path) $(dahua_links) -o $(TARGET)/dahua/dahua.exe
+	$(shell cp $(libs_path)/dahua/*.so $(TARGET)/dahua/)

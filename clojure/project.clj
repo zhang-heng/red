@@ -30,7 +30,7 @@
   :profiles {:dev        {:main red.core
                           :jvm-opts ["-Dlogfile.level=DEBUG,console"]
                           :env {:clj-env           :development
-                                :sdk-path          "../bin/sdk"
+                                :sdk-path          "../target"
                                 :subscribe-timeout 60
                                 :gtsp-port         7748
                                 :rest-port         8080}}
@@ -38,4 +38,8 @@
              :uberjar    {:main red.server
                           :aot :all
                           :jvm-opts ["-Dlogfile.level=INFO,console,A3"]
-                          :env {:clj-env :production}}})
+                          :env {:clj-env           :production
+                                :sdk-path          "./"
+                                :subscribe-timeout 30
+                                :gtsp-port         7748
+                                :rest-port         8080}}})

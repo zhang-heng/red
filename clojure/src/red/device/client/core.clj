@@ -12,7 +12,11 @@
            [java.nio ByteBuffer]
            [java.util UUID]))
 
-(deftype Client [^UUID               session
+(defprotocol IClient
+  (client->device [this data])
+  (close [this]))
+
+(deftype Client [^String             session
                  ^Source             source
                  ^PersistentArrayMap connection
                  ^Ref                device->flow
@@ -20,6 +24,13 @@
                  ^Fn                 write-handle
                  ^Fn                 close-handle
                  ^DateTime           start-time]
+  IClient
+  (client->device [this data]
+    (.client->device source data))
+
+  (close [this]
+    (.remove source this))
+
   Notify$Iface
   (Offline [this _]
     (write-handle (ByteBuffer/allocate 0))
@@ -74,24 +85,21 @@
 
 (defn get-all-clients []
   (dosync
-   (reduce (fn [c {clients :clients}]
-             (clojure.set/union c (vals (deref clients))))
+   (reduce (fn [c clients]
+             (clojure.set/union c (deref (deref clients))))
            #{} (get-all-sources))))
 
-(defn get-client-by-id [^UUID id]
+(defn get-client-by-id [^String id]
   (dosync
-   (some #(= id
-             (get-in [:session-id] (deref %)))
-         (get-all-clients))))
-
-(defn get-client-by-id+ [^UUID id]
-  (dosync
-   (-> (get-client-by-id id))))
-
-
-(defn dissoc-client! [^Client client])
+   ;; (some #(= id
+   ;;           (get-in [:session-id] (deref %)))
+   ;;       (get-all-clients))
+   ))
 
 (defn client->data [^Client client byte-buffer])
+
+(defn close-session! [^Client client]
+  (.close client))
 
 (defn open-session!
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"
@@ -109,30 +117,3 @@
                         manufacturer account session-type info
                         write-handle close-handle
                         session-id)))))
-
-(def test-session
-  {:manufacturer "dahua"
-   :addr         "192.168.8.85"
-   :port         37777
-   :user         "admin"
-   :password     "admin"
-   :session-type :realplay
-   :channel-id   1
-   :session-id (UUID/randomUUID)})
-
-(defn test-write-handle [byte-buffer]
-  (log/info byte-buffer))
-
-(defn test-close-handle []
-  (log/info "close"))
-
-(def connection {:local-addr "127.0.0.1"
-                 :local-port 123
-                 :remote-addr "127.0.0.1"
-                 :remote-port 456})
-
-(open-session! connection test-session test-write-handle test-close-handle)
-(log/info (str "exes: \n" (clojure.string/join "\n" (map str (red.device.sdk.core/get-all-executors)))))
-
-
-;;(red.device.sdk.core/clean)
