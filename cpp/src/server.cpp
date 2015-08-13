@@ -5,8 +5,13 @@
 #include <thread>
 #include <algorithm>
 
+#if (defined(WIN32) || defined(WIN64))
+  #include <thrift/concurrency/StdThreadFactory.h>
+#else
+  #include <thrift/concurrency/PosixThreadFactory.h>
+#endif
+
 #include <thrift/concurrency/ThreadManager.h>
-#include <thrift/concurrency/StdThreadFactory.h>
 #include <thrift/protocol/TBinaryProtocol.h>
 #include <thrift/server/TSimpleServer.h>
 #include <thrift/server/TThreadPoolServer.h>
@@ -56,7 +61,11 @@ Server::Server(int client_port) {
 	shared_ptr<TServerEventHandler> e (new TServerEventHandlerImpl([&](){ServerStarted();}));
 
 	boost::shared_ptr<ThreadManager> threadManager = ThreadManager::newSimpleThreadManager(workerCount);
+#if (defined(WIN32) || defined(WIN64))
 	boost::shared_ptr<StdThreadFactory> threadFactory = boost::shared_ptr<StdThreadFactory>(new StdThreadFactory());
+#else
+	boost::shared_ptr<PosixThreadFactory> threadFactory = boost::shared_ptr<PosixThreadFactory>(new PosixThreadFactory());
+#endif
 	threadManager->threadFactory(threadFactory);
 	threadManager->start();
 
