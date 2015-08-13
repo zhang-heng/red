@@ -14,7 +14,7 @@ using namespace device;
 using namespace device::netsdk;
 
 bool Server::InitSDK() {
-	auto ret = NET_DVR_Init();
+	bool ret = NET_DVR_Init();
 	if (!ret) {
 		info::InvalidOperation io;
 		io.what = ret;

@@ -29,7 +29,7 @@ class Server : virtual public device::netsdk::SdkIf {
 
   bool CleanSDK() override;
 
-  bool Login(const std::string& device_id, const  ::device::info::LoginAccount& account) override;
+  bool Login(const device::info::LoginAccount& account, const std::string& device_id) override;
 
   bool Logout(const std::string& device_id) override;
 

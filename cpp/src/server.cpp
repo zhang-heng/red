@@ -44,7 +44,6 @@ void Server::ServerStarted(){
 	try{
 		client = new Client(_client_port);
 		client->send_lanuched(_listen_port);
-		client->send_connected("abc");
 	}
 	catch (std::exception e){
 		std::cerr << e.what() << ", can not connect back!" << std::endl;
@@ -101,7 +100,7 @@ Device* Server::FindDevice(std::string id){
 	return it->second;
 }
 
-bool Server::Login(const std::string& device_id, const  ::device::info::LoginAccount& account){
+bool Server::Login(const device::info::LoginAccount& account, const std::string& device_id){
 	auto device = FindDevice(device_id);
 	if(device){
 		return device->Login(account);

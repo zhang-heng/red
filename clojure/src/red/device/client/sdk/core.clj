@@ -94,6 +94,12 @@
       (log/log header level nil msg)))
 
   Sdk$Iface
+  (InitSDK [this]
+    (request @thrift-sdk InitSDK))
+
+  (CleanSDK [this]
+    (request @thrift-sdk CleanSDK))
+
   (Login [this account device-id]
     (some?
      (dosync
@@ -126,6 +132,7 @@
     (dosync
      (log/infof "process lanuched: port=%d \n%s" port this)
      (deliver thrift-sdk port)
+     (.InitSDK this)
      (doseq [^Notify$Iface device (deref devices)]
        (.Lanuched device port))))
 

@@ -43,7 +43,7 @@
      (.sub-remove executor this)))
 
   Sdk$Iface
-  (Login [this account _]
+  (Login [this _ _]
     (.Login executor account id))
 
   (Logout [this _]
@@ -74,7 +74,7 @@
 
   Notify$Iface
   (Lanuched [this _]
-    (.Login this id account))
+    (.Login this account id))
 
   (Connected [this _]
     (dosync
