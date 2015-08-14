@@ -10,6 +10,7 @@
         (put "LD_LIBRARY_PATH" path))))
 
 (defn- get-win32-pid [^Process process]
+  "在windows系统下，仅获取进程句柄"
   (when-let [f (.. process getClass (getDeclaredField "handle"))]
     (.setAccessible f true)
     (.getLong f process)))

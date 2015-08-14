@@ -1,6 +1,6 @@
 (ns red.device.client.device
   (:require [clojure.tools.logging :as log]
-            [red.device.client.sdk.core :refer [create-exe! get-all-executors]]
+            [red.device.client.sdk.core :refer [create-exe! get-all-executors add-device remove-device]]
             [red.device.client.operate :refer :all]
             [red.utils :refer [now]])
   (:import [red.device.client.sdk.core Executor]
@@ -12,7 +12,8 @@
            [org.joda.time DateTime]))
 
 (defprotocol IDevice
-  (add-source [this source id]))
+  (add-source [this source id])
+  (remove-source [this id]))
 
 (deftype Device [^String       id
                  ^Executor     executor
@@ -27,6 +28,11 @@
     (dosync
      (alter sources assoc id source)))
 
+  (remove-source [this id]
+    (dosync
+     (empty? (alter sources dissoc id)
+             (close this))))
+
   IOperate
   (can-multiplex? [this args]
     (let [[manufacturer* account*] args]
@@ -39,12 +45,11 @@
      ;;请求断开此设备
      (.Logout executor id)
      ;;从进程层将本对象删除
-     (alter @executor dissoc id)
+     (remove-device executor id)
      ;;通知所有子层关闭 todo... 网关模式还要增加处理
      (doseq [psource (deref sources)]
        (let [source-id (key psource)
              source    (val psource)]
-         (alter sources dissoc source-id)
          (.Offline ^Notify$Iface source nil)))))
 
   Sdk$Iface
@@ -91,13 +96,12 @@
 
   (Offline [this _]
     (dosync
+     ;;告知所有媒体源,由媒体源决定下一步操作
      (doseq [psource (deref sources)]
-       (let [source-id (key psource)
-             source (val psource)]
-         (alter sources dissoc source-id)
-         (.Offline ^Notify$Iface source _)))))
+       (.Offline ^Notify$Iface (val psource) _))))
 
   (MediaStarted [this source-id _]
+    "当无对应，则应该关闭媒体 todo..."
     (dosync
      (when-let [source (get (deref sources) source-id)]
        (.MediaStarted ^Notify$Iface source source-id _))))
@@ -105,7 +109,7 @@
   (MediaFinish [this source-id _]
     (dosync
      (when-let [source (get (deref sources) source-id)]
-       (.MediaFinish ^Notify$Iface source _ source-id))))
+       (.MediaFinish ^Notify$Iface source source-id _ ))))
 
   (MediaData [this {^ByteBuffer payload :payload :as data} source-id _]
     (dosync
@@ -114,16 +118,15 @@
        (.MediaData ^Notify$Iface source data source-id _))))
 
   clojure.lang.IDeref
-  (deref [_] sources)
+  (deref [_] (vals @sources))
 
   Object
-  (toString [_]
+  (toString [this]
     (let [{:keys [addr port]} (bean account)]
       (format "__device: %s:%d \n%s"
               addr port
-              (->> @sources
-                   vals
-                   (map #(str %))
+              (->> @this
+                   (map str)
                    (clojure.string/join ",\n"))))))
 
 (defn- creat-device!
@@ -135,15 +138,15 @@
    (let [id           (str (UUID/randomUUID))
          executor     (create-exe! manufacturer)
          device       (Device. id executor manufacturer account (ref {}) (ref 0) (ref 0) (now))]
-     (.add-device ^Executor executor device id)
+     (add-device executor device id)
      device)))
 
 (defn get-all-devices
   "获取所有设备数据" []
   (dosync
    (reduce (fn [c executor]
-             (clojure.set/union c (vals (deref (deref executor)))))
-           #{} (get-all-executors))))
+             (conj c (deref executor)))
+           {} (get-all-executors))))
 
 (defn- added-device?*
   "设备是否已添加"

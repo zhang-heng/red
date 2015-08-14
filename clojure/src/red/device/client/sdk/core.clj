@@ -15,10 +15,7 @@
            [java.util UUID]
            [org.joda.time DateTime]))
 
-;;exe复用个数
-(defonce _MUX 2)
-
-(defonce ^:private executors (ref #{}))
+(defonce ^:private executors (ref {}))
 
 (thrift/import
  (:types    [device.types  MediaType    StreamType]
@@ -41,9 +38,10 @@
    (deref executors)))
 
 (defprotocol IExecutor
-  (add-device [this device id])
-  (mk-out-printer [this])
-  (mk-crashed [this]))
+  (add-device [this device id] "添加设备")
+  (remove-device [this id] "移除设备: 1.移除id设备; 2.判断设备列表为空则关闭本对象")
+  (mk-out-printer [this] "创建用于sdk进程打印的函数")
+  (mk-crashed [this] "创建用于处理进程close/crash的函数"))
 
 (deftype Executor [^String   id           ;;执行程序唯一标识,方便检索
                    ^String   manufacturer ;;厂商
@@ -57,6 +55,11 @@
   IExecutor
   (add-device [this device id]
     (dosync (alter devices assoc id device)))
+
+  (remove-device [this id]
+    (dosync
+     (empty? (alter devices dissoc id)
+             (close this))))
 
   (mk-out-printer [this]
     (fn [msg]
@@ -77,9 +80,12 @@
 
   IOperate
   (can-multiplex? [this args]
-    (let [[manufacturer*] args]
+    (let [[manufacturer*] args
+          mux             (env :exe-mux)]
       (and (= manufacturer manufacturer*)
-           (< (count (deref devices)) _MUX))))
+           (if (pos? mux)
+             (< (count (deref devices)) mux)
+             true))))
 
   (close [this]
     (dosync
@@ -91,7 +97,7 @@
          (alter devices dissoc device-id)
          (.Offline ^Notify$Iface device nil)))
      ;;从表中剔除此对象
-     (alter executors disj this)
+     (alter executors dissoc id)
      ;;释放资源
      (future
        (try
@@ -185,7 +191,7 @@
        (log/error "a device connected, but could not found in list"))))
 
   clojure.lang.IDeref
-  (deref [_] devices)
+  (deref [_] @devices)
 
   Object
   (toString [_]
@@ -193,23 +199,24 @@
             manufacturer
             (->> @devices
                  vals
-                 (map #(str %))
+                 (map str)
                  (clojure.string/join ",\n")))))
 
 (defn- can-exe-multiplex?*
   "执行程序可否可复用"
   [manufacturer]
   (dosync
-   (some (fn [executor]
-           (when (can-multiplex+? executor manufacturer)
-             executor))
-         (deref executors))))
+   (some (fn [pexecutor]
+           (let [executor (val pexecutor)]
+             (when (can-multiplex+? executor manufacturer)
+               executor)))
+         (get-all-executors))))
 
 (defn- create-process*thrift
   [manufacturer]
   (dosync
    (log/info "create executor:" manufacturer)
-   (let [executor-id   (str (UUID/randomUUID))
+   (let [id            (str (UUID/randomUUID))
          devices       (ref {})
          proc          (promise)
          thrift-notify (promise)
@@ -217,9 +224,9 @@
          sdk-path      (format "%s/%s" (System/getProperty "user.dir") (env :sdk-path))
          working-path  (format "%s/%s" sdk-path manufacturer)
          exe-path      (format "%s/%s.exe" working-path manufacturer)
-         executor      (Executor. executor-id manufacturer devices (ref 0) (ref 0) proc thrift-notify thrift-sdk (now))]
+         executor      (Executor. id manufacturer devices (ref 0) (ref 0) proc thrift-notify thrift-sdk (now))]
      ;;将当前对象添加入列表
-     (alter executors conj executor)
+     (alter executors assoc id executor)
 
      (future
        (try
@@ -252,4 +259,4 @@
   (dosync
    (doseq [executor (deref executors)]
      (close executor))
-   (ref-set executors #{})))
+   (ref-set executors {})))
