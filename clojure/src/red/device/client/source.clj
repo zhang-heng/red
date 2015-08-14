@@ -83,6 +83,7 @@
 
   Notify$Iface
   (Connected [this _]
+    (log/infof "req %s, %s" source-type id)
     (dosync
      (case source-type
        :playback  (.PlayBackByTime this info id _)

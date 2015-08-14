@@ -83,10 +83,11 @@
     (.Login this account id))
 
   (Connected [this _]
+    (log/infof "device connected: %s" id)
     (dosync
      ;;告知所有媒体源,可以做媒体请求
-     (doseq [source (deref sources)]
-       (.Connected ^Notify$Iface source _))))
+     (doseq [psource (deref sources)]
+       (.Connected ^Notify$Iface (val psource) _))))
 
   (Offline [this _]
     (dosync
