@@ -2,8 +2,9 @@
 
 (defprotocol IOperate
   (can-multiplex? [this args])
-  (sub-remove [this device])
   (close [this]))
 
-(defn can-multiplex+? [operate & args]
+(defn can-multiplex+?
+  "由于defprotocol不能处理 option args, 故写此函数"
+  [operate & args]
   (can-multiplex? operate args))

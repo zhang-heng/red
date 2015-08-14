@@ -41,6 +41,7 @@
    (deref executors)))
 
 (defprotocol IExecutor
+  (add-device [this device id])
   (mk-out-printer [this])
   (mk-crashed [this]))
 
@@ -54,6 +55,9 @@
                    ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                    ^DateTime start-time]
   IExecutor
+  (add-device [this device id]
+    (dosync (alter devices assoc id device)))
+
   (mk-out-printer [this]
     (fn [msg]
       (let [level :debug
@@ -76,12 +80,6 @@
     (let [[manufacturer*] args]
       (and (= manufacturer manufacturer*)
            (< (count (deref devices)) _MUX))))
-
-  (sub-remove [this device-id]
-    (dosync
-     (log/info "remove device form executor")
-     (empty? (alter devices dissoc device-id)
-             (.close this))))
 
   (close [this]
     (dosync
@@ -194,7 +192,7 @@
     (format "exe: %s \n%s"
             manufacturer
             (->> @devices
-                 val
+                 vals
                  (map #(str %))
                  (clojure.string/join ",\n")))))
 
