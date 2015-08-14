@@ -2,6 +2,7 @@
   "主动连接: socket (1->1) client (n->1) source (n->1) device (n*->1) exe"
   (:require [clojure.tools.logging :as log]
             [red.device.client.source :refer [get-all-sources get-source! add-client]]
+            [red.device.client.operate :refer :all]
             [red.utils :refer [now]])
   (:import [red.device.client.source Source]
            [device.netsdk Sdk$Iface Notify$Iface]
@@ -13,8 +14,7 @@
            [java.util UUID]))
 
 (defprotocol IClient
-  (client->device [this data])
-  (close [this]))
+  (client->device [this data]))
 
 (deftype Client [^String             session
                  ^Source             source
@@ -28,6 +28,7 @@
   (client->device [this data]
     (.client->device source data))
 
+  IOperate
   (close [this]
     (let [{:keys [remote-addr remote-port]}  connection]
       (log/infof "close client: %s:%d" remote-addr remote-port)

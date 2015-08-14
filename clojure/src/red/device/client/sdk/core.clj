@@ -1,5 +1,6 @@
 (ns red.device.client.sdk.core
   (:require [thrift-clj.core :as thrift]
+            [red.device.client.operate :refer :all]
             [clojure.tools.logging :as log]
             [red.utils :refer [now stack-trace]]
             [environ.core :refer [env]]
@@ -8,6 +9,7 @@
   (:import [red.device.client.sdk.callback Thrift]
            [red.device.client.sdk.launcher Proc]
            [device.netsdk Sdk$Iface Notify$Iface]
+           [device.info InvalidOperation]
            [clojure.lang Ref PersistentArrayMap Fn]
            [java.nio ByteBuffer]
            [java.util UUID]
@@ -23,22 +25,24 @@
             [device.info   LoginAccount MediaPackage])
  (:clients  [device.netsdk Sdk]))
 
+(defn try-do [f]
+  (try (f)
+       (catch InvalidOperation e (prn e))))
+
 (defmacro request [port method & args]
   (let [method# (symbol "Sdk" (str method))]
     `(if (pos? ~port)
        (with-open [c# (thrift/connect! Sdk ["localhost" ~port] :protocol :binary)]
-         (~method# c# ~@args))
+         (try-do #(~method# c# ~@args)))
        (log/error "sdk thrift port not found"))))
 
 (defn get-all-executors []
   (dosync
    (deref executors)))
 
-(defprotocol IExecutor
-  (can-multiplex? [this manufacturer])
-  (sub-remove [this device])
-  (close [this])
-  (exe-log [this msg]))
+(defn get-device [executor device-id]
+  (dosync (some (fn [device] (when (is-you? device device-id) device))
+                (deref (deref executor)))))
 
 (deftype Executor [^String   id           ;;执行程序唯一标识,方便检索
                    ^String   manufacturer ;;厂商
@@ -49,10 +53,11 @@
                    ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
                    ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                    ^DateTime start-time]
-  IExecutor
-  (can-multiplex? [this manufacturer*]
-    (and (= manufacturer manufacturer*)
-         (< (count (deref devices)) _MUX)))
+  IOperate
+  (can-multiplex? [this args]
+    (let [[manufacturer*] args]
+      (and (= manufacturer manufacturer*)
+           (< (count (deref devices)) _MUX))))
 
   (sub-remove [this device]
     (dosync
@@ -97,7 +102,7 @@
     (request @thrift-sdk CleanSDK))
 
   (Login [this account device-id]
-    (some? (request @thrift-sdk Login account device-id)))
+    (request @thrift-sdk Login account device-id))
 
   (Logout [this device-id]
     (some? (request @thrift-sdk Logout device-id)))
@@ -175,14 +180,14 @@
   [manufacturer]
   (dosync
    (some (fn [executor]
-           (when (can-multiplex? executor manufacturer)
+           (when (can-multiplex+? executor manufacturer)
              executor))
          (deref executors))))
 
 (defn- mk-crashed [^Executor executor]
   (fn []
-    (exe-log executor "crashed. close all in exe resources")
-    (exe-log executor (str executor))
+    (.exe-log executor "crashed. close all in exe resources")
+    (.exe-log executor (str executor))
     (try (.close executor)
          (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e))))))
 
@@ -240,5 +245,5 @@
 (defn clean-executors []
   (dosync
    (doseq [^Executor executor (deref executors)]
-     (.close executor))
+     (close executor))
    (ref-set executors #{})))

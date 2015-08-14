@@ -1,6 +1,7 @@
 (ns red.device.client.source
   (:require [clojure.tools.logging :as log]
             [red.device.client.device :refer [add-device! get-all-devices add-source]]
+            [red.device.client.operate :refer :all]
             [red.utils :refer [now]])
   (:import [red.device.client.device Device]
            [device.types MediaType]
@@ -12,10 +13,7 @@
            [org.joda.time DateTime]))
 
 (defprotocol ISource
-  (can-multiplex? [this manufacturer account source-type info])
-  (client->device [this data])
-  (sub-remove [this client])
-  (close [this]))
+  (client->device [this data]))
 
 (deftype Source [^String       id
                  ^Device       device
@@ -29,18 +27,20 @@
                  ^Ref          client->flow
                  ^DateTime     start-time]
   ISource
-  (can-multiplex? [this manufacturer* account* source-type* info*]
-    "可复用的媒体,意味着实时流,且所有参数全相等"
-    (and (= :realplay source-type source-type*)
-         (= manufacturer manufacturer*)
-         (= account account*)
-         (= info info*)))
-
   (client->device [this data]
     (case source-type
       :realplay  nil
       :playback  nil
       :voicetalk (.SendVoiceData this data nil nil)))
+
+  IOperate
+  (can-multiplex? [this args]
+    "可复用的媒体,意味着实时流,且所有参数全相等"
+    (let [[manufacturer* account* source-type* info*] args]
+      (and (= :realplay source-type source-type*)
+           (= manufacturer manufacturer*)
+           (= account account*)
+           (= info info*))))
 
   (sub-remove [this client]
     (dosync
@@ -154,7 +154,7 @@
    media-type   ^PlayInfo     info]
   (dosync
    (some (fn [^Source source]
-           (when (.can-multiplex? source manufacturer account media-type info)
+           (when (can-multiplex+? source manufacturer account media-type info)
              source))
          (get-all-sources))))
 

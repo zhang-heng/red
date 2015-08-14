@@ -1,19 +1,15 @@
 (ns red.device.client.device
   (:require [clojure.tools.logging :as log]
             [red.device.client.sdk.core :refer [create-exe! get-all-executors add-device]]
+            [red.device.client.operate :refer :all]
             [red.utils :refer [now]])
-  (:import [red.device.client.sdk.core Executor ]
+  (:import [red.device.client.sdk.core Executor]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.info LoginAccount]
            [clojure.lang Ref PersistentArrayMap]
            [java.util UUID]
            [java.nio ByteBuffer]
            [org.joda.time DateTime]))
-
-(defprotocol IDevice
-  (can-multiplex? [this manufacturer account])
-  (sub-remove [this source])
-  (close [this]))
 
 (deftype Device [^String       id
                  ^Executor     executor
@@ -23,16 +19,20 @@
                  ^Ref          device->flow ;;来自设备的流量统计
                  ^Ref          client->flow ;;来自客户端的流量统计
                  ^DateTime     start-time]
-  IDevice
-  (can-multiplex? [this manufacturer* account*]
-    (and (= manufacturer* manufacturer)
-         (= account*      account)))
+  IOperate
+  (can-multiplex? [this args]
+    (let [[manufacturer* account*] args]
+      (and (= manufacturer* manufacturer)
+           (= account*      account))))
 
   (sub-remove [this source]
     (dosync
      (log/info "remove source form device")
      (empty? (alter sources disj source)
              (.close this))))
+
+  (is-you? [this device-id]
+    (= id device-id))
 
   (close [this]
     (dosync
@@ -44,7 +44,10 @@
 
   Sdk$Iface
   (Login [this _ _]
-    (.Login executor account id))
+    (log/info account id)
+    true
+    ;; (.Login executor account id)
+    )
 
   (Logout [this _]
     (.Logout executor id))
@@ -142,7 +145,7 @@
   [manufacturer account]
   (dosync
    (some (fn [device]
-           (when (can-multiplex? device manufacturer account)
+           (when (can-multiplex+? device manufacturer account)
              device))
          (get-all-devices))))
 
