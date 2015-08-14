@@ -15,13 +15,18 @@
 (defprotocol ISource
   (client->device [this data]))
 
+(defn add-client
+  [source client id]
+  (dosync
+   (alter @source assoc id client)))
+
 (deftype Source [^String       id
                  ^Device       device
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
                  ^Keyword      source-type ;; :playback :realplay :voicetalk
                  ^PlayInfo     info
-                 ^Ref          clients
+                 ^Ref          clients ;;(ref {id client ...})
                  ^Ref          header-data
                  ^Ref          device->flow
                  ^Ref          client->flow
@@ -42,23 +47,17 @@
            (= account account*)
            (= info info*))))
 
-  (sub-remove [this client]
-    (dosync
-     (log/info "remove client form source")
-     (empty? (alter clients disj client)
-             (case source-type
-               :realplay  (.StopRealPlay  this nil nil)
-               :playback  (.StopPlayBack  this nil nil)
-               :voicetalk (.StopVoiceTalk this nil nil))
-             (.close this))))
-
   (close [this]
     (dosync
      (log/info "close source")
+     (case source-type
+       :realplay  (.StopRealPlay  this nil nil)
+       :playback  (.StopPlayBack  this nil nil)
+       :voicetalk (.StopVoiceTalk this nil nil))
+     (alter @device dissoc id)
      (doseq [^Notify$Iface client (deref clients)]
        (alter clients disj client)
-       (.Offline client nil))
-     (.sub-remove device this)))
+       (.Offline client nil))))
 
   Sdk$Iface
   (StartRealPlay [this _ _ _]
@@ -92,26 +91,28 @@
 
   (Offline [this _]
     (dosync
-     (doseq [client (deref clients)]
-       (alter clients disj client)
-       (.Offline ^Notify$Iface client _))))
+     (doseq [pclient (deref clients)]
+       (let [client-id (key pclient)
+             client (val pclient)]
+         (alter clients dissoc client-id)
+         (.Offline ^Notify$Iface client _)))))
 
   (MediaStarted [this _ _]
     (dosync
      (doseq [client (deref clients)]
-       (.MediaStarted ^Notify$Iface client _ _))))
+       (.MediaStarted ^Notify$Iface (val client) _ _))))
 
   (MediaFinish [this _ _]
     (dosync
      (doseq [client (deref clients)]
-       (.MediaFinish ^Notify$Iface client _ _))))
+       (.MediaFinish ^Notify$Iface (val client) _ _))))
 
   (MediaData [this {:keys [^ByteBuffer payload type] :as data} _ _]
     (dosync
      (when (= type MediaType/FileHeader)
        (ref-set header-data data))
      (doseq [client (deref clients)]
-       (.MediaData ^Notify$Iface client data _ _))))
+       (.MediaData ^Notify$Iface (val client) data _ _))))
 
   clojure.lang.IDeref
   (deref [_] clients)
@@ -122,6 +123,7 @@
       (format "____source: %s %d %s %s %s %s \n%s"
               source-type channel stream_type connect_type start_time end_time
               (->> @clients
+                   vals
                    (map #(str %))
                    (clojure.string/join ",\n"))))))
 
@@ -136,16 +138,16 @@
                 addr port channel stream_type connect_type start_time end_time))
    (let [device  (add-device! manufacturer account)
          id      (str (UUID/randomUUID))
-         clients (ref #{})
+         clients (ref {})
          source  (Source. id device manufacturer account media-type info clients (ref nil) (ref 0) (ref 0) (now))]
      ;;将本source 添加入设备
-     (add-source device source)
+     (add-source device source id)
      source)))
 
 (defn get-all-sources []
   (dosync
    (reduce (fn [c device]
-             (clojure.set/union c (deref (deref device))))
+             (clojure.set/union c (vals (deref (deref device)))))
            #{} (get-all-devices))))
 
 (defn- can-source-multiplex?*
@@ -157,11 +159,6 @@
            (when (can-multiplex+? source manufacturer account media-type info)
              source))
          (get-all-sources))))
-
-(defn add-client
-  [source client]
-  (dosync
-   (alter @source conj client)))
 
 (defn get-source!
   "获取源,即生成执行程序并建立联系"

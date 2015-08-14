@@ -151,8 +151,8 @@
      ;;获取sdk版本信息
      (.GetVersion this)
      ;;告知所有设备进行访问操作
-     (doseq [^Notify$Iface device (deref devices)]
-       (.Lanuched device port))))
+     (doseq [pdevice (deref devices)]
+       (.Lanuched ^Notify$Iface (val pdevice) port))))
 
   (Connected [this device-id]
     (dosync

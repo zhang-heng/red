@@ -141,7 +141,7 @@
   "获取所有设备数据" []
   (dosync
    (reduce (fn [c executor]
-             (clojure.set/union c (vals (deref executor))))
+             (clojure.set/union c (vals (deref (deref executor)))))
            #{} (get-all-executors))))
 
 (defn- added-device?*

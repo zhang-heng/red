@@ -30,9 +30,9 @@
 
   IOperate
   (close [this]
-    (let [{:keys [remote-addr remote-port]}  connection]
-      (log/infof "close client: %s:%d" remote-addr remote-port)
-      (.sub-remove source this)))
+    (dosync
+     (let [{:keys [remote-addr remote-port]} connection]
+       (log/infof "close client: %s:%d" remote-addr remote-port))))
 
   Notify$Iface
   (Offline [this _]
@@ -82,13 +82,13 @@
                          device->client
                          device->close
                          (now))]
-     (add-client source client)
+     (add-client source client session-id)
      client)))
 
 (defn get-all-clients []
   (dosync
    (reduce (fn [c clients]
-             (clojure.set/union c (deref (deref clients))))
+             (clojure.set/union c (vals (deref (deref clients)))))
            #{} (get-all-sources))))
 
 (defn get-client-by-id [^String id]
