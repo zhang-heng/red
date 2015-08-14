@@ -9,14 +9,15 @@ struct DeviceInfo{
 2:i32 n_alarm_in,          //报警输入端子个数
 3:i32 n_alarm_out,         //报警输出端子个数
 4:string device_model,     //设备型号
-5:i32 n_an_video_channels,    //模拟视频通道数
-6:i32 n_audio_channels,       //音频通道数
-7:i32 start_an_video_channel, //模拟首通道数
+5:i32 n_an_video_channels,      //模拟视频通道数
+6:i32 n_audio_channels,         //音频通道数
+7:i32 start_an_video_channel,   //模拟首通道数
 8:i32 n_dig_video_channels,     //数字通道数
 9:i32 start_dig_video_channels, //数字首通道
-10:i32 n_talk_channels,     //对讲通道数
-11:i32 start_talk_channels, //对讲首通道
-12:i32 n_com,              //串口个数
+10:i32 n_talk_channels,         //对讲通道数
+11:i32 start_talk_channels,     //对讲首通道
+12:i32 n_com,                   //串口个数
+13:i32 n_disk,                  //硬盘个数
 }
 
 //媒体包
