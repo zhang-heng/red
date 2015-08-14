@@ -42,8 +42,7 @@ private:
 void Server::ServerStarted(){
   std::cout<<"sdk thrift server started, tell clojure sdk port is:" <<  _listen_port <<std::endl;
   try{
-    client = new Client(_client_port);
-    client->send_lanuched(_listen_port);
+    _client->send_lanuched(_listen_port);
   }
   catch (std::exception e){
     std::cerr << e.what() << ", can not connect back!" << std::endl;
@@ -53,7 +52,9 @@ void Server::ServerStarted(){
 
 Server::Server(int client_port) {
   _client_port = client_port;
-  shared_ptr<Server> handler(new Server());
+  _client = new Client(_client_port);
+
+  shared_ptr<Server> handler(this);
   shared_ptr<TProcessor> processor(new SdkProcessor(handler));
   shared_ptr<TTransportFactory> transportFactory(new TBufferedTransportFactory());
   shared_ptr<TProtocolFactory> protocolFactory(new TBinaryProtocolFactory());
@@ -103,9 +104,9 @@ Device* Server::FindDevice(std::string id){
 bool Server::Login(const device::info::LoginAccount& account, const std::string& device_id){
   auto device = FindDevice(device_id);
   if(device){
-    return device->Login(account);
+    return device->Login();
   }else{
-    device = new Device(device_id, account);
+    device = new Device(device_id, account, _client);
     _devices.insert(std::pair<std::string, Device*>(device_id, device));
     return device->Login();
   }

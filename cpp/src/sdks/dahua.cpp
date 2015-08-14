@@ -51,6 +51,11 @@ std::string LoginErrorTostring(int code){
 }
 
 bool Device::Login() {
+  std::cout<<"login:"<<_account.addr << std::endl;
+  std::cout<<"login:"<<_account.port << std::endl;
+  std::cout<<"login:"<<_account.user << std::endl;
+  std::cout<<"login:"<<_account.password << std::endl;
+
   NET_DEVICEINFO info;
   int err_code = 0;
   auto login_id = CLIENT_Login((char*)_account.addr.c_str(),
@@ -63,8 +68,11 @@ bool Device::Login() {
     device::info::InvalidOperation io;
     io.what = err_code;
     io.why = "Fail to login, " + LoginErrorTostring(err_code);
+    std::cout<< io.why << std::endl;
     throw io;
   };
+  std::cout<<_device_id<<std::endl;
+  _client->send_connected(_device_id);
   return true;
 }
 

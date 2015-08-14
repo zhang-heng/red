@@ -44,10 +44,7 @@
 
   Sdk$Iface
   (Login [this _ _]
-    (log/info account id)
-    true
-    ;; (.Login executor account id)
-    )
+    (.Login executor account id))
 
   (Logout [this _]
     (.Logout executor id))

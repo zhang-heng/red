@@ -15,8 +15,16 @@
 #endif
 
 class Server : virtual public device::netsdk::SdkIf {
+ private:
+  Device* FindDevice(std::string id);
+  Client *_client;
+  static int const workerCount = 20;
+  int _listen_port;
+  int _client_port;
+  std::map<std::string, Device*> _devices;
+  int GetRandomPort(int from, int to);
+
  public:
-  Server(){};
   Server(int client_port);
   void ServerStarted();
   ~Server();
@@ -161,14 +169,4 @@ class Server : virtual public device::netsdk::SdkIf {
     // Your implementation goes here
     std::cout<<"b"<<std::endl;return true;
   }
-
-
- private:
-  Device* FindDevice(std::string id);
-  Client *client;
-  static int const workerCount = 20;
-  int _listen_port;
-  int _client_port;
-  std::map<std::string, Device*> _devices;
-  int GetRandomPort(int from, int to);
 };

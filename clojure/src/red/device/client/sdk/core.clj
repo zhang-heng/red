@@ -102,7 +102,10 @@
     (request @thrift-sdk CleanSDK))
 
   (Login [this account device-id]
-    (request @thrift-sdk Login account device-id))
+    (some? (try (request @thrift-sdk Login account device-id)
+                (catch InvalidOperation e (log/info "login:" (.what e) (.why e)))
+                (catch Exception e (log/info "login unknow:" e))
+                (finally false))))
 
   (Logout [this device-id]
     (some? (request @thrift-sdk Logout device-id)))
@@ -135,34 +138,40 @@
        (.Lanuched device port))))
 
   (Connected [this device-id]
+    (log/error "a device connected" device-id)
     (dosync
-     (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.Connected device device-id)
-       (log/error "a device connected, but could not found in list"))))
+     ;; (if-let [^Notify$Iface device (deref (deref devices) device-id)]
+     ;;   (.Connected device device-id)
+     ;;   (log/error "a device connected, but could not found in list"))
+     ))
 
   (Offline [this device-id]
     (dosync
-     (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.Offline device device-id)
-       (log/error "a device connected, but could not found in list"))))
+     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
+     ;;   (.Offline device device-id)
+     ;;   (log/error "a device connected, but could not found in list"))
+     ))
 
   (MediaStarted [this media-id device-id]
     (dosync
-     (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.MediaStarted device media-id device-id)
-       (log/error "a device connected, but could not found in list"))))
+     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
+     ;;   (.MediaStarted device media-id device-id)
+     ;;   (log/error "a device connected, but could not found in list"))
+     ))
 
   (MediaFinish [this media-id device-id]
     (dosync
-     (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.MediaFinish device media-id device-id)
-       (log/error "a device connected, but could not found in list"))))
+     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
+     ;;   (.MediaFinish device media-id device-id)
+     ;;   (log/error "a device connected, but could not found in list"))
+     ))
 
   (MediaData [this data media-id device-id]
     (dosync
-     (if-let [^Notify$Iface device (get (deref devices) device-id)]
-       (.MediaData device data media-id device-id)
-       (log/error "a device connected, but could not found in list"))))
+     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
+     ;;   (.MediaData device data media-id device-id)
+     ;;   (log/error "a device connected, but could not found in list"))
+     ))
 
   clojure.lang.IDeref
   (deref [_] devices)

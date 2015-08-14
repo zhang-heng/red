@@ -1,18 +1,13 @@
 #include "server_device.h"
 
-Device::Device(std::string device_id, const device::info::LoginAccount& account){}
+Device::Device(std::string device_id, const device::info::LoginAccount& account, Client* client)
+  :_device_id(device_id),_account(account), _client(client){}
 
 Media* Device::FindMedia(std::string id){
   auto it = _medias.find(id);
   if(it == _medias.end())
     return nullptr;
   return it->second;
-}
-
-bool Device::Login(const device::info::LoginAccount& account){
-  Logout();
-  _account = account;
-  return Login();
 }
 
 bool Device::StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info){
