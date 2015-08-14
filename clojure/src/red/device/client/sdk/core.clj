@@ -40,9 +40,9 @@
   (dosync
    (deref executors)))
 
-(defn get-device [executor device-id]
-  (dosync (some (fn [device] (when (is-you? device device-id) device))
-                (deref (deref executor)))))
+(defprotocol IExecutor
+  (mk-out-printer [this])
+  (mk-crashed [this]))
 
 (deftype Executor [^String   id           ;;执行程序唯一标识,方便检索
                    ^String   manufacturer ;;厂商
@@ -53,47 +53,62 @@
                    ^Object   thrift-notify ;;本地thrift服务,接收来自sdk通知
                    ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                    ^DateTime start-time]
+  IExecutor
+  (mk-out-printer [this]
+    (fn [msg]
+      (let [level :debug
+            pid   (:pid (deref proc))
+            header (format "%s<%d>" manufacturer pid)]
+        (log/log header level nil msg))))
+
+  (mk-crashed [this]
+    (fn []
+      (let [level :warn
+            pid   (:pid (deref proc))
+            header (format "%s<%d>" manufacturer pid)]
+        (log/log header level nil "sdk proc crashed. notice all in exe resources"))
+      ;;关闭释放当前
+      (try (.close this)
+           (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e))))))
+
   IOperate
   (can-multiplex? [this args]
     (let [[manufacturer*] args]
       (and (= manufacturer manufacturer*)
            (< (count (deref devices)) _MUX))))
 
-  (sub-remove [this device]
+  (sub-remove [this device-id]
     (dosync
      (log/info "remove device form executor")
-     (empty? (alter devices disj device)
+     (empty? (alter devices dissoc device-id)
              (.close this))))
 
   (close [this]
     (dosync
      (log/info "close executor")
      ;;通知每个设备掉线
-     (doseq [^Notify$Iface device (deref devices)]
-       (alter devices disj device)
-       (.Offline device nil))
+     (doseq [pdevice (deref devices)]
+       (let [device-id (key pdevice)
+             device    (val pdevice)]
+         (alter devices dissoc device-id)
+         (.Offline ^Notify$Iface device nil)))
      ;;从表中剔除此对象
      (alter executors disj this)
      ;;释放资源
      (future
        (try
-         (let [^Proc   proc   (deref proc 100 nil)
-               ^Thrift thrift (deref thrift-notify 100 nil)]
+         (let [^Proc   proc   (deref proc 300 nil)
+               ^Thrift thrift (deref thrift-notify 300 nil)]
            ;;关闭进程对象
            (.close proc)
            ;;关闭thrift本地监听
            (.close thrift))
          (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e)))))))
 
-  (exe-log [this msg]
-    (let [level :debug
-          pid   (:pid (deref proc))
-          header (format "%s<%d>" manufacturer pid)]
-      (log/log header level nil msg)))
-
   Sdk$Iface
   (GetVersion [this]
-    (log/infof "%s version=%s" manufacturer (request @thrift-sdk GetVersion)))
+    (log/infof "%s version=%s"
+               manufacturer (request @thrift-sdk GetVersion)))
 
   (InitSDK [this]
     (request @thrift-sdk InitSDK))
@@ -130,48 +145,46 @@
   Notify$Iface
   (Lanuched [this port]
     (dosync
-     (log/infof "process lanuched: port=%d \n%s" port this)
+     (log/infof "process lanuched: port=%d" port)
+     ;;保存sdk进程的thrift服务端口
      (deliver thrift-sdk port)
+     ;;初始化进程
      (.InitSDK this)
+     ;;获取sdk版本信息
      (.GetVersion this)
+     ;;告知所有设备进行访问操作
      (doseq [^Notify$Iface device (deref devices)]
        (.Lanuched device port))))
 
   (Connected [this device-id]
-    (log/error "a device connected" device-id)
     (dosync
-     ;; (if-let [^Notify$Iface device (deref (deref devices) device-id)]
-     ;;   (.Connected device device-id)
-     ;;   (log/error "a device connected, but could not found in list"))
-     ))
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.Connected device device-id)
+       (log/error "a device connected, but could not found in list"))))
 
   (Offline [this device-id]
     (dosync
-     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
-     ;;   (.Offline device device-id)
-     ;;   (log/error "a device connected, but could not found in list"))
-     ))
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.Offline device device-id)
+       (log/error "a device connected, but could not found in list"))))
 
   (MediaStarted [this media-id device-id]
     (dosync
-     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
-     ;;   (.MediaStarted device media-id device-id)
-     ;;   (log/error "a device connected, but could not found in list"))
-     ))
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.MediaStarted device media-id device-id)
+       (log/error "a device connected, but could not found in list"))))
 
   (MediaFinish [this media-id device-id]
     (dosync
-     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
-     ;;   (.MediaFinish device media-id device-id)
-     ;;   (log/error "a device connected, but could not found in list"))
-     ))
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.MediaFinish device media-id device-id)
+       (log/error "a device connected, but could not found in list"))))
 
   (MediaData [this data media-id device-id]
     (dosync
-     ;; (if-let [^Notify$Iface device (get (deref devices) device-id)]
-     ;;   (.MediaData device data media-id device-id)
-     ;;   (log/error "a device connected, but could not found in list"))
-     ))
+     (if-let [^Notify$Iface device (get (deref devices) device-id)]
+       (.MediaData device data media-id device-id)
+       (log/error "a device connected, but could not found in list"))))
 
   clojure.lang.IDeref
   (deref [_] devices)
@@ -181,11 +194,12 @@
     (format "exe: %s \n%s"
             manufacturer
             (->> @devices
+                 val
                  (map #(str %))
                  (clojure.string/join ",\n")))))
 
 (defn- can-exe-multiplex?*
-  "执行程序可否复用"
+  "执行程序可否可复用"
   [manufacturer]
   (dosync
    (some (fn [executor]
@@ -193,23 +207,12 @@
              executor))
          (deref executors))))
 
-(defn- mk-crashed [^Executor executor]
-  (fn []
-    (.exe-log executor "crashed. close all in exe resources")
-    (.exe-log executor (str executor))
-    (try (.close executor)
-         (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e))))))
-
-(defn- mk-out-printer [^Executor executor]
-  (fn [msg]
-    (exe-log executor msg)))
-
 (defn- create-process*thrift
   [manufacturer]
   (dosync
    (log/info "create executor:" manufacturer)
    (let [executor-id   (str (UUID/randomUUID))
-         devices       (ref #{})
+         devices       (ref {})
          proc          (promise)
          thrift-notify (promise)
          thrift-sdk    (promise)
@@ -235,14 +238,10 @@
      executor)))
 
 (defn have-exe?
-  "通过初始化扫描文件目录,获取sdk厂商列表"
+  "通过初始化扫描文件目录,获取sdk厂商列表
+  todo..."
   [manufacturer]
   (some? (#{"hik" "dahua"} manufacturer)))
-
-(defn add-device
-  [executor device]
-  (dosync
-   (alter @executor conj device)))
 
 (defn create-exe!
   "创建执行程序"
@@ -253,6 +252,6 @@
 
 (defn clean-executors []
   (dosync
-   (doseq [^Executor executor (deref executors)]
+   (doseq [executor (deref executors)]
      (close executor))
    (ref-set executors #{})))
