@@ -1,7 +1,7 @@
 (ns red.device.client.core
   "主动连接: socket (1->1) client (n->1) source (n->1) device (n*->1) exe"
   (:require [clojure.tools.logging :as log]
-            [red.device.client.source :refer [get-all-sources get-source! add-client]]
+            [red.device.client.source :refer [get-all-sources get-source! add-client remove-client source->device]]
             [red.device.client.operate :refer :all]
             [red.utils :refer [now]])
   (:import [red.device.client.source Source]
@@ -14,7 +14,7 @@
            [java.util UUID]))
 
 (defprotocol IClient
-  (client->device [this data]))
+  (client->source [this data]))
 
 (deftype Client [^String             session
                  ^Source             source
@@ -25,26 +25,28 @@
                  ^Fn                 close-handle
                  ^DateTime           start-time]
   IClient
-  (client->device [this data]
-    (.client->device source data))
+  (client->source [this data]
+    (source->device source data))
 
   IOperate
   (close [this]
     (dosync
      (let [{:keys [remote-addr remote-port]} connection]
-       (log/infof "close client: %s:%d" remote-addr remote-port))))
+       (log/infof "close client: %s:%d" remote-addr remote-port))
+     (write-handle (ByteBuffer/allocate 0))
+     (close-handle)
+     (remove-client source session)))
 
   Notify$Iface
   (Offline [this _]
     (write-handle (ByteBuffer/allocate 0))
-    (close-handle))
+    (close this))
 
   (MediaStarted [this _ _]
     (log/info "media start: " this))
 
   (MediaFinish [this _ _]
-    (write-handle (ByteBuffer/allocate 0))
-    (close-handle))
+    (close this))
 
   (MediaData [this {:keys [^ByteBuffer payload type] :as data} _ _]
     (let [header (doto (ByteBuffer/allocate 5)
@@ -87,9 +89,9 @@
 
 (defn get-all-clients []
   (dosync
-   (reduce (fn [c clients]
-             (clojure.set/union c (vals (deref (deref clients)))))
-           #{} (get-all-sources))))
+   (reduce (fn [c pclients]
+             (->> pclients val deref :sources (conj c)))
+           {} (get-all-sources))))
 
 (defn get-client-by-id [^String id]
   (dosync
@@ -101,7 +103,7 @@
 (defn client->data [^Client client byte-buffer])
 
 (defn close-session! [^Client client]
-  (.close client))
+  (close client))
 
 (defn open-session!
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"

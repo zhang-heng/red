@@ -13,13 +13,16 @@
 
 (defprotocol IDevice
   (add-source [this source id])
-  (remove-source [this id]))
+  (remove-source [this id])
+  (add-gateway [this gateway id])
+  (remove-gateway [this id]))
 
 (deftype Device [^String       id
                  ^Executor     executor
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
                  ^Ref          sources ;;媒体请求列表 (ref {id source ...})
+                 ^Ref          gateways ;;网关列表 (ref {id gateway ...})
                  ^Ref          device->flow ;;来自设备的流量统计
                  ^Ref          client->flow ;;来自客户端的流量统计
                  ^DateTime     start-time]
@@ -30,8 +33,18 @@
 
   (remove-source [this id]
     (dosync
-     (empty? (alter sources dissoc id)
-             (close this))))
+     (when (and (empty? (alter sources dissoc id))
+                (empty? @gateways))
+       (close this))))
+
+  (add-gateway [this gateway id]
+    (dosync
+     (alter gateways assoc id gateway)))
+
+  (remove-gateway [this id]
+    (when (and (empty? (alter gateways dissoc id))
+               (empty? @sources))
+      (close this)))
 
   IOperate
   (can-multiplex? [this args]
@@ -42,15 +55,15 @@
   (close [this]
     (dosync
      (log/info "close device")
+     ;;通知所有子层关闭
+     (doseq [pgateway (deref gateways)]
+       (close (val pgateway)))
+     (doseq [psource (deref sources)]
+       (close (val psource)))
      ;;请求断开此设备
      (.Logout executor id)
      ;;从进程层将本对象删除
-     (remove-device executor id)
-     ;;通知所有子层关闭 todo... 网关模式还要增加处理
-     (doseq [psource (deref sources)]
-       (let [source-id (key psource)
-             source    (val psource)]
-         (.Offline ^Notify$Iface source nil)))))
+     (remove-device executor id)))
 
   Sdk$Iface
   (Login [this _ _]
@@ -90,15 +103,19 @@
   (Connected [this _]
     (log/infof "device connected: %s" id)
     (dosync
-     ;;告知所有媒体源,可以做媒体请求
+     ;;告知所有子对象,可以做进一步请求
      (doseq [psource (deref sources)]
-       (.Connected ^Notify$Iface (val psource) _))))
+       (.Connected ^Notify$Iface (val psource) _))
+     (doseq [pgateway (deref gateways)]
+       (.Connected ^Notify$Iface (val pgateway) _))))
 
   (Offline [this _]
     (dosync
-     ;;告知所有媒体源,由媒体源决定下一步操作
+     ;;告知所有子对象,由子对象决定下一步操作
      (doseq [psource (deref sources)]
-       (.Offline ^Notify$Iface (val psource) _))))
+       (.Offline ^Notify$Iface (val psource) _))
+     (doseq [pgateway (deref gateways)]
+       (.Offline ^Notify$Iface (val pgateway) _))))
 
   (MediaStarted [this source-id _]
     "当无对应，则应该关闭媒体 todo..."
@@ -118,16 +135,16 @@
        (.MediaData ^Notify$Iface source data source-id _))))
 
   clojure.lang.IDeref
-  (deref [_] (vals @sources))
+  (deref [_] {:sources @sources :gateways  @gateways})
 
   Object
-  (toString [this]
-    (let [{:keys [addr port]} (bean account)]
+  (toString [_]
+    (let [{:keys [addr port]} (bean account)
+          sources (->> @sources vals (map str))
+          gateways (->> @gateways vals (map str))]
       (format "__device: %s:%d \n%s"
-              addr port
-              (->> @this
-                   (map str)
-                   (clojure.string/join ",\n"))))))
+              addr port (->> (apply conj sources gateways)
+                             (clojure.string/join ",\n"))))))
 
 (defn- creat-device!
   [manufacturer ^LoginAccount account]
@@ -137,24 +154,25 @@
 
    (let [id           (str (UUID/randomUUID))
          executor     (create-exe! manufacturer)
-         device       (Device. id executor manufacturer account (ref {}) (ref 0) (ref 0) (now))]
+         device       (Device. id executor manufacturer account (ref {}) (ref {}) (ref 0) (ref 0) (now))]
      (add-device executor device id)
      device)))
 
 (defn get-all-devices
   "获取所有设备数据" []
   (dosync
-   (reduce (fn [c executor]
-             (conj c (deref executor)))
+   (reduce (fn [c pexecutor]
+             (->> pexecutor val deref (conj c)))
            {} (get-all-executors))))
 
 (defn- added-device?*
   "设备是否已添加"
   [manufacturer account]
   (dosync
-   (some (fn [device]
-           (when (can-multiplex+? device manufacturer account)
-             device))
+   (some (fn [pdevice]
+           (let [device (val pdevice)]
+             (when (can-multiplex+? device manufacturer account)
+               device)))
          (get-all-devices))))
 
 (defn add-device!

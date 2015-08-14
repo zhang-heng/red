@@ -1,6 +1,6 @@
 (ns red.device.client.source
   (:require [clojure.tools.logging :as log]
-            [red.device.client.device :refer [add-device! get-all-devices add-source]]
+            [red.device.client.device :refer [add-device! get-all-devices add-source remove-source]]
             [red.device.client.operate :refer :all]
             [red.utils :refer [now]])
   (:import [red.device.client.device Device]
@@ -13,12 +13,9 @@
            [org.joda.time DateTime]))
 
 (defprotocol ISource
-  (client->device [this data]))
-
-(defn add-client
-  [source client id]
-  (dosync
-   (alter @source assoc id client)))
+  (add-client [this client id])
+  (remove-client [this id])
+  (source->device [this data]))
 
 (deftype Source [^String       id
                  ^Device       device
@@ -32,7 +29,16 @@
                  ^Ref          client->flow
                  ^DateTime     start-time]
   ISource
-  (client->device [this data]
+  (add-client [this client id]
+    (dosync
+     (alter clients assoc id client)))
+
+  (remove-client [this id]
+    (dosync
+     (when (empty? (alter clients dissoc id))
+       (close this))))
+
+  (source->device [this data]
     (case source-type
       :realplay  nil
       :playback  nil
@@ -54,10 +60,9 @@
        :realplay  (.StopRealPlay  this nil nil)
        :playback  (.StopPlayBack  this nil nil)
        :voicetalk (.StopVoiceTalk this nil nil))
-     (alter @device dissoc id)
-     (doseq [^Notify$Iface client (deref clients)]
-       (alter clients disj client)
-       (.Offline client nil))))
+     (doseq [pclient (deref clients)]
+       (close (val pclient)))
+     (remove-source device id)))
 
   Sdk$Iface
   (StartRealPlay [this _ _ _]
@@ -93,39 +98,34 @@
   (Offline [this _]
     (dosync
      (doseq [pclient (deref clients)]
-       (let [client-id (key pclient)
-             client (val pclient)]
-         (alter clients dissoc client-id)
-         (.Offline ^Notify$Iface client _)))))
+       (.Offline ^Notify$Iface (val pclient) _))))
 
   (MediaStarted [this _ _]
     (dosync
-     (doseq [client (deref clients)]
-       (.MediaStarted ^Notify$Iface (val client) _ _))))
+     (doseq [pclient (deref clients)]
+       (.MediaStarted ^Notify$Iface (val pclient) _ _))))
 
   (MediaFinish [this _ _]
     (dosync
-     (doseq [client (deref clients)]
-       (.MediaFinish ^Notify$Iface (val client) _ _))))
+     (doseq [pclient (deref clients)]
+       (.MediaFinish ^Notify$Iface (val pclient) _ _))))
 
   (MediaData [this {:keys [^ByteBuffer payload type] :as data} _ _]
     (dosync
      (when (= type MediaType/FileHeader)
        (ref-set header-data data))
-     (doseq [client (deref clients)]
-       (.MediaData ^Notify$Iface (val client) data _ _))))
+     (doseq [pclient (deref clients)]
+       (.MediaData ^Notify$Iface (val pclient) data _ _))))
 
   clojure.lang.IDeref
-  (deref [_] clients)
+  (deref [_] @clients)
 
   Object
   (toString [_]
     (let [{:keys [channel stream_type connect_type start_time end_time]} (bean info)]
       (format "____source: %s %d %s %s %s %s \n%s"
               source-type channel stream_type connect_type start_time end_time
-              (->> @clients
-                   vals
-                   (map #(str %))
+              (->> @clients vals (map str)
                    (clojure.string/join ",\n"))))))
 
 (defn- create-source!
@@ -147,9 +147,9 @@
 
 (defn get-all-sources []
   (dosync
-   (reduce (fn [c device]
-             (clojure.set/union c (vals (deref (deref device)))))
-           #{} (get-all-devices))))
+   (reduce (fn [c pdevice]
+             (->> pdevice val deref (conj c)))
+           {} (get-all-devices))))
 
 (defn- can-source-multiplex?*
   "源能否复用"

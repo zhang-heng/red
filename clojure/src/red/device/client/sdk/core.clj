@@ -190,7 +190,7 @@
        (.MediaData device data media-id device-id)
        (log/error "a device connected, but could not found in list"))))
 
-  clojure.lang.IDeref
+  ;; clojure.lang.IDeref
   (deref [_] @devices)
 
   Object
