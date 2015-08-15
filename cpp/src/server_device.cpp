@@ -13,7 +13,7 @@ Media* Device::FindMedia(std::string id){
 void Device::StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info){
   auto media = FindMedia(media_id);
   if(!media){
-    media = new Media(_device_id, _login_id, media_id, play_info);
+    media = new Media(_client, _device_id, _login_id, media_id, play_info);
     _medias.insert(std::pair<std::string, Media*>(media_id, media));
     media->StartRealPlay();
   }

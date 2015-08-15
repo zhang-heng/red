@@ -3,15 +3,17 @@
 
 #include <iostream>
 #include "Sdk.h"
+#include "client.h"
 
 #define SESSION_ID void*
 
 class Media{
  public:
-  Media(std::string device_id, SESSION_ID login_id,
+  Media(Client *client, std::string device_id, SESSION_ID login_id,
         std::string media_id,  const device::info::PlayInfo& play_info);
-  void StartRealPlay(){ };  //SDK
-  void StopRealPlay(){ };   //SDK
+  void HandleDate();
+  void StartRealPlay();  //SDK
+  void StopRealPlay();   //SDK
   void StartVoiceTalk(){ }; //SDK
   void StopVoiceTalk(){ };  //SDK
   void SendVoiceData(const std::string& buffer){}; //SDK
@@ -23,6 +25,7 @@ class Media{
   void PlayBackSlow(){ };        //SDK
   void PlayBackSeek(){ };        //SDK
  private:
+  Client* _client;
   std::string _device_id;
   SESSION_ID _login_id;
 

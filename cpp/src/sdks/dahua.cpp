@@ -59,10 +59,10 @@ void Device::Login() {
 
 	NET_DEVICEINFO info;
 	int err_code = 0;
-	auto login_id = CLIENT_Login((char*)_account.addr.c_str(), _account.port,
+	_login_id = (SESSION_ID) CLIENT_Login((char*)_account.addr.c_str(), _account.port,
 		(char*)_account.user.c_str(), (char*)_account.password.c_str(),
 		&info, &err_code);
-	if (login_id == 0) {
+	if (_login_id == 0) {
 		std::cout<< "Fail to login, " + LoginErrorTostring(err_code)<< std::endl;
 		_client->send_offline(_device_id);
 	};
@@ -80,4 +80,27 @@ void Device::Login() {
 	return;
 }
 
-void Device::Logout(){return;}
+void Device::Logout(){
+	CLIENT_Logout((LLONG)_login_id);
+}
+
+void Media::HandleDate(){
+    _client->send_media_data(device::info::MediaPackage(), _media_id, _device_id);
+}
+
+void Media::StartRealPlay(){
+	auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
+		auto pthis = (Media*)dwUser;
+		pthis->HandleDate();
+	};
+
+	_handle_id = (SESSION_ID) CLIENT_StartRealPlay((LLONG)_login_id, _play_info.channel, 0,
+		_play_info.stream_type == device::types::StreamType::Main ? DH_RType_Realplay_0 : DH_RType_Realplay_1,
+		data_callback, 0, (DWORD)this);
+	if (_handle_id == 0) {
+		std::cout<<"startplay error: "<<CLIENT_GetLastError()<<std::endl;
+	}
+};
+
+void Media::StopRealPlay(){
+}; 

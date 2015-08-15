@@ -15,7 +15,7 @@
            [java.util UUID]
            [org.joda.time DateTime]))
 
-(defonce ^:private executors (ref {}))
+(def ^:private executors (ref {}))
 
 (thrift/import
  (:types    [device.types  MediaType    StreamType]
@@ -66,7 +66,8 @@
       (let [level :debug
             pid   (:pid (deref proc))
             header (format "%s<%d>" manufacturer pid)]
-        (log/log header level nil msg))))
+        ;; (log/log header level nil msg)
+        )))
 
   (mk-crashed [this]
     (fn []

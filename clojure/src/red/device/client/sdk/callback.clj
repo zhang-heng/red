@@ -40,8 +40,9 @@
                                 (Lanuched    [port] (try-do #(.Lanuched notifier port)))
                                 (Connected   [device-id] (try-do #(.Connected notifier device-id)))
                                 (Offline     [device-id] (try-do #(.Offline notifier device-id)))
-                                (MediaFinish [device-id media-id] (try-do #(.MediaFinish notifier device-id media-id)))
-                                (MediaData   [device-id media-id data] (try-do #(.MediaData notifier device-id media-id data))))
+                                (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
+                                (MediaData   [data media-id device-id]  ;; (try-do #(.MediaData notifier data media-id device-id))
+                                             ))
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
                                                       :protocol :binary)]
