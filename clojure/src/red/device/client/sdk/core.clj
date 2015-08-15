@@ -58,8 +58,8 @@
 
   (remove-device [this id]
     (dosync
-     (empty? (alter devices dissoc id)
-             (close this))))
+     (when (empty? (alter devices dissoc id))
+       (close this))))
 
   (mk-out-printer [this]
     (fn [msg]
@@ -95,7 +95,7 @@
        (let [device-id (key pdevice)
              device    (val pdevice)]
          (alter devices dissoc device-id)
-         (.Offline ^Notify$Iface device nil)))
+         (close device)))
      ;;从表中剔除此对象
      (alter executors dissoc id)
      ;;释放资源
@@ -190,7 +190,7 @@
        (.MediaData device data media-id device-id)
        (log/error "a device connected, but could not found in list"))))
 
-  ;; clojure.lang.IDeref
+  clojure.lang.IDeref
   (deref [_] @devices)
 
   Object
@@ -257,6 +257,8 @@
 
 (defn clean-executors []
   (dosync
-   (doseq [executor (deref executors)]
-     (close executor))
-   (ref-set executors {})))
+   (doseq [pexecutor (deref executors)]
+     (let [executor (val pexecutor)
+           executor-id (key pexecutor)]
+       (alter executors dissoc executor-id)
+       (close executor)))))

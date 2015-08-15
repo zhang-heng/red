@@ -10,12 +10,12 @@ const string version = "1.0.0"
 service Sdk{
 oneway void TestBytes(1:binary bytes),
 //********初始化库*********/
-bool InitSDK(),  //初始化sdk
-bool CleanSDK(), //释放SDK,退出
+oneway void InitSDK(),  //初始化sdk
+oneway void CleanSDK(), //释放SDK,退出
 
 //**********登入**********/
-bool Login  (1:info.LoginAccount account, 2:string device_id), //登入
-bool Logout (1:string device_id),           //登出
+oneway void Login  (1:info.LoginAccount account, 2:string device_id), //登入
+oneway void Logout (1:string device_id),           //登出
 
 //**********维护**********/
 string GetVersion(),    //获取版本信息
@@ -37,23 +37,23 @@ bool xDownloadRecordByTime(), //按时间下载
 bool xStopDownload(),         //停止下载
 
 //**********预览**********/
-bool StartRealPlay (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //打开预览
-bool StopRealPlay  (1:string media_id, 2:string device_id),     //关闭预览
+oneway void StartRealPlay (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //打开预览
+oneway void StopRealPlay  (1:string media_id, 2:string device_id),     //关闭预览
 
 //**********对讲**********/
-bool StartVoiceTalk (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //启动对讲
-bool StopVoiceTalk  (1:string media_id, 2:string device_id),    //关闭对讲
+oneway void StartVoiceTalk (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //启动对讲
+oneway void StopVoiceTalk  (1:string media_id, 2:string device_id),    //关闭对讲
 oneway void SendVoiceData (1:string device_id, 2:string media_id, 3:binary buffer), //发送对讲音频
 
 //**********回放**********/
-bool PlayBackByTime (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //按时间点播
-bool StopPlayBack   (1:string media_id, 2:string device_id), //停止点播
+oneway void PlayBackByTime (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //按时间点播
+oneway void StopPlayBack   (1:string media_id, 2:string device_id), //停止点播
 //->回放控制
-bool PlayBackNormalSpeed (1:string media_id, 2:string device_id), //正常速度
-bool PlayBackPause       (1:string media_id, 2:string device_id), //暂停
-bool PlayBackFast        (1:string media_id, 2:string device_id), //快放
-bool PlayBackSlow        (1:string media_id, 2:string device_id), //慢放
-bool PlayBackSeek        (1:string media_id, 2:string device_id), //改变进度
+oneway void PlayBackNormalSpeed (1:string media_id, 2:string device_id), //正常速度
+oneway void PlayBackPause       (1:string media_id, 2:string device_id), //暂停
+oneway void PlayBackFast        (1:string media_id, 2:string device_id), //快放
+oneway void PlayBackSlow        (1:string media_id, 2:string device_id), //慢放
+oneway void PlayBackSeek        (1:string media_id, 2:string device_id), //改变进度
 }
 
 

@@ -33,13 +33,13 @@ class Server : virtual public device::netsdk::SdkIf {
     return;
   }
 
-  bool InitSDK() override;
+  void InitSDK() override;
 
-  bool CleanSDK() override;
+  void CleanSDK() override;
 
-  bool Login(const device::info::LoginAccount& account, const std::string& device_id) override;
+  void Login(const device::info::LoginAccount& account, const std::string& device_id) override;
 
-  bool Logout(const std::string& device_id) override;
+  void Logout(const std::string& device_id) override;
 
   void GetVersion(std::string& _return) override;
 
@@ -114,59 +114,28 @@ class Server : virtual public device::netsdk::SdkIf {
     return true;
   }
 
-  bool StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) override;
+  void StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) override;
 
-  bool StopRealPlay(const std::string& media_id, const std::string& device_id) override;
+  void StopRealPlay(const std::string& media_id, const std::string& device_id) override;
 
-  bool StartVoiceTalk(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl;
-    return true;
-  }
+  void StartVoiceTalk(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {  }
 
-  bool StopVoiceTalk(const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl;
-    return true;
-  }
+  void StopVoiceTalk(const std::string& media_id, const std::string& device_id) { }
 
-  void SendVoiceData(const std::string& device_id, const std::string& media_id, const std::string& buffer) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl;
-  }
+  void SendVoiceData(const std::string& device_id, const std::string& media_id, const std::string& buffer) {  }
 
-  bool PlayBackByTime(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl; return true;
-  }
+  void PlayBackByTime(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {  }
 
-  bool StopPlayBack(const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl;return true;
-  }
+  void StopPlayBack(const std::string& media_id, const std::string& device_id) {  }
 
-  bool PlayBackNormalSpeed(const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl;return true;
-  }
+  void PlayBackNormalSpeed(const std::string& media_id, const std::string& device_id) {  }
 
-  bool PlayBackPause(const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl;return true;
-  }
+  void PlayBackPause(const std::string& media_id, const std::string& device_id) {  }
 
-  bool PlayBackFast(const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl; return true;
-  }
+  void PlayBackFast(const std::string& media_id, const std::string& device_id) {  }
 
-  bool PlayBackSlow(const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl; return true;
-  }
+  void PlayBackSlow(const std::string& media_id, const std::string& device_id) {  }
 
-  bool PlayBackSeek(const std::string& media_id, const std::string& device_id) {
-    // Your implementation goes here
-    std::cout<<"b"<<std::endl;return true;
+  void PlayBackSeek(const std::string& media_id, const std::string& device_id) {
   }
 };

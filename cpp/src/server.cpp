@@ -96,54 +96,32 @@ int Server::GetRandomPort(int from, int to){
 
 Device* Server::FindDevice(std::string id){
   auto it = _devices.find(id);
-  if(it == _devices.end())
-    return nullptr;
+  if(it == _devices.end()) return nullptr;
   return it->second;
 }
 
-bool Server::Login(const device::info::LoginAccount& account, const std::string& device_id){
+void Server::Login(const device::info::LoginAccount& account, const std::string& device_id){
   auto device = FindDevice(device_id);
   if(device){
-    return device->Login();
+    device->Login();
   }else{
     device = new Device(device_id, account, _client);
     _devices.insert(std::pair<std::string, Device*>(device_id, device));
-    return device->Login();
+    device->Login();
   }
 }
 
-bool Server::Logout(const std::string& device_id) {
+void Server::Logout(const std::string& device_id) {
   auto device = FindDevice(device_id);
-  if(device)
-    return device->Logout();
-  else{
-    device::info::InvalidOperation io;
-    io.what = 0;
-    io.why = "device_id not found";
-    throw io;
-  }
+  if(device) device->Logout();
 }
 
-bool Server::StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
+void Server::StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
   auto device = FindDevice(device_id);
-  if(device)
-    return device->StartRealPlay(media_id, play_info);
-  else{
-    device::info::InvalidOperation io;
-    io.what = 0;
-    io.why = "device_id not found";
-    throw io;
-  }
+  if(device) device->StartRealPlay(media_id, play_info);
 }
 
-bool Server::StopRealPlay(const std::string& media_id, const std::string& device_id){
+void Server::StopRealPlay(const std::string& media_id, const std::string& device_id){
   auto device = FindDevice(device_id);
-  if(device)
-    return device->StopRealPlay(media_id);
-  else{
-    device::info::InvalidOperation io;
-    io.what = 0;
-    io.why = "device_id not found";
-    throw io;
-  }
+  if(device) device->StopRealPlay(media_id);
 }

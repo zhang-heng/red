@@ -33,15 +33,15 @@ std::string LoginErrorTostring(int code){
 	};
 }
 
-bool Server::InitSDK() {
+void Server::InitSDK() {
 	bool ret = CLIENT_Init(DisConnectFunc, (LDWORD)this);
 	std::cout<<"init dahua sdk "<< ret <<std::endl;
-	return ret;
+	return;
 }
 
-bool Server::CleanSDK() {
+void Server::CleanSDK() {
 	//todo...
-	return true;}
+	return;}
 
 void Server::GetVersion(std::string& _return) {
 	std::stringstream stream;
@@ -50,7 +50,7 @@ void Server::GetVersion(std::string& _return) {
 	_return = stream.str();
 }
 
-bool Device::Login() {
+void Device::Login() {
 	std::cout<<"login: "
 		<<"addr= "<<_account.addr
 		<<"port= "<<_account.port
@@ -63,11 +63,8 @@ bool Device::Login() {
 		(char*)_account.user.c_str(), (char*)_account.password.c_str(),
 		&info, &err_code);
 	if (login_id == 0) {
-		device::info::InvalidOperation io;
-		io.what = err_code;
-		io.why = "Fail to login, " + LoginErrorTostring(err_code);
-		std::cout<< io.why << std::endl;
-		throw io;
+		std::cout<< "Fail to login, " + LoginErrorTostring(err_code)<< std::endl;
+		_client->send_offline(_device_id);
 	};
 	//序列号
 	_info.serial_number = std::string(info.sSerialNumber, info.sSerialNumber + DH_SERIALNO_LEN);
@@ -80,7 +77,7 @@ bool Device::Login() {
 
 	std::cout<<_info.serial_number<<std::endl;
 	_client->send_connected(_device_id);
-	return true;
+	return;
 }
 
-bool Device::Logout(){return true;}
+void Device::Logout(){return;}

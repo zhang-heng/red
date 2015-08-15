@@ -14,25 +14,21 @@
 using namespace device;
 using namespace device::netsdk;
 
-bool Server::InitSDK() {
+void Server::InitSDK() {
 	bool ret = NET_DVR_Init();
 	if (!ret) {
-		info::InvalidOperation io;
-		io.what = ret;
-		io.why = "Fail to init sdk";
-		throw io;
+      std::cout<<"Fail to init sdk"<<std::endl;
 	}
-	return ret;
 }
 
-bool Server::CleanSDK() { return true;}
+void Server::CleanSDK() { return;}
 
 void Server::GetVersion(std::string& _return){
 	_return = "";
 }
 
-bool Device::Login(){return true;}
-bool Device::Logout(){return true;}
+void Device::Login(){return;}
+void Device::Logout(){return;}
 
 
 

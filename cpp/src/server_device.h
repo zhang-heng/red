@@ -4,10 +4,10 @@
 class Device{
  public:
   Device(std::string device_id, const device::info::LoginAccount& account, Client* client);
-  bool Login();
-  bool Logout();
-  bool StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info);
-  bool StopRealPlay(const std::string& media_id);
+  void Login();
+  void Logout();
+  void StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info);
+  void StopRealPlay(const std::string& media_id);
  private:
   SESSION_ID _login_id;
   std::string _device_id;

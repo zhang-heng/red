@@ -10,33 +10,20 @@ Media* Device::FindMedia(std::string id){
   return it->second;
 }
 
-bool Device::StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info){
+void Device::StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info){
   auto media = FindMedia(media_id);
-  if(media){
-    device::info::InvalidOperation io;
-    io.what = 0;
-    io.why = "realplay has started";
-    throw io;
-  }
-  else{
+  if(!media){
     media = new Media(_device_id, _login_id, media_id, play_info);
     _medias.insert(std::pair<std::string, Media*>(media_id, media));
-    return media->StartRealPlay();
+    media->StartRealPlay();
   }
 }
 
-bool Device::StopRealPlay(const std::string& media_id){
+void Device::StopRealPlay(const std::string& media_id){
   auto media = FindMedia(media_id);
   if(media){
     _medias.erase(media_id);
-    auto ret = media->StopRealPlay();
+    media->StopRealPlay();
     delete media;
-    return ret;
-  }
-  else{
-    device::info::InvalidOperation io;
-    io.what = 0;
-    io.why = "realplay not found";
-    throw io;
   }
 }

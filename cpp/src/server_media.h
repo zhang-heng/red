@@ -10,18 +10,18 @@ class Media{
  public:
   Media(std::string device_id, SESSION_ID login_id,
         std::string media_id,  const device::info::PlayInfo& play_info);
-  bool StartRealPlay(){return true;};  //SDK
-  bool StopRealPlay(){return true;};   //SDK
-  bool StartVoiceTalk(){return true;}; //SDK
-  bool StopVoiceTalk(){return true;};  //SDK
+  void StartRealPlay(){ };  //SDK
+  void StopRealPlay(){ };   //SDK
+  void StartVoiceTalk(){ }; //SDK
+  void StopVoiceTalk(){ };  //SDK
   void SendVoiceData(const std::string& buffer){}; //SDK
-  bool PlayBackByTime(){return true;};      //SDK
-  bool StopPlayBack(){return true;};        //SDK
-  bool PlayBackNormalSpeed(){return true;}; //SDK
-  bool PlayBackPause(){return true;};       //SDK
-  bool PlayBackFast(){return true;};        //SDK
-  bool PlayBackSlow(){return true;};        //SDK
-  bool PlayBackSeek(){return true;};        //SDK
+  void PlayBackByTime(){ };      //SDK
+  void StopPlayBack(){ };        //SDK
+  void PlayBackNormalSpeed(){ }; //SDK
+  void PlayBackPause(){ };       //SDK
+  void PlayBackFast(){ };        //SDK
+  void PlayBackSlow(){ };        //SDK
+  void PlayBackSeek(){ };        //SDK
  private:
   std::string _device_id;
   SESSION_ID _login_id;
