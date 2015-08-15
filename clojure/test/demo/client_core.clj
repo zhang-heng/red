@@ -1,5 +1,7 @@
 (ns demo.client-core
-  (:require [clojure.tools.logging :as log]
+  (:require [thrift-clj.core :as thrift]
+            [clojure.tools.logging :as log]
+            [thrift-clj.core :as thrift]
             [red.device.client.sdk.core :refer [get-all-executors clean-executors]]
             [red.device.client.device :refer [get-all-devices]]
             [red.device.client.source :refer [get-all-sources]]

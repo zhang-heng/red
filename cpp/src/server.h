@@ -29,8 +29,22 @@ class Server : virtual public device::netsdk::SdkIf {
   void ServerStarted();
   ~Server();
 
-  void TestBytes(const std::string& buffer) {
-    return;
+  void Test1(const ::device::info::MediaPackage& mp) {
+	  std::cout<<"->sdkTest1"<<std::endl;
+  }
+
+  void Test2(const std::string& bytes) {
+	  std::cout<<"->sdkTest2"<<std::endl;
+  }
+
+  void Test3( ::device::info::MediaPackage& _return) {
+	  std::cout<<"->sdkTest3"<<std::endl;
+	  _return.payload = "return by sdk";
+  }
+
+  void Test4(std::string& _return) {
+	  std::cout<<"->sdkTest4"<<std::endl;
+	  _return = "return by sdk";
   }
 
   void InitSDK() override;

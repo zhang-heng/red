@@ -5,9 +5,11 @@
             [thrift-clj.transports :as t])
   (:import [device.netsdk Notify$Iface]
            [org.apache.thrift.server TThreadPoolServer TThreadPoolServer$Args]
-           [org.apache.thrift.transport TServerSocket]))
+           [org.apache.thrift.transport TServerSocket]
+           [java.nio ByteBuffer]))
 
 (thrift/import
+ (:types [device.info MediaPackage])
  (:services [device.netsdk Notify]))
 
 ;;thrift-clj的接口中将port置为零,自动获取一个随机可用端口,不可查.
@@ -35,14 +37,28 @@
   (try (f)
        (catch Exception e (log/warnf "executor notify handle error: \n%s" (stack-trace e)))))
 
+(defn media-data [data media-id device-id]
+  (log/info (str MediaPackage) (str data)))
+
 (defn start-thrift! [^Notify$Iface notifier]
   (let [handler (thrift/service Notify
+                                (Test1 [mp] (log/debug "test1:" mp))
+                                (Test2 [bs] (log/debug "test2:" bs))
+                                (Test3 [] (log/debug "test3") (device.info.MediaPackage.))
+                                (Test4 [] (log/debug "test4") (ByteBuffer/allocate 0))
+
                                 (Lanuched    [port] (try-do #(.Lanuched notifier port)))
+
                                 (Connected   [device-id] (try-do #(.Connected notifier device-id)))
+
                                 (Offline     [device-id] (try-do #(.Offline notifier device-id)))
+
                                 (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
-                                (MediaData   [data media-id device-id] (log/info (.type data) (.reserver data) (.payload data));; (try-do #(.MediaData notifier data media-id device-id))
-                                             ))
+
+                                (MediaData   [{:keys [type reserver payload] :as data} media-id device-id]
+                                             (media-data (device.info.MediaPackage.
+                                                          type reserver (ByteBuffer/wrap payload))
+                                                         media-id device-id)))
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
                                                       :protocol :binary)]

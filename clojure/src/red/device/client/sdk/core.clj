@@ -24,7 +24,8 @@
 
 (defn try-do [f]
   (try (f)
-       (catch InvalidOperation e (prn e))))
+       (catch InvalidOperation e (prn e))
+       (catch Exception e (prn e))))
 
 (defmacro request [port method & args]
   (let [method# (symbol "Sdk" (str method))]
@@ -66,8 +67,7 @@
       (let [level :debug
             pid   (:pid (deref proc))
             header (format "%s<%d>" manufacturer pid)]
-        ;; (log/log header level nil msg)
-        )))
+        (log/log header level nil msg))))
 
   (mk-crashed [this]
     (fn []
@@ -111,6 +111,11 @@
          (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e)))))))
 
   Sdk$Iface
+  (Test1 [this mp] (request @thrift-sdk Test1 (device.info.MediaPackage.)))
+  (Test2 [this bs] (request @thrift-sdk Test2 (ByteBuffer/allocate 0)))
+  (Test3 [this] (request @thrift-sdk Test3))
+  (Test4 [this] (request @thrift-sdk Test4))
+
   (GetVersion [this]
     (log/infof "%s version=%s"
                manufacturer (request @thrift-sdk GetVersion)))
@@ -153,6 +158,10 @@
      (log/infof "process lanuched: port=%d" port)
      ;;保存sdk进程的thrift服务端口
      (deliver thrift-sdk port)
+     (do (.Test1 this nil)
+         (.Test2 this nil)
+         (log/debug "test3" (.Test3 this))
+         (log/debug "test4" (.Test4 this)))
      ;;初始化进程
      (.InitSDK this)
      ;;获取sdk版本信息

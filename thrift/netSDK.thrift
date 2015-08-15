@@ -8,7 +8,12 @@ const string version = "1.0.0"
 
 //请求操作
 service Sdk{
-oneway void TestBytes(1:binary bytes),
+//**********TEST***********/
+oneway void       Test1(1:info.MediaPackage mp),
+oneway void       Test2(1:binary bytes),
+info.MediaPackage Test3(),
+binary            Test4(),
+
 //********初始化库*********/
 oneway void InitSDK(),  //初始化sdk
 oneway void CleanSDK(), //释放SDK,退出
@@ -61,6 +66,12 @@ oneway void PlayBackSeek        (1:string media_id, 2:string device_id), //改�
 
 //通知反馈
 service Notify{
+//**********TEST***********/
+oneway void       Test1(1:info.MediaPackage mp),
+oneway void       Test2(1:binary bytes),
+info.MediaPackage Test3(),
+binary            Test4(),
+
 //**********状态通知**********/
 oneway void Lanuched     (1:i32 thrift_port),  //启动完成
 oneway void Connected    (1:string device_id), //连接成功
@@ -71,6 +82,4 @@ oneway void MediaFinish  (1:string media_id, 2:string device_id), //结束通知
 oneway void MediaData    (1:info.MediaPackage data, 2:string media_id, 3:string device_id), //媒体数据
 //**********报警通知**********/
 oneway void xAlarmNotify (),
-//test
-oneway void TestBytes(1:binary bytes),
 }

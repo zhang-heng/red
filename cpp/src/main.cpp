@@ -19,6 +19,12 @@ bool isNum(std::string str){
 
 int main(int argc, char* argv[]){
   std::cout<< "sdk proc working on!" <<std::endl;
+
+#if (defined(WIN32) || defined(WIN64))
+  DWORD dwMode = SetErrorMode(SEM_NOGPFAULTERRORBOX);
+  SetErrorMode(dwMode | SEM_NOGPFAULTERRORBOX);
+#endif
+
   if(argc == 2){
     std::string port_str(argv[1]);
     int port = 0;

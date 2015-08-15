@@ -85,7 +85,9 @@ void Device::Logout(){
 }
 
 void Media::HandleDate(){
-    _client->send_media_data(device::info::MediaPackage(), _media_id, _device_id);
+	device::info::MediaPackage p;
+	p.payload = "";
+    _client->send_media_data(p, _media_id, _device_id);
 }
 
 void Media::StartRealPlay(){

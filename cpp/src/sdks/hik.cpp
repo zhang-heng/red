@@ -30,8 +30,8 @@ void Server::GetVersion(std::string& _return){
 void Device::Login(){return;}
 void Device::Logout(){return;}
 
-
-
+void Media::StartRealPlay(){}
+void Media::StopRealPlay(){}; 
 // bool Server::Login(const std::string& deviceID, const device::info::LoginAccount& account){
 //   NET_DVR_DEVICEINFO_V30 info;
 //   long login_id = NET_DVR_Login_V30((char*)account.addr.c_str(),
