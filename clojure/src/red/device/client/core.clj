@@ -90,7 +90,7 @@
 (defn get-all-clients []
   (dosync
    (reduce (fn [c pclients]
-             (->> pclients val deref :sources (conj c)))
+             (->> pclients val deref (conj c)))
            {} (get-all-sources))))
 
 (defn get-client-by-id [^String id]

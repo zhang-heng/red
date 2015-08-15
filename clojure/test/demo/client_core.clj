@@ -1,6 +1,8 @@
 (ns demo.client-core
   (:require [clojure.tools.logging :as log]
             [red.device.client.sdk.core :refer [get-all-executors clean-executors]]
+            [red.device.client.device :refer [get-all-devices]]
+            [red.device.client.source :refer [get-all-sources]]
             [red.device.client.core :refer [open-session! close-session! get-all-clients]]
             [clojure.test :refer :all])
   (:import [java.util UUID]))
@@ -27,8 +29,13 @@
                  :remote-addr "127.0.0.1"
                  :remote-port 456})
 
-;; (open-session! connection test-session test-write-handle test-close-handle)
-;; (clean-executors)
+(open-session! connection test-session test-write-handle test-close-handle)
 
-;;(log/info (str "exes: \n" (clojure.string/join "\n" (map str (get-all-executors)))))
-;;(close-session! (first (get-all-clients)))
+(log/info (str "exes: \n" (clojure.string/join "\n" (map str (get-all-executors)))))
+(log/info (str "devices: \n" (clojure.string/join "\n" (map str (get-all-devices)))))
+(log/info (str "sources: \n" (clojure.string/join "\n" (map str (get-all-sources)))))
+(log/info (str "clients: \n" (clojure.string/join "\n" (map str (get-all-clients)))))
+
+(close-session! (first (get-all-clients)))
+
+(clean-executors)

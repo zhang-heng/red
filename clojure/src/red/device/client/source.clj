@@ -148,7 +148,7 @@
 (defn get-all-sources []
   (dosync
    (reduce (fn [c pdevice]
-             (->> pdevice val deref (conj c)))
+             (->> pdevice val deref :sources (conj c)))
            {} (get-all-devices))))
 
 (defn- can-source-multiplex?*

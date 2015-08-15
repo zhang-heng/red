@@ -41,7 +41,7 @@
                                 (Connected   [device-id] (try-do #(.Connected notifier device-id)))
                                 (Offline     [device-id] (try-do #(.Offline notifier device-id)))
                                 (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
-                                (MediaData   [data media-id device-id]  ;; (try-do #(.MediaData notifier data media-id device-id))
+                                (MediaData   [data media-id device-id] (log/info (.type data) (.reserver data) (.payload data));; (try-do #(.MediaData notifier data media-id device-id))
                                              ))
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
