@@ -12,7 +12,7 @@
 (def test-session
   {:manufacturer "dahua"
    ;;:addr         "192.168.8.85"
-   :addr         "124.64.74.180"
+   :addr         "124.64.75.10"
    :port         37777
    :user         "admin"
    :password     "admin"

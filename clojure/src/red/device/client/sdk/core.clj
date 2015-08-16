@@ -24,14 +24,15 @@
 
 (defn try-do [f]
   (try (f)
-       (catch InvalidOperation e (prn e))
-       (catch Exception e (prn e))))
+       (catch InvalidOperation e (log/debug e))
+       (catch Exception e (log/debug e))))
 
 (defmacro request [port method & args]
   (let [method# (symbol "Sdk" (str method))]
     `(if (pos? ~port)
-       (with-open [c# (thrift/connect! Sdk ["localhost" ~port] :protocol :binary)]
-         (try-do #(~method# c# ~@args)))
+       (try-do
+        #(with-open [c# (thrift/connect! Sdk ["localhost" ~port] :protocol :binary)]
+           (~method# c# ~@args)))
        (log/error "sdk thrift port not found"))))
 
 (defn get-all-executors []
@@ -111,10 +112,10 @@
          (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e)))))))
 
   Sdk$Iface
-  (Test1 [this mp] (request @thrift-sdk Test1 (device.info.MediaPackage.)))
-  (Test2 [this bs] (request @thrift-sdk Test2 (ByteBuffer/allocate 0)))
-  (Test3 [this] (request @thrift-sdk Test3))
-  (Test4 [this] (request @thrift-sdk Test4))
+  (Test1 [this mp] (log/debug "->sdk test1" (request @thrift-sdk Test1 (device.info.MediaPackage.))))
+  (Test2 [this bs] (log/debug "->sdk test2" (request @thrift-sdk Test2 (ByteBuffer/allocate 0))))
+  (Test3 [this] (log/debug "->sdk test3" (request @thrift-sdk Test3)))
+  (Test4 [this] (log/debug "->sdk test4" (request @thrift-sdk Test4)))
 
   (GetVersion [this]
     (log/infof "%s version=%s"
@@ -160,8 +161,8 @@
      (deliver thrift-sdk port)
      (do (.Test1 this nil)
          (.Test2 this nil)
-         (log/debug "test3" (.Test3 this))
-         (log/debug "test4" (.Test4 this)))
+         (.Test3 this)
+         (.Test4 this))
      ;;初始化进程
      (.InitSDK this)
      ;;获取sdk版本信息
@@ -196,6 +197,7 @@
 
   (MediaData [this data media-id device-id]
     (dosync
+     (log/debug data)
      (if-let [^Notify$Iface device (get (deref devices) device-id)]
        (.MediaData device data media-id device-id)
        (log/error "a device connected, but could not found in list"))))

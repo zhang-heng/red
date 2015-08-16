@@ -48,8 +48,9 @@
   (MediaFinish [this _ _]
     (close this))
 
-  (MediaData [this {:keys [^ByteBuffer payload type] :as data} _ _]
-    (let [header (doto (ByteBuffer/allocate 5)
+  (MediaData [this data _ _]
+    (let [{:keys [^ByteBuffer payload type]} (bean data)
+          header (doto (ByteBuffer/allocate 5)
                    (.put (byte type))
                    (.putInt (.limit payload))
                    (.flip))]

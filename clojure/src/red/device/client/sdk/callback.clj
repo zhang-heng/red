@@ -37,15 +37,12 @@
   (try (f)
        (catch Exception e (log/warnf "executor notify handle error: \n%s" (stack-trace e)))))
 
-(defn media-data [data media-id device-id]
-  (log/info (str MediaPackage) (str data)))
-
 (defn start-thrift! [^Notify$Iface notifier]
   (let [handler (thrift/service Notify
-                                (Test1 [mp] (log/debug "test1:" mp))
-                                (Test2 [bs] (log/debug "test2:" bs))
-                                (Test3 [] (log/debug "test3") (device.info.MediaPackage.))
-                                (Test4 [] (log/debug "test4") (ByteBuffer/allocate 0))
+                                (Test1 [mp] (log/debug "->sdk test1" mp))
+                                (Test2 [bs] (log/debug "->sdk test2:" bs))
+                                (Test3 [] (log/debug "->sdk test3") (device.info.MediaPackage.))
+                                (Test4 [] (log/debug "->sdk test4") (ByteBuffer/allocate 0))
 
                                 (Lanuched    [port] (try-do #(.Lanuched notifier port)))
 
@@ -56,9 +53,12 @@
                                 (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
 
                                 (MediaData   [{:keys [type reserver payload] :as data} media-id device-id]
-                                             (media-data (device.info.MediaPackage.
-                                                          type reserver (ByteBuffer/wrap payload))
-                                                         media-id device-id)))
+                                             (let [d (device.info.MediaPackage.
+                                                      type reserver (ByteBuffer/wrap payload))]
+                                               (log/debug data)
+                                               (log/debug d)
+                                               (try-do #(.MediaData notifier d media-id device-id)))))
+
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
                                                       :protocol :binary)]

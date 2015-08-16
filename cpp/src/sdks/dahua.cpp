@@ -86,7 +86,9 @@ void Device::Logout(){
 
 void Media::HandleDate(){
 	device::info::MediaPackage p;
-	p.payload = "";
+	p.type = device::types::MediaType::MediaData;
+	p.reserver = 1;
+	p.payload = "123";
     _client->send_media_data(p, _media_id, _device_id);
 }
 

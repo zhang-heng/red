@@ -110,12 +110,13 @@
      (doseq [pclient (deref clients)]
        (.MediaFinish ^Notify$Iface (val pclient) _ _))))
 
-  (MediaData [this {:keys [^ByteBuffer payload type] :as data} _ _]
+  (MediaData [this data _ _]
     (dosync
-     (when (= type MediaType/FileHeader)
-       (ref-set header-data data))
-     (doseq [pclient (deref clients)]
-       (.MediaData ^Notify$Iface (val pclient) data _ _))))
+     (let [{:keys [^ByteBuffer payload type]} (bean data)]
+       (when (= type MediaType/FileHeader)
+         (ref-set header-data data))
+       (doseq [pclient (deref clients)]
+         (.MediaData ^Notify$Iface (val pclient) data _ _)))))
 
   clojure.lang.IDeref
   (deref [_] @clients)

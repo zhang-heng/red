@@ -39,6 +39,7 @@ class Server : virtual public device::netsdk::SdkIf {
 
   void Test3( ::device::info::MediaPackage& _return) {
 	  std::cout<<"->sdkTest3"<<std::endl;
+	  _return.type = device::types::MediaType::FileHeader;
 	  _return.payload = "return by sdk";
   }
 
