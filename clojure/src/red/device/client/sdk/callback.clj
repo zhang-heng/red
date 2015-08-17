@@ -53,10 +53,13 @@
 
                                 (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
 
-                                (MediaData   [{:keys [type reserver payload] :as ^MediaPackage data} media-id device-id]
-                                             (let [d (device.info.MediaPackage.
-                                                      type reserver (ByteBuffer/wrap payload))]
-                                               (try-do #(.MediaData notifier d media-id device-id)))))
+                                (MediaData   [{:keys [type reserver ^bytes payload] :as ^MediaPackage data} media-id device-id]
+                                             (try
+                                               (let [d (device.info.MediaPackage.
+                                                        type reserver (ByteBuffer/wrap payload))]
+                                                 (.MediaData notifier d media-id device-id))
+                                               (catch Exception e
+                                                 (log/error e data media-id device-id)))))
 
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"

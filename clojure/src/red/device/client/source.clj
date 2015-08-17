@@ -13,6 +13,7 @@
            [org.joda.time DateTime]))
 
 (defprotocol ISource
+  (connect [this])
   (add-client [this client id])
   (remove-client [this id])
   (source->device [this data]))
@@ -29,6 +30,13 @@
                  ^Ref          client->flow
                  ^DateTime     start-time]
   ISource
+  (connect [this]
+    (dosync
+     (case source-type
+       :playback  (.PlayBackByTime this info id nil)
+       :realplay  (.StartRealPlay  this info id nil)
+       :voicetalk (.StartVoiceTalk this info id nil))))
+
   (add-client [this client id]
     (dosync
      (alter clients assoc id client)))
@@ -88,12 +96,7 @@
 
   Notify$Iface
   (Connected [this _]
-    (log/infof "req %s, %s" source-type id)
-    (dosync
-     (case source-type
-       :playback  (.PlayBackByTime this info id _)
-       :realplay  (.StartRealPlay  this info id _)
-       :voicetalk (.StartVoiceTalk this info id _))))
+    (connect this))
 
   (Offline [this _]
     (dosync
@@ -144,7 +147,7 @@
          source  (Source. id device manufacturer account media-type info clients (ref nil) (ref 0) (ref 0) (now))]
      ;;将本source 添加入设备
      (add-source device source id)
-     (.Connected source nil)
+     (connect source)
      ;;请求
      source)))
 

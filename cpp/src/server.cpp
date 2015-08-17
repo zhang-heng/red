@@ -105,7 +105,7 @@ void Server::Login(const device::info::LoginAccount& account, const std::string&
   if(device){
     device->Login();
   }else{
-    device = new Device(device_id, account, _client);
+    device = new Device(device_id, account, _client_port);
     _devices.insert(std::pair<std::string, Device*>(device_id, device));
     device->Login();
   }

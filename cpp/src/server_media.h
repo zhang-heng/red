@@ -9,7 +9,7 @@
 
 class Media{
  public:
-  Media(Client *client, std::string device_id, SESSION_ID login_id,
+  Media(int client_port, std::string device_id, SESSION_ID login_id,
         std::string media_id,  const device::info::PlayInfo& play_info);
   void HandleDate(const device::info::MediaPackage & media);
   void StartRealPlay();  //SDK

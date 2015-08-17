@@ -8,6 +8,7 @@
   (:require [thrift-clj.core :as thrift]
             [clojure.tools.logging :as log]
             [thrift-clj.core :as thrift]
+            [red.utils :refer [now pass-mill]]
             [red.device.client.sdk.core :refer [get-all-executors clean-executors]]
             [red.device.client.device :refer [get-all-devices]]
             [red.device.client.source :refer [get-all-sources]]
@@ -29,16 +30,24 @@
 
 (defonce w (clojure.java.io/writer "media.out"))
 
-(defonce session (atom 0))
+(def session (atom 0))
 
-(defonce outer (agent nil))
+(defn get-mark-space [s]
+  (let [n (rem s 32)]
+    (apply str (take n (repeat " ")))))
 
 (defn mk-test-write-handle [s]
-  (fn [^ByteBuffer byte-buffer]
-    (send outer (fn [_] (clojure.pprint/pprint (str s " " (.limit byte-buffer)) w)))))
+  (let [t (atom (now))
+        l (atom 0)]
+    (fn [^ByteBuffer byte-buffer]
+      (swap! l + (.limit byte-buffer))
+      (when (< 500 (pass-mill @t))
+        (clojure.pprint/pprint (str (get-mark-space s) s @l) w)
+        (reset! t (now))
+        (reset! l 0)))))
 
 (defn mk-test-close-handle [s]
-  (fn [] (log/info  s " close")))
+  (fn [] (clojure.pprint/pprint (str (get-mark-space s) s " close") w)))
 
 (def connection {:local-addr "127.0.0.1"
                  :local-port 123
@@ -75,7 +84,7 @@
      a:日志无异常;
      b:输出正常(tail -f media.out).
      c:无进程残留"
-  [] (dotimes [n 1]
+  [] (dotimes [n 10]
        (test-open-close 2000)))
 
 (defn test2 []
@@ -104,16 +113,17 @@
 
 (defn test5
   "5:打开不同媒体通道"
-  [] (let [clients (->> (range 1 9)
-                        (map #(assoc (test-session) :channel-id %))
-                        (map #(test-start-session %))
-                        doall)]
-       (Thread/sleep 1000)
-       (show-all-exes)
-       (show-all-clients)
-       (Thread/sleep 10000)
-       (doseq [client clients]
-         (close-session! client))
-       (show-all-exes)))
+  [] (dotimes [n 5]
+       (let [clients (->> (range 1 17)
+                          (map #(assoc (test-session) :channel-id %))
+                          (map #(do (Thread/sleep 0)
+                                    (test-start-session %)))
+                          doall)]
+         (show-all-exes)
+         (show-all-clients)
+         (Thread/sleep 5000)
+         (doseq [client clients]
+           (close-session! client))
+         (show-all-exes))))
 
-;;(test5)
+(test1)

@@ -3,7 +3,7 @@
 
 class Device{
  public:
-  Device(std::string device_id, const device::info::LoginAccount& account, Client* client);
+  Device(std::string device_id, const device::info::LoginAccount& account, int client_port);
   void Login();
   void Logout();
   void StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info);
@@ -15,6 +15,7 @@ class Device{
   device::info::DeviceInfo _info;
   std::map<std::string, Media*> _medias;
   Client* _client;
+  int _client_port;
 
   Media* FindMedia(std::string id);
 };
