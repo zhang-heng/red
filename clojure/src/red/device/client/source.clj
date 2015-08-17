@@ -144,6 +144,8 @@
          source  (Source. id device manufacturer account media-type info clients (ref nil) (ref 0) (ref 0) (now))]
      ;;将本source 添加入设备
      (add-source device source id)
+     (.Connected source nil)
+     ;;请求
      source)))
 
 (defn get-all-sources []
@@ -157,9 +159,10 @@
   [manufacturer ^LoginAccount account
    media-type   ^PlayInfo     info]
   (dosync
-   (some (fn [^Source source]
-           (when (can-multiplex+? source manufacturer account media-type info)
-             source))
+   (some (fn [psource]
+           (let [^Source source (val psource)]
+             (when (can-multiplex+? source manufacturer account media-type info)
+               source)))
          (get-all-sources))))
 
 (defn get-source!

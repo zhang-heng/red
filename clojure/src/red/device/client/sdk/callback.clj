@@ -30,12 +30,13 @@
   (get-port [this]
     port)
   (close [this]
-    (try (thrift/stop! server)
-         (catch Exception e (prn e)))))
+    (future
+      (try (io! (thrift/stop! server))
+           (catch Exception e (log/warn e))))))
 
 (defn try-do [f]
   (try (f)
-       (catch Exception e (log/warnf "executor notify handle error: \n%s" (stack-trace e)))))
+       (catch Exception e (log/errorf "executor notify handle error: \n%s" (stack-trace e)))))
 
 (defn start-thrift! [^Notify$Iface notifier]
   (let [handler (thrift/service Notify
@@ -52,11 +53,9 @@
 
                                 (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
 
-                                (MediaData   [{:keys [type reserver payload] :as data} media-id device-id]
+                                (MediaData   [{:keys [type reserver payload] :as ^MediaPackage data} media-id device-id]
                                              (let [d (device.info.MediaPackage.
                                                       type reserver (ByteBuffer/wrap payload))]
-                                               ;; (log/debug data)
-                                               ;; (log/debug d)
                                                (try-do #(.MediaData notifier d media-id device-id)))))
 
         {:keys [server port]}  (multi-threaded-server handler 0

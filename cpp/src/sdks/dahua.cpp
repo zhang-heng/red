@@ -52,10 +52,10 @@ void Server::GetVersion(std::string& _return) {
 
 void Device::Login() {
   std::cout<<"login: "
-           <<"addr= "<<_account.addr
-           <<"port= "<<_account.port
-           <<"user= "<<_account.user
-           <<"password= "<<_account.password<< std::endl;
+           <<"addr="<<_account.addr
+           <<", port="<<_account.port
+           <<", user="<<_account.user
+           <<", password="<<_account.password<< std::endl;
 
   NET_DEVICEINFO info;
   int err_code = 0;

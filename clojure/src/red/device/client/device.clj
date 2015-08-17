@@ -25,6 +25,7 @@
                  ^Ref          gateways ;;网关列表 (ref {id gateway ...})
                  ^Ref          device->flow ;;来自设备的流量统计
                  ^Ref          client->flow ;;来自客户端的流量统计
+                 ^Ref          status ;; :connecting :online :offline
                  ^DateTime     start-time]
   IDevice
   (add-source [this source id]
@@ -67,19 +68,28 @@
 
   Sdk$Iface
   (Login [this _ _]
-    (.Login executor account id))
+    (dosync
+     (when (= :offline @status)
+       (ref-set status :connecting)
+       (.Login executor account id))))
 
   (Logout [this _]
-    (.Logout executor id))
+    (dosync
+     (when (= :online @status)
+       (.Logout executor id))))
 
   (StartRealPlay [this info source-id _]
-    (.StartRealPlay executor info source-id id))
+    (dosync
+     (when (= :online @status)
+       (.StartRealPlay executor info source-id id))))
 
   (StopRealPlay [this source-id _]
     (.StopRealPlay executor source-id id))
 
   (StartVoiceTalk [this info source-id _]
-    (.StartVoiceTalk executor info source-id id))
+    (dosync
+     (when (= :online @status)
+       (.StartVoiceTalk executor info source-id id))))
 
   (StopVoiceTalk [this source-id _]
     (.StopVoiceTalk executor source-id id))
@@ -90,7 +100,9 @@
     (.SendVoiceData executor data source-id id))
 
   (PlayBackByTime [this info source-id _]
-    (.PlayBackByTime executor info source-id id))
+    (dosync
+     (when (= :online @status)
+       (.PlayBackByTime executor info source-id id))))
 
   (StopPlayBack [this source-id _]
     (.StopPlayBack executor source-id id))
@@ -103,6 +115,7 @@
   (Connected [this _]
     (log/infof "device connected: %s" id)
     (dosync
+     (ref-set status :online)
      ;;告知所有子对象,可以做进一步请求
      (doseq [psource (deref sources)]
        (.Connected ^Notify$Iface (val psource) _))
@@ -111,6 +124,7 @@
 
   (Offline [this _]
     (dosync
+     (ref-set status :offline)
      ;;告知所有子对象,由子对象决定下一步操作
      (doseq [psource (deref sources)]
        (.Offline ^Notify$Iface (val psource) _))
@@ -156,7 +170,7 @@
 
    (let [id           (str (UUID/randomUUID))
          executor     (create-exe! manufacturer)
-         device       (Device. id executor manufacturer account (ref {}) (ref {}) (ref 0) (ref 0) (now))]
+         device       (Device. id executor manufacturer account (ref {}) (ref {}) (ref 0) (ref 0) (ref :offline) (now))]
      (add-device executor device id)
      device)))
 

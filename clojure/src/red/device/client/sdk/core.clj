@@ -22,17 +22,11 @@
             [device.info   LoginAccount MediaPackage])
  (:clients  [device.netsdk Sdk]))
 
-(defn try-do [f]
-  (try (f)
-       (catch InvalidOperation e (log/debug e))
-       (catch Exception e (log/debug e))))
-
 (defmacro request [port method & args]
   (let [method# (symbol "Sdk" (str method))]
     `(if (pos? ~port)
-       (try-do
-        #(with-open [c# (thrift/connect! Sdk ["localhost" ~port] :protocol :binary)]
-           (~method# c# ~@args)))
+       (with-open [c# (thrift/connect! Sdk ["localhost" ~port] :protocol :binary)]
+         (~method# c# ~@args))
        (log/error "sdk thrift port not found"))))
 
 (defn get-all-executors []
@@ -40,6 +34,7 @@
    (deref executors)))
 
 (defprotocol IExecutor
+  (try-do [this f])
   (add-device [this device id] "添加设备")
   (remove-device [this id] "移除设备: 1.移除id设备; 2.判断设备列表为空则关闭本对象")
   (mk-out-printer [this] "创建用于sdk进程打印的函数")
@@ -55,6 +50,12 @@
                    ^Object   thrift-sdk ;;promise,当进程创建完毕并返回thrift参数
                    ^DateTime start-time]
   IExecutor
+  (try-do [this f]
+    (try (f)
+         (catch InvalidOperation e (log/debug "sdk handle failed:" e))
+         ;;除此之外,sdk出现故障,直接关闭
+         (catch Exception _ (.close this))))
+
   (add-device [this device id]
     (dosync (alter devices assoc id device)))
 
@@ -90,86 +91,96 @@
              true))))
 
   (close [this]
-    (dosync
-     (log/info "close executor")
-     ;;通知每个设备掉线
-     (doseq [pdevice (deref devices)]
-       (let [device-id (key pdevice)
-             device    (val pdevice)]
-         (alter devices dissoc device-id)
-         (close device)))
-     ;;从表中剔除此对象
-     (alter executors dissoc id)
-     ;;释放资源
-     (future
-       (try
-         (let [^Proc   proc   (deref proc 300 nil)
-               ^Thrift thrift (deref thrift-notify 300 nil)]
-           ;;关闭进程对象
-           (.close proc)
-           ;;关闭thrift本地监听
-           (.close thrift))
-         (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e)))))))
+    (future
+      (dosync
+       ;;否则已经被删除了
+       (when (get @executors id)
+         (log/info "close executor")
+         ;;从表中剔除此对象
+         (alter executors dissoc id)
+         ;;通知每个设备掉线
+         (doseq [pdevice (deref devices)]
+           (let [device-id (key pdevice)
+                 device    (val pdevice)]
+             (alter devices dissoc device-id)
+             (close device)))
+         ;;释放资源
+         (try
+           (let [^Proc   proc   (deref proc 0 nil)
+                 ^Thrift thrift (deref thrift-notify 0 nil)]
+             ;;关闭进程对象
+             (.close proc)
+             ;;关闭thrift本地监听
+             (.close thrift))
+           (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e))))))))
 
   Sdk$Iface
-  (Test1 [this mp] (log/debug "->sdk test1" (request @thrift-sdk Test1 (device.info.MediaPackage.))))
-  (Test2 [this bs] (log/debug "->sdk test2" (request @thrift-sdk Test2 (ByteBuffer/allocate 0))))
-  (Test3 [this] (log/debug "->sdk test3" (request @thrift-sdk Test3)))
-  (Test4 [this] (log/debug "->sdk test4" (request @thrift-sdk Test4)))
+  (Test1 [this mp] (log/debug "->sdk test1" (try-do this #(request @thrift-sdk Test1 (device.info.MediaPackage.)))))
+  (Test2 [this bs] (log/debug "->sdk test2" (try-do this #(request @thrift-sdk Test2 (ByteBuffer/allocate 0)))))
+  (Test3 [this] (log/debug "->sdk test3" (try-do this #(request @thrift-sdk Test3))))
+  (Test4 [this] (log/debug "->sdk test4" (try-do this #(request @thrift-sdk Test4))))
 
   (GetVersion [this]
     (log/infof "%s version=%s"
-               manufacturer (request @thrift-sdk GetVersion)))
+               manufacturer (try-do this #(request @thrift-sdk GetVersion))))
 
   (InitSDK [this]
-    (request @thrift-sdk InitSDK))
+    (try-do this #(request @thrift-sdk InitSDK)))
 
   (CleanSDK [this]
-    (request @thrift-sdk CleanSDK))
+    (try-do this #(request @thrift-sdk CleanSDK)))
 
   (Login [this account device-id]
-    (some? (try (request @thrift-sdk Login account device-id)
-                (catch InvalidOperation e (log/info "login:" (.what e) (.why e)))
-                (catch Exception e (log/info "login unknow:" e))
-                (finally false))))
+    (future
+      (try (request @thrift-sdk Login account device-id)
+           (catch InvalidOperation e (log/info "login:" (.what e) (.why e)))
+           (finally false))))
 
   (Logout [this device-id]
-    (some? (request @thrift-sdk Logout device-id)))
+    (future
+      (try-do this #(request @thrift-sdk Logout device-id))))
 
   (StartRealPlay [this info source-id device-id]
-    (some? (request @thrift-sdk StartRealPlay info source-id device-id)))
+    (future
+      (try-do this #(request @thrift-sdk StartRealPlay info source-id device-id))))
   (StopRealPlay [this source-id device-id]
-    (some? (request @thrift-sdk StopRealPlay source-id device-id)))
+    (future
+      (try-do this #(request @thrift-sdk StopRealPlay source-id device-id))))
 
   (StartVoiceTalk [this info source-id device-id]
-    (some? (request @thrift-sdk StartVoiceTalk device-id source-id info)))
+    (future
+      (try-do this #(request @thrift-sdk StartVoiceTalk device-id source-id info))))
   (StopVoiceTalk [this source-id device-id]
-    (some? (request @thrift-sdk StopVoiceTalk source-id device-id)))
+    (try-do this #(request @thrift-sdk StopVoiceTalk source-id device-id)))
   (SendVoiceData [this data source-id device-id]
-    (some? (request @thrift-sdk SendVoiceData data source-id device-id)))
+    (future
+      (try-do this #(request @thrift-sdk SendVoiceData data source-id device-id))))
 
   (PlayBackByTime [this info source-id device-id]
-    (some? (request @thrift-sdk PlayBackByTime info source-id device-id)))
+    (future
+      (try-do this #(request @thrift-sdk PlayBackByTime info source-id device-id))))
   (StopPlayBack [this source-id device-id]
-    (some? (request @thrift-sdk StopPlayBack source-id device-id)))
+    (future
+      (try-do this #(request @thrift-sdk StopPlayBack source-id device-id))))
 
   Notify$Iface
   (Lanuched [this port]
-    (dosync
-     (log/infof "process lanuched: port=%d" port)
-     ;;保存sdk进程的thrift服务端口
-     (deliver thrift-sdk port)
-     (do (.Test1 this nil)
-         (.Test2 this nil)
-         (.Test3 this)
-         (.Test4 this))
-     ;;初始化进程
-     (.InitSDK this)
-     ;;获取sdk版本信息
-     (.GetVersion this)
-     ;;告知所有设备进行访问操作
-     (doseq [pdevice (deref devices)]
-       (.Lanuched ^Notify$Iface (val pdevice) port))))
+    (future
+      (dosync
+       (log/infof "process lanuched: port=%d" port)
+       ;;保存sdk进程的thrift服务端口
+       (deliver thrift-sdk port)
+       (do (.Test1 this nil)
+           (.Test2 this nil)
+           (.Test3 this)
+           (.Test4 this))
+       ;;初始化进程
+       (.InitSDK this)
+       ;;获取sdk版本信息
+       (.GetVersion this)
+       ;;告知所有设备进行访问操作
+       (doseq [pdevice (deref devices)]
+         (.Lanuched ^Notify$Iface (val pdevice) port)))))
 
   (Connected [this device-id]
     (dosync

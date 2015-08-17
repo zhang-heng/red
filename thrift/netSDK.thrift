@@ -15,8 +15,8 @@ info.MediaPackage Test3(),
 binary            Test4(),
 
 //********初始化库*********/
-oneway void InitSDK(),  //初始化sdk
-oneway void CleanSDK(), //释放SDK,退出
+void InitSDK(),  //初始化sdk
+void CleanSDK(), //释放SDK,退出
 
 //**********登入**********/
 oneway void Login  (1:info.LoginAccount account, 2:string device_id), //登入
@@ -48,7 +48,7 @@ oneway void StopRealPlay  (1:string media_id, 2:string device_id),     //关闭�
 //**********对讲**********/
 oneway void StartVoiceTalk (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //启动对讲
 oneway void StopVoiceTalk  (1:string media_id, 2:string device_id),    //关闭对讲
-oneway void SendVoiceData (1:string device_id, 2:string media_id, 3:binary buffer), //发送对讲音频
+       void SendVoiceData (1:string device_id, 2:string media_id, 3:binary buffer), //发送对讲音频
 
 //**********回放**********/
 oneway void PlayBackByTime (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //按时间点播
@@ -79,7 +79,7 @@ oneway void Offline      (1:string device_id), //断线通知
 //**********媒体通知**********/
 oneway void MediaStarted (1:string media_id, 2:string device_id), //媒体连接成功
 oneway void MediaFinish  (1:string media_id, 2:string device_id), //结束通知
-oneway void MediaData    (1:info.MediaPackage data, 2:string media_id, 3:string device_id), //媒体数据
+void        MediaData    (1:info.MediaPackage data, 2:string media_id, 3:string device_id), //媒体数据
 //**********报警通知**********/
 oneway void xAlarmNotify (),
 }

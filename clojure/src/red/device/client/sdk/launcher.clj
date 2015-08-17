@@ -41,10 +41,10 @@
   (get-cpu [this] )
   (get-mem [this])
   (close [this]
-    (io!
-     (try
-       (.destroy proc)
-       (catch Exception e (prn e)))))
+    (future
+      (try
+        (io! (.destroy proc))
+        (catch Exception e (log/warn e)))))
 
   Object
   (toString [_]))
