@@ -11,7 +11,7 @@ class Media{
  public:
   Media(Client *client, std::string device_id, SESSION_ID login_id,
         std::string media_id,  const device::info::PlayInfo& play_info);
-  void HandleDate();
+  void HandleDate(const device::info::MediaPackage & media);
   void StartRealPlay();  //SDK
   void StopRealPlay();   //SDK
   void StartVoiceTalk(){ }; //SDK

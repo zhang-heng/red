@@ -130,12 +130,11 @@
 
   (MediaData [this data source-id _]
     (dosync
-     (let [{:keys [^ByteBuffer payload]} (bean data)]
-       (log/debug payload)
-       ;; (alter device->flow + (.limit payload))
-       ;; (when-let [source (get (deref sources) source-id)]
-       ;;   (.MediaData ^Notify$Iface source data source-id _))
-       )))
+     (let [{:keys [^bytes payload]} (bean data)]
+       ;; (log/debug payload)
+       (alter device->flow + (alength payload))
+       (when-let [source (get (deref sources) source-id)]
+         (.MediaData ^Notify$Iface source data source-id _)))))
 
   clojure.lang.IDeref
   (deref [_] {:sources @sources :gateways  @gateways})

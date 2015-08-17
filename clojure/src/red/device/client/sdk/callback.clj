@@ -55,8 +55,8 @@
                                 (MediaData   [{:keys [type reserver payload] :as data} media-id device-id]
                                              (let [d (device.info.MediaPackage.
                                                       type reserver (ByteBuffer/wrap payload))]
-                                               (log/debug data)
-                                               (log/debug d)
+                                               ;; (log/debug data)
+                                               ;; (log/debug d)
                                                (try-do #(.MediaData notifier d media-id device-id)))))
 
         {:keys [server port]}  (multi-threaded-server handler 0

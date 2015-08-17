@@ -197,7 +197,7 @@
 
   (MediaData [this data media-id device-id]
     (dosync
-     (log/debug data)
+     ;; (log/debug data)
      (if-let [^Notify$Iface device (get (deref devices) device-id)]
        (.MediaData device data media-id device-id)
        (log/error "a device connected, but could not found in list"))))

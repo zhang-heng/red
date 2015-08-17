@@ -49,13 +49,16 @@
     (close this))
 
   (MediaData [this data _ _]
-    (let [{:keys [^ByteBuffer payload type]} (bean data)
+    (let [{:keys [^bytes payload ^device.types.MediaType type reserver]} (bean data)
           header (doto (ByteBuffer/allocate 5)
-                   (.put (byte type))
-                   (.putInt (.limit payload))
+                   (.put (byte (.getValue type)))
+                   (.putInt (alength payload))
                    (.flip))]
-      (write-handle header)
-      (write-handle payload)))
+      (log/debug reserver)
+      ;; (log/debug (alength payload))
+      ;; (write-handle header)
+      ;; (write-handle payload)
+      ))
 
   Object
   (toString [_]
