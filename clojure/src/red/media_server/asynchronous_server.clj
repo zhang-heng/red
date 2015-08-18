@@ -1,7 +1,7 @@
 (ns red.media-server.asynchronous-server
   (:require [clojure.tools.logging :as log]
             [red.utils :refer [correspond-args stack-trace]])
-  (:import [clojure.lang Ref Fn PersistentArrayMap Atom PersistentVector PersistentQueue]
+  (:import [clojure.lang Ref Fn PersistentArrayMap Atom PersistentVector PersistentQueue Agent]
            [java.nio.channels AsynchronousServerSocketChannel AsynchronousSocketChannel
             CompletionHandler AsynchronousChannelGroup]
            [java.nio ByteBuffer]
@@ -19,6 +19,7 @@
                        ^clojure.lang.Fn           disconnect-notify ;;连接断开通知函数
                        ^java.lang.Boolean         writing?          ;;是否正在写入
                        ^PersistentQueue           write-queue       ;;写入队列
+                       ^Agent                     sender
                        ^clojure.lang.Ref          user])            ;;用户数据,供调用层写状态
 
 (declare get-socket-info)
@@ -56,7 +57,7 @@
       (try
         (io! (.accept server server this)) ;; 继续监听新的连接
         (dosync
-         (let [connection (ref (Connection. socket nil nil false (PersistentQueue/EMPTY) (ref nil)))]
+         (let [connection (ref (Connection. socket nil nil false (PersistentQueue/EMPTY) (agent nil) (ref nil)))]
            (alter connections conj connection)
            (accept-handler connection)))
         (catch Exception e (log/warn "tcp_server accept: \n" (stack-trace e)))))
@@ -128,12 +129,11 @@
   [^Ref connection
    ^ByteBuffer byte-buffer]
   (dosync
-   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
+   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket sender]} (deref connection)]
      (when (.isOpen socket)
        (if writing?
          (alter connection update-in [:write-queue] conj byte-buffer)
-         (locking write-queue
-           (.write socket byte-buffer byte-buffer (completion* :write connection))))))))
+         (send sender (fn [_] (.write socket byte-buffer byte-buffer (completion* :write connection)))))))))
 
 (defn get-socket-info
   "通过socket对象获取地址/端口"
