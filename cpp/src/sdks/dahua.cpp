@@ -81,21 +81,24 @@ void Device::Login() {
 }
 
 void Device::Logout(){
-  CLIENT_Logout((LLONG)_login_id);
+  std::cout<<"logout: "<<std::endl;
+  std::cout<<CLIENT_Logout((LLONG)_login_id)<<std::endl;
 }
-long i = 0;
+
 void Media::StartRealPlay(){
+  std::cout<<"media: startrealplay: "<<_play_info.channel<<std::endl;
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
     media.type = device::types::MediaType::MediaData;
-    media.reserver = i++;
+    media.reserver = param;
     media.payload = std::string(pBuffer, pBuffer + dwBufSize);
     pthis->HandleDate(media);
   };
 
   _handle_id = (SESSION_ID) CLIENT_StartRealPlay((LLONG)_login_id, _play_info.channel, 0,
-                                                 _play_info.stream_type == device::types::StreamType::Main ? DH_RType_Realplay_0 : DH_RType_Realplay_1,
+                                                 _play_info.stream_type == device::types::StreamType::Main ?
+                                                 DH_RType_Realplay_0 : DH_RType_Realplay_1,
                                                  data_callback, 0, (DWORD)this);
   if (_handle_id == 0) {
     std::cout<<"startplay error: "<<CLIENT_GetLastError()<<std::endl;
@@ -103,4 +106,6 @@ void Media::StartRealPlay(){
 };
 
 void Media::StopRealPlay(){
+  std::cout<<"media: stoprealplay"<<std::endl;
+  CLIENT_StopRealPlay((long)_handle_id);
 };

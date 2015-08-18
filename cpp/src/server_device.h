@@ -1,5 +1,6 @@
 #include "server_media.h"
 #include "client.h"
+#include <mutex>
 
 class Device{
  public:
@@ -14,6 +15,7 @@ class Device{
   device::info::LoginAccount _account;
   device::info::DeviceInfo _info;
   std::map<std::string, Media*> _medias;
+  std::mutex _medias_mtx;
   Client* _client;
   int _client_port;
 

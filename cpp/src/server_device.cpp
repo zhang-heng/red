@@ -16,15 +16,23 @@ void Device::StartRealPlay(const std::string& media_id, const device::info::Play
   auto media = FindMedia(media_id);
   if(!media){
     media = new Media(_client_port, _device_id, _login_id, media_id, play_info);
+    _medias_mtx.lock();
+    std::cout<<"device: startrealplay<<<"<<_device_id<<std::endl;
     _medias.insert(std::pair<std::string, Media*>(media_id, media));
+    _medias_mtx.unlock();
     media->StartRealPlay();
+    std::cout<<">>>device: startrealplay"<<_device_id<<std::endl;
+
   }
 }
 
 void Device::StopRealPlay(const std::string& media_id){
+  std::cout<<"device: stoprealplay"<<_device_id<<std::endl;
   auto media = FindMedia(media_id);
   if(media){
+    _medias_mtx.lock();
     _medias.erase(media_id);
+    _medias_mtx.unlock();
     media->StopRealPlay();
     delete media;
   }

@@ -106,13 +106,12 @@
     ;;释放资源
     (future
       (try
-        (let [^Proc   proc   (deref proc 0 nil)]
+        (let [^Proc proc (deref proc 2000 nil)]
           ;;关闭进程对象
           (.close proc))
-        (catch Exception e (log/errorf "close executor proc: \n%s" (stack-trace e)))))
-    (future
+        (catch Exception e (log/errorf "close executor proc: \n%s" (stack-trace e))))
       (try
-        (let [^Thrift thrift (deref thrift-notify 0 nil)]
+        (let [^Thrift thrift (deref thrift-notify 1000 nil)]
           ;;关闭thrift本地监听
           (.close thrift))
         (catch Exception e (log/errorf "close executor thrift: \n%s" (stack-trace e))))))

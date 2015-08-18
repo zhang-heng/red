@@ -31,23 +31,26 @@
 (defonce w (clojure.java.io/writer "media.out"))
 
 (def session (atom 0))
+(def last-time (atom (now)))
+(def session-out-count (atom (sorted-map)))
 
-(defn get-mark-space [s]
-  (let [n (rem s 32)]
-    (apply str (take n (repeat " ")))))
+(defn print-sessions []
+  (-> (reduce (fn [c p] (str c (key p) "." (val p) " ")) "" @session-out-count)
+      (clojure.pprint/pprint w)))
 
 (defn mk-test-write-handle [s]
-  (let [t (atom (now))
-        l (atom 0)]
-    (fn [^ByteBuffer byte-buffer]
-      (swap! l + (.limit byte-buffer))
-      (when (< 500 (pass-mill @t))
-        (clojure.pprint/pprint (str (get-mark-space s) s "." @l) w)
-        (reset! t (now))
-        (reset! l 0)))))
+  (fn [^ByteBuffer byte-buffer]
+    (swap! session-out-count update-in [s] #(if % (+ % (.limit byte-buffer)) (.limit byte-buffer)))
+    (when (< 500 (pass-mill @last-time))
+      (print-sessions)
+      (reset! last-time (now)))))
 
 (defn mk-test-close-handle [s]
-  (fn [] (clojure.pprint/pprint (str (get-mark-space s) s ".close") w)))
+  (fn []
+    (swap! session-out-count update-in [s] (constantly "close"))
+    (print-sessions)
+    (swap! session-out-count dissoc s)
+    (reset! last-time (now))))
 
 (def connection {:local-addr "127.0.0.1"
                  :local-port 123
@@ -55,7 +58,8 @@
                  :remote-port 456})
 
 (defn test-start-session
-  ([p] (let [s @session]
+  ([p] (let [s @session
+             connection (assoc connection :remote-port s)]
          (swap! session inc)
          (log/info "start session" s)
          (open-session! connection p
@@ -100,8 +104,8 @@
        (test-open-close 0)))
 
 (defn test3
-  "3:同1,2"
-  [] (dotimes [n 10]
+  "3:启停综合测试;同1,2:重点考察在测试结束,系统资源中是否有进程和监听残留"
+  [] (dotimes [n 100]
        (log/info "start test3")
        (test-open-close (rand-int 1000))))
 
@@ -111,26 +115,26 @@
        (log/info "start test4")
        (let [m 50 ;;分发个数
              clients (doall (take m (repeatedly #(test-start-session))))]
-         (Thread/sleep 3000)
          (show-all-clients)
          (show-all-exes)
+         (Thread/sleep 3000)
          (doseq [client clients]
            (close-session! client)))))
 
 (defn test5
   "5:打开不同媒体通道"
-  [] (dotimes [n 5]
+  [] (dotimes [n 1]
        (log/info "start test5")
-       (let [clients (->> (range 1 17)
+       (let [clients (->> (range 0 16)
                           (map #(assoc (test-session) :channel-id %))
-                          (map #(do (Thread/sleep 0)
+                          (map #(do (log/debug "-------------------------------------")
                                     (test-start-session %)))
                           doall)]
          (show-all-exes)
          (show-all-clients)
-         (Thread/sleep 5000)
+         (log/debug "@@@@@@@@@@@@@@@@@@@@@@@@@@")
          (doseq [client clients]
+           (Thread/sleep 1000)
+           (log/debug "-------------------------------------")
            (close-session! client))
          (show-all-exes))))
-
-(test1)

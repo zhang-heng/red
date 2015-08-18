@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <map>
+#include <mutex>
 
 #if (defined(WIN32) || defined(WIN64))
 #pragma comment(lib,"libthrift.lib")
@@ -22,6 +23,7 @@ class Server : virtual public device::netsdk::SdkIf {
   int _listen_port;
   int _client_port;
   std::map<std::string, Device*> _devices;
+  std::mutex _device_mtx;
   int GetRandomPort(int from, int to);
 
  public:

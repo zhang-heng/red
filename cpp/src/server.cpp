@@ -106,22 +106,31 @@ void Server::Login(const device::info::LoginAccount& account, const std::string&
     device->Login();
   }else{
     device = new Device(device_id, account, _client_port);
+    _device_mtx.lock();
     _devices.insert(std::pair<std::string, Device*>(device_id, device));
+    _device_mtx.unlock();
     device->Login();
   }
 }
 
 void Server::Logout(const std::string& device_id) {
   auto device = FindDevice(device_id);
-  if(device) device->Logout();
+  if(device) {
+    _device_mtx.lock();
+    _devices.erase(device_id);
+    _device_mtx.unlock();
+    device->Logout();
+  }
 }
 
 void Server::StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
+  std::cout<<"server: startrealplay"<<media_id<<std::endl;
   auto device = FindDevice(device_id);
   if(device) device->StartRealPlay(media_id, play_info);
 }
 
 void Server::StopRealPlay(const std::string& media_id, const std::string& device_id){
+  std::cout<<"server: stoprealplay"<<media_id<<std::endl;
   auto device = FindDevice(device_id);
   if(device) device->StopRealPlay(media_id);
 }
