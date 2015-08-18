@@ -90,12 +90,12 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [^AsynchronousSocketChannel socket write-queue writing?]} (deref connection)]
+         (let [{:keys [^AsynchronousSocketChannel socket write-queue writing? sender]} (deref connection)]
            (when (.isOpen socket)
              (if (neg? i)
                (close-connection connection)
                (if (.hasRemaining byte-buffer)
-                 (.write socket byte-buffer byte-buffer this)
+                 (send sender (fn [_] (.write socket byte-buffer byte-buffer this)))
                  (if (empty? write-queue)
                    (alter connection update-in [:writing?] (constantly false))
                    (let [next-buffer (peek write-queue)]
