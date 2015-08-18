@@ -91,28 +91,31 @@
              true))))
 
   (close [this]
+    (dosync
+     ;;否则已经被删除了
+     (when (get @executors id)
+       (log/info "close executor")
+       ;;从表中剔除此对象
+       (alter executors dissoc id)
+       ;;通知每个设备掉线
+       (doseq [pdevice (deref devices)]
+         (let [device-id (key pdevice)
+               device    (val pdevice)]
+           (alter devices dissoc device-id)
+           (close device)))))
+    ;;释放资源
     (future
-      (dosync
-       ;;否则已经被删除了
-       (when (get @executors id)
-         (log/info "close executor")
-         ;;从表中剔除此对象
-         (alter executors dissoc id)
-         ;;通知每个设备掉线
-         (doseq [pdevice (deref devices)]
-           (let [device-id (key pdevice)
-                 device    (val pdevice)]
-             (alter devices dissoc device-id)
-             (close device)))
-         ;;释放资源
-         (try
-           (let [^Proc   proc   (deref proc 0 nil)
-                 ^Thrift thrift (deref thrift-notify 0 nil)]
-             ;;关闭进程对象
-             (.close proc)
-             ;;关闭thrift本地监听
-             (.close thrift))
-           (catch Exception e (log/errorf "close executor resources: \n%s" (stack-trace e))))))))
+      (try
+        (let [^Proc   proc   (deref proc 0 nil)]
+          ;;关闭进程对象
+          (.close proc))
+        (catch Exception e (log/errorf "close executor proc: \n%s" (stack-trace e)))))
+    (future
+      (try
+        (let [^Thrift thrift (deref thrift-notify 0 nil)]
+          ;;关闭thrift本地监听
+          (.close thrift))
+        (catch Exception e (log/errorf "close executor thrift: \n%s" (stack-trace e))))))
 
   Sdk$Iface
   (Test1 [this mp] (log/debug "->sdk test1" (try-do this #(request @thrift-sdk Test1 (device.info.MediaPackage.)))))

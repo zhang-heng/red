@@ -33,9 +33,9 @@
     (dosync
      (let [{:keys [remote-addr remote-port]} connection]
        (log/infof "close client: %s:%d" remote-addr remote-port))
+     (remove-client source session)
      (write-handle (ByteBuffer/allocate 0))
-     (close-handle)
-     (remove-client source session)))
+     (close-handle)))
 
   Notify$Iface
   (Offline [this _]

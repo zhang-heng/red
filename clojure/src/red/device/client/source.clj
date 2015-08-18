@@ -64,13 +64,13 @@
   (close [this]
     (dosync
      (log/info "close source")
+     (remove-source device id)
      (case source-type
        :realplay  (.StopRealPlay  this nil nil)
        :playback  (.StopPlayBack  this nil nil)
        :voicetalk (.StopVoiceTalk this nil nil))
      (doseq [pclient (deref clients)]
-       (close (val pclient)))
-     (remove-source device id)))
+       (close (val pclient)))))
 
   Sdk$Iface
   (StartRealPlay [this _ _ _]

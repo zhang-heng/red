@@ -56,15 +56,15 @@
   (close [this]
     (dosync
      (log/info "close device")
+     ;;从进程层将本对象删除
+     (remove-device executor id)
      ;;通知所有子层关闭
      (doseq [pgateway (deref gateways)]
        (close (val pgateway)))
      (doseq [psource (deref sources)]
        (close (val psource)))
      ;;请求断开此设备
-     (.Logout executor id)
-     ;;从进程层将本对象删除
-     (remove-device executor id)))
+     (.Logout executor id)))
 
   Sdk$Iface
   (Login [this _ _]
