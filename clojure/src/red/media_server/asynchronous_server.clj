@@ -102,7 +102,8 @@
                    (alter connection update-in [:writing?] (constantly false))
                    (let [next-buffer (peek write-queue)]
                      (alter connection update-in [:write-queue] pop)
-                     (future (io! (.write socket next-buffer next-buffer this))))))))))
+                 (send sender (fn [_] (try (.write socket next-buffer next-buffer this)
+                                          (catch Exception _)))))))))))
         (catch Exception e (log/info "tcp_server write: " (stack-trace e)))))
     (failed [e byte-buffer]
       (log/info "tcp_server write failed: " e)
@@ -121,10 +122,11 @@
    ^Long l
    ^Fn   finish-handler]
   (dosync
-   (let [{:keys [^AsynchronousSocketChannel socket]} (deref connection)
+   (let [{:keys [^AsynchronousSocketChannel socket sender]} (deref connection)
          byte-buffer (ByteBuffer/allocate l)]
      (alter connection update-in [:read-handler] (constantly finish-handler))
-     (future (.read socket byte-buffer byte-buffer (completion* :read connection))))))
+     (send sender (fn [_]) (try (.read socket byte-buffer byte-buffer (completion* :read connection))
+                              (catch Exception _))))))
 
 (defn write-to
   "将ByteBuffer写入网络，正在写则存入队列"
