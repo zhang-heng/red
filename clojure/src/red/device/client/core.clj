@@ -103,8 +103,7 @@
    ;;       (get-all-clients))
    ))
 
-(defn client->data [^Client client ^ByteBuffer byte-buffer]
-  (log/debug (.limit byte-buffer)))
+(defn client->data [^Client client ^ByteBuffer byte-buffer])
 
 (defn close-session! [^Client client]
   (close client))

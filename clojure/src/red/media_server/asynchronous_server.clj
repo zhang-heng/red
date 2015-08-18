@@ -75,7 +75,7 @@
              (if (neg? i)
                (close-connection connection)
                (if (.hasRemaining byte-buffer)
-                 (future (io! (.read socket byte-buffer byte-buffer this)))
+                 (.read socket byte-buffer byte-buffer this)
                  (do (.flip byte-buffer)
                      (read-handler connection byte-buffer)))))))
         (catch Exception e (log/warn "tcp_server read: \n" (stack-trace e)))))
@@ -132,7 +132,8 @@
      (when (.isOpen socket)
        (if writing?
          (alter connection update-in [:write-queue] conj byte-buffer)
-         (.write socket byte-buffer byte-buffer (completion* :write connection)))))))
+         (locking write-queue
+           (.write socket byte-buffer byte-buffer (completion* :write connection))))))))
 
 (defn get-socket-info
   "通过socket对象获取地址/端口"
