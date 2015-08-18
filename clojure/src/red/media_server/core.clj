@@ -1,7 +1,7 @@
 (ns red.media-server.core
   (:require [clojure.tools.logging :as log]
             [red.media-server.asynchronous-server :refer [run-server read-from write-to set-disconnect-notify
-                                                          get-socket-info ]]
+                                                          get-socket-info close-connection]]
             [red.media-server.restful :refer [get-and-remove-subscribe]]
             [red.device.client.core :refer [open-session! close-session! client->data]]
             [red.utils :refer [string->uuid buffer->string]])
@@ -12,11 +12,11 @@
            [java.util UUID Date]))
 
 (defn- mk-send-handler [connection]
-  (fn [buffer] (write-to connection buffer)))
+  (fn [buffer]
+    (write-to connection buffer)))
 
 (defn- mk-close-handler [connection]
-  (fn [] (let [{:keys [closer]} (deref connection)]
-          (closer))))
+  (fn [] (close-connection connection)))
 
 (declare session-handler header-handler payload-handler)
 
@@ -29,7 +29,7 @@
          string-uuid (buffer->string session-buffer)]
      (if-let [subscribe (-> (string->uuid string-uuid)
                             (get-and-remove-subscribe))]
-       (let [client (open-session! (get-socket-info connection)
+       (let [client (open-session! socket-info
                                    subscribe (mk-send-handler connection) (mk-close-handler connection))
              {:keys [user]} (deref connection)]
          ;;设置关闭操作
@@ -44,12 +44,12 @@
 
 (defn- payload-handler
   "接收到负载数据的处理"
-  [connection payload-buffer]
-  (let [{:keys [^Client user closer]} (deref connection)
+  [connection ^ByteBuffer payload-buffer]
+  (let [{:keys [user closer]} (deref connection)
         {:keys [remote-addr remote-port]} (-> connection deref :socket get-socket-info)]
-    (client->data user payload-buffer)
-    (do (log/errorf "receive frome %s:%s, but none of handle fun, close!")
-        (closer))
+    (try
+      (client->data @user payload-buffer)
+      (catch Exception e (log/debug e)))
     (read-from connection 4 header-handler)))
 
 (defn- header-handler

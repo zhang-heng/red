@@ -12,10 +12,9 @@
 
 (defonce execut-pool (Executors/newFixedThreadPool 2))
 
-(defonce sockets (ref #{})) ;;连接记录，用于关闭服务时释放
+(defonce connections (ref #{})) ;;连接记录
 
 (defrecord Connection [^AsynchronousSocketChannel socket            ;;socket 连接
-                       ^clojure.lang.Fn           closer            ;;关闭函数
                        ^clojure.lang.Fn           read-handler      ;;读取完成处理函数
                        ^clojure.lang.Fn           disconnect-notify ;;连接断开通知函数
                        ^java.lang.Boolean         writing?          ;;是否正在写入
@@ -24,17 +23,18 @@
 
 (declare get-socket-info)
 
-(defn- mk-close-fn
-  "创建关闭函数"
+(defn close-connection
+  "关闭函数"
   [connection]
-  (fn []
-    (let [{:keys [^AsynchronousSocketChannel socket disconnect-notify]} (deref connection)
-          {:keys [local-addr local-port remote-addr remote-port]}       (get-socket-info socket)]
-      (log/infof "connection disconneted: %s:%d <- %s:%d" local-addr local-port remote-addr remote-port)
-      (dosync (alter sockets disj socket))
-      (future (io! (.close socket))
-              (when disconnect-notify
-                (disconnect-notify))))))
+  (let [{:keys [^AsynchronousSocketChannel socket disconnect-notify]} (deref connection)
+        {:keys [local-addr local-port remote-addr remote-port]}       (get-socket-info socket)]
+    (dosync
+     (when (get @connections connection)
+       (log/infof "connection disconneted: %s:%d <- %s:%d" local-addr local-port remote-addr remote-port)
+       (alter connections disj connection)
+       (try (when disconnect-notify (disconnect-notify))
+            (catch Exception e (log/warn "close: \n" (stack-trace e))))
+       (future (when (.isOpen socket) (.close socket)))))))
 
 (defn- mk-stop-fn
   "创建服务停止函数"
@@ -42,9 +42,9 @@
   (fn []
     (.close server)
     (dosync
-     (doseq [^AsynchronousSocketChannel socket (deref sockets)]
-       (future (io! (.close socket))))
-     (ref-set sockets #{}))))
+     (doseq [connection (deref connections)]
+       (alter connections disj connection)
+       (close-connection connection)))))
 
 (defmulti completion* (fn [t info] t))
 
@@ -54,18 +54,12 @@
     (completed [^AsynchronousSocketChannel       socket
                 ^AsynchronousServerSocketChannel server]
       (try
-        (let [connection       (ref nil)
-              closer           (mk-close-fn connection)]
-          (io! (.accept server server this)) ;; 继续监听新的连接
-          (dosync
-           (alter sockets conj socket) ;; 用于统一关闭
-           (ref-set connection
-                    (Connection. socket closer
-                                 nil nil
-                                 false (PersistentQueue/EMPTY)
-                                 (ref nil)))
+        (io! (.accept server server this)) ;; 继续监听新的连接
+        (dosync
+         (let [connection (ref (Connection. socket nil nil false (PersistentQueue/EMPTY) (ref nil)))]
+           (alter connections conj connection)
            (accept-handler connection)))
-        (catch Exception e (log/warn "tcp_server accept: " (stack-trace e)))))
+        (catch Exception e (log/warn "tcp_server accept: \n" (stack-trace e)))))
 
     (failed [e server]
       (log/error "tcp_server accept failed: " e))))
@@ -76,16 +70,18 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [^AsynchronousSocketChannel socket closer read-handler]} (deref connection)]
-           (if (neg? i)
-             (closer)
-             (if (.hasRemaining byte-buffer)
-               (future (io! (.read socket byte-buffer byte-buffer this)))
-               (do (.flip byte-buffer)
-                   (read-handler connection byte-buffer))))))
-        (catch Exception e (log/warn "tcp_server read: " (stack-trace e)))))
+         (let [{:keys [^AsynchronousSocketChannel socket read-handler]} (deref connection)]
+           (when (.isOpen socket)
+             (if (neg? i)
+               (close-connection connection)
+               (if (.hasRemaining byte-buffer)
+                 (future (io! (.read socket byte-buffer byte-buffer this)))
+                 (do (.flip byte-buffer)
+                     (read-handler connection byte-buffer)))))))
+        (catch Exception e (log/warn "tcp_server read: \n" (stack-trace e)))))
     (failed [e byte-buffer]
-      (log/error "tcp_server read failed: " e))))
+      (log/error "tcp_server read failed: " e)
+      (close-connection connection))))
 
 (defmethod completion* :write [_ ^Ref connection]
   (proxy [CompletionHandler] []
@@ -93,19 +89,21 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [closer ^AsynchronousSocketChannel socket send-queue writing?]} (deref connection)]
-           (if (neg? i)
-             (closer)
-             (if (.hasRemaining byte-buffer)
-               (future (io! (.write socket byte-buffer byte-buffer this)))
-               (if (empty? @send-queue)
-                 (alter connection update-in [:writing?] (constantly false))
-                 (let [next-buffer (peek send-queue)]
-                   (alter connection update-in [:send-queue] pop)
-                   (future (io! (.write socket next-buffer next-buffer this)))))))))
+         (let [{:keys [^AsynchronousSocketChannel socket write-queue writing?]} (deref connection)]
+           (when (.isOpen socket)
+             (if (neg? i)
+               (close-connection connection)
+               (if (.hasRemaining byte-buffer)
+                 (.write socket byte-buffer byte-buffer this)
+                 (if (empty? write-queue)
+                   (alter connection update-in [:writing?] (constantly false))
+                   (let [next-buffer (peek write-queue)]
+                     (alter connection update-in [:write-queue] pop)
+                     (future (io! (.write socket next-buffer next-buffer this))))))))))
         (catch Exception e (log/info "tcp_server write: " (stack-trace e)))))
     (failed [e byte-buffer]
-      (log/info "tcp_server write failed: " e))))
+      (log/info "tcp_server write failed: " e)
+      (close-connection connection))))
 
 (defn set-disconnect-notify
   "订阅断线通知"
@@ -130,10 +128,11 @@
   [^Ref connection
    ^ByteBuffer byte-buffer]
   (dosync
-   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel scoket]} (deref connection)]
-     (if writing?
-       (alter connection update-in [:write-queue] conj byte-buffer)
-       (future (io! (.write scoket byte-buffer byte-buffer (completion* :write connection))))))))
+   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
+     (when (.isOpen socket)
+       (if writing?
+         (alter connection update-in [:write-queue] conj byte-buffer)
+         (.write socket byte-buffer byte-buffer (completion* :write connection)))))))
 
 (defn get-socket-info
   "通过socket对象获取地址/端口"

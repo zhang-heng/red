@@ -18,8 +18,7 @@
              (and port (< 0 port) (< port 65535))            "The port must be valid"
              channel-id                                      "the channel-id must be a number"
              (some #(= % stream-type) (keys stream-types*)) "the stream-type not found"]
-
-            (log/info "request a new realplay session:" manufacturer addr port user password channel-id stream-type)
+            (log/debug "request a new realplay session:" manufacturer addr port user password channel-id stream-type)
             (response {:session-id (subscribe! (assoc (correspond-args manufacturer addr port user password channel-id stream-type)
                                                  :session-type :realplay))
                        :media-port (env :gtsp-port)}))))
@@ -37,8 +36,8 @@
 (defroutes realplay-routes
   (context "/realplay" []
            ;;启动实时
-           (POST "/" [manufacturer addr port user password channel-id stream-type]
-                 (realplay manufacturer addr port user password channel-id stream-type))
+           (POST "/" [manufacturer host port user password channel-id stream-type]
+                 (realplay manufacturer host port user password channel-id stream-type))
 
            (GET "/" [manufacturer addr port user password channel-id stream-type]
                 (when (= (env :clj-env) :development)
