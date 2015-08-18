@@ -71,12 +71,13 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [^AsynchronousSocketChannel socket read-handler]} (deref connection)]
+         (let [{:keys [^AsynchronousSocketChannel socket read-handler sender]} (deref connection)]
            (when (.isOpen socket)
              (if (neg? i)
                (close-connection connection)
                (if (.hasRemaining byte-buffer)
-                 (.read socket byte-buffer byte-buffer this)
+                 (send sender (fn [_] (try (.read socket byte-buffer byte-buffer this)
+                                          (catch Exception _))))
                  (do (.flip byte-buffer)
                      (read-handler connection byte-buffer)))))))
         (catch Exception e (log/warn "tcp_server read: \n" (stack-trace e)))))
