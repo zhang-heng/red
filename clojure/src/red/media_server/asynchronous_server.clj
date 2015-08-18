@@ -95,7 +95,8 @@
              (if (neg? i)
                (close-connection connection)
                (if (.hasRemaining byte-buffer)
-                 (send sender (fn [_] (.write socket byte-buffer byte-buffer this)))
+                 (send sender (fn [_] (try (.write socket byte-buffer byte-buffer this)
+                                          (catch Exception _))))
                  (if (empty? write-queue)
                    (alter connection update-in [:writing?] (constantly false))
                    (let [next-buffer (peek write-queue)]
@@ -133,7 +134,8 @@
      (when (.isOpen socket)
        (if writing?
          (alter connection update-in [:write-queue] conj byte-buffer)
-         (send sender (fn [_] (.write socket byte-buffer byte-buffer (completion* :write connection)))))))))
+         (send sender (fn [_] (try (.write socket byte-buffer byte-buffer (completion* :write connection))
+                                  (catch Exception _)))))))))
 
 (defn get-socket-info
   "通过socket对象获取地址/端口"
