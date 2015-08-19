@@ -1,5 +1,6 @@
 (ns red.utils
   (:require [clj-time.core :as time]
+            [clojure.tools.logging :as log]
             [clj-time.coerce :refer [to-long]]
             [clj-time.format :refer [parse unparse formatters with-zone]]
             [ring.util.response :refer [response status]])
@@ -11,7 +12,7 @@
   (cond
    (integer? n) n
    (number? n)  (long n)
-   (string? n)  (try (Long/parseLong n) (catch Exception _ nil))
+   (string? n)  (try (Long/parseLong n) (catch Exception e (log/debug e)))
    :else nil))
 
 (defn now []
@@ -34,7 +35,7 @@
 (defn mk-queue-handler
   "生成队列执行函数" []
   (let [ag (agent nil)]
-    (fn [f] (send ag (fn [_] (try (f) (catch Exception _)))))))
+    (fn [f] (send ag (fn [_] (try (f) (catch Exception e (log/debug e))))))))
 
 ;;
 (defn exception

@@ -20,7 +20,7 @@
     #(try (do (deliver running false)
               (.join task)
               (.stop task))
-          (catch Exception _))))
+          (catch Exception e (log/debug e)))))
 
 (defn run [join?]
   (log/info "server start running")

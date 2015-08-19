@@ -32,6 +32,7 @@
        (let [client (open-session! socket-info
                                    subscribe (mk-send-handler connection) (mk-close-handler connection))
              {:keys [user]} (deref connection)]
+         (log/info "handled a new session: " client)
          ;;设置关闭操作
          (set-disconnect-notify connection #(close-session! client))
          ;;将client 设为 socket 私有变量

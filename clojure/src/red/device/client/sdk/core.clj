@@ -54,7 +54,7 @@
     (try (f)
          (catch InvalidOperation e (log/debug "sdk handle failed:" e))
          ;;除此之外,sdk出现故障,直接关闭
-         (catch Exception _ (.close this))))
+         (catch Exception e (log/warn "close executor:\n" this) (.close this))))
 
   (add-device [this device id]
     (dosync (alter devices assoc id device)))

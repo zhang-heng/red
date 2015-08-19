@@ -79,6 +79,8 @@
    device->client device->close
    session-id]
   (dosync
+   (let [{:keys [remote-addr remote-port]} connection]
+     (log/infof "creat client: %s:%d" remote-addr remote-port))
    (let [client (Client. session-id
                          source
                          connection
@@ -115,8 +117,6 @@
                       session-id]}
    write-handle close-handle]
   (dosync
-   (let [{:keys [remote-addr remote-port]} connection]
-     (log/infof "creat client: %s:%d" remote-addr remote-port))
    (let [connect-type ConnectType/Tcp
          stream-type  (get stream-types* stream-type StreamType/Main)
          account      (LoginAccount. addr port user password)

@@ -146,7 +146,7 @@
           :local-port (.getPort local)
           :remote-addr (.getHostString remote)
           :remote-port (.getPort remote)})
-       (catch Exception _ {})))
+       (catch Exception e (log/debug e) {})))
 
 (defn run-server
   "启动服务"
