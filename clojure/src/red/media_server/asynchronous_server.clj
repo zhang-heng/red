@@ -1,6 +1,6 @@
 (ns red.media-server.asynchronous-server
   (:require [clojure.tools.logging :as log]
-            [red.utils :refer [correspond-args stack-trace]])
+            [red.utils :refer [correspond-args stack-trace mk-queue-handler]])
   (:import [clojure.lang Ref Fn PersistentArrayMap Atom PersistentVector PersistentQueue Agent]
            [java.nio.channels AsynchronousServerSocketChannel AsynchronousSocketChannel
             CompletionHandler AsynchronousChannelGroup]
@@ -19,7 +19,8 @@
                        ^clojure.lang.Fn           disconnect-notify ;;连接断开通知函数
                        ^java.lang.Boolean         writing?          ;;是否正在写入
                        ^PersistentQueue           write-queue       ;;写入队列
-                       ^Agent                     sender
+                       ^Fn                        writer
+                       ^Fn                        reader
                        ^clojure.lang.Ref          user])            ;;用户数据,供调用层写状态
 
 (declare get-socket-info)
@@ -57,7 +58,8 @@
       (try
         (io! (.accept server server this)) ;; 继续监听新的连接
         (dosync
-         (let [connection (ref (Connection. socket nil nil false (PersistentQueue/EMPTY) (agent nil) (ref nil)))]
+         (let [connection (ref (Connection. socket nil nil false (PersistentQueue/EMPTY)
+                                            (mk-queue-handler) (mk-queue-handler) (ref nil)))]
            (alter connections conj connection)
            (accept-handler connection)))
         (catch Exception e (log/warn "tcp_server accept: \n" (stack-trace e)))))
@@ -71,13 +73,12 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [^AsynchronousSocketChannel socket read-handler sender]} (deref connection)]
+         (let [{:keys [^AsynchronousSocketChannel socket read-handler reader]} (deref connection)]
            (when (.isOpen socket)
              (if (neg? i)
                (close-connection connection)
                (if (.hasRemaining byte-buffer)
-                 (send sender (fn [_] (try (.read socket byte-buffer byte-buffer this)
-                                          (catch Exception _))))
+                 (reader #(.read socket byte-buffer byte-buffer this))
                  (do (.flip byte-buffer)
                      (read-handler connection byte-buffer)))))))
         (catch Exception e (log/warn "tcp_server read: \n" (stack-trace e)))))
@@ -91,19 +92,17 @@
                 ^ByteBuffer byte-buffer]
       (try
         (dosync
-         (let [{:keys [^AsynchronousSocketChannel socket write-queue writing? sender]} (deref connection)]
+         (let [{:keys [^AsynchronousSocketChannel socket write-queue writing? writer]} (deref connection)]
            (when (.isOpen socket)
              (if (neg? i)
                (close-connection connection)
                (if (.hasRemaining byte-buffer)
-                 (send sender (fn [_] (try (.write socket byte-buffer byte-buffer this)
-                                          (catch Exception _))))
+                 (writer #(.write socket byte-buffer byte-buffer this))
                  (if (empty? write-queue)
                    (alter connection update-in [:writing?] (constantly false))
                    (let [next-buffer (peek write-queue)]
                      (alter connection update-in [:write-queue] pop)
-                     (send sender (fn [_] (try (.write socket next-buffer next-buffer this)
-                                              (catch Exception _)))))))))))
+                     (writer #(.write socket next-buffer next-buffer this)))))))))
         (catch Exception e (log/info "tcp_server write: " (stack-trace e)))))
     (failed [e byte-buffer]
       (log/info "tcp_server write failed: " e)
@@ -122,33 +121,32 @@
    ^Long l
    ^Fn   finish-handler]
   (dosync
-   (let [{:keys [^AsynchronousSocketChannel socket sender]} (deref connection)
+   (let [{:keys [^AsynchronousSocketChannel socket reader]} (deref connection)
          byte-buffer (ByteBuffer/allocate l)]
      (alter connection update-in [:read-handler] (constantly finish-handler))
-     (send sender (fn [_]) (try (.read socket byte-buffer byte-buffer (completion* :read connection))
-                               (catch Exception _))))))
+     (reader #(.read socket byte-buffer byte-buffer (completion* :read connection))))))
 
 (defn write-to
   "将ByteBuffer写入网络，正在写则存入队列"
   [^Ref connection
    ^ByteBuffer byte-buffer]
   (dosync
-   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket sender]} (deref connection)]
+   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket writer]} (deref connection)]
      (when (.isOpen socket)
        (if writing?
          (alter connection update-in [:write-queue] conj byte-buffer)
-         (send sender (fn [_] (try (.write socket byte-buffer byte-buffer (completion* :write connection))
-                                  (catch Exception _)))))))))
+         (writer #(.write socket byte-buffer byte-buffer (completion* :write connection))))))))
 
 (defn get-socket-info
   "通过socket对象获取地址/端口"
   [^AsynchronousSocketChannel socket]
-  (let [^InetSocketAddress local  (.getLocalAddress socket)
-        ^InetSocketAddress remote (.getRemoteAddress socket)]
-    {:local-addr (.getHostString local)
-     :local-port (.getPort local)
-     :remote-addr (.getHostString remote)
-     :remote-port (.getPort remote)}))
+  (try (let [^InetSocketAddress local  (.getLocalAddress socket)
+             ^InetSocketAddress remote (.getRemoteAddress socket)]
+         {:local-addr (.getHostString local)
+          :local-port (.getPort local)
+          :remote-addr (.getHostString remote)
+          :remote-port (.getPort remote)})
+       (catch Exception _ {})))
 
 (defn run-server
   "启动服务"

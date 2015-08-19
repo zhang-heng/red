@@ -31,6 +31,11 @@
   [& args]
   (reduce (fn [c k] (assoc c (keyword k) k)) {} args))
 
+(defn mk-queue-handler
+  "生成队列执行函数" []
+  (let [ag (agent nil)]
+    (fn [f] (send ag (fn [_] (try (f) (catch Exception _)))))))
+
 ;;
 (defn exception
   ([]
