@@ -6,7 +6,7 @@
   (:import [red.device.client.sdk.core Executor]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.info LoginAccount]
-           [clojure.lang Ref PersistentArrayMap]
+           [clojure.lang Ref PersistentArrayMap Atom]
            [java.util UUID]
            [java.nio ByteBuffer]
            [org.joda.time DateTime]))
@@ -23,8 +23,8 @@
                  ^LoginAccount account      ;;设备账号
                  ^Ref          sources ;;媒体请求列表 (ref {id source ...})
                  ^Ref          gateways ;;网关列表 (ref {id gateway ...})
-                 ^Ref          device->flow ;;来自设备的流量统计
-                 ^Ref          client->flow ;;来自客户端的流量统计
+                 ^Atom         device->flow ;;来自设备的流量统计
+                 ^Atom         client->flow ;;来自客户端的流量统计
                  ^Ref          status ;; :connecting :online :offline
                  ^DateTime     start-time]
   IDevice
@@ -96,7 +96,7 @@
 
   (SendVoiceData [this {^ByteBuffer payload :payload :as data} source-id _]
     (dosync
-     (alter client->flow + (.limit payload)))
+     (swap! client->flow + (.limit payload)))
     (.SendVoiceData executor data source-id id))
 
   (PlayBackByTime [this info source-id _]
@@ -143,12 +143,10 @@
        (.MediaFinish ^Notify$Iface source source-id _ ))))
 
   (MediaData [this data source-id _]
-    (dosync
-     (let [{:keys [^bytes payload]} (bean data)]
-       ;; (log/debug payload)
-       (alter device->flow + (alength payload))
-       (when-let [source (get (deref sources) source-id)]
-         (.MediaData ^Notify$Iface source data source-id _)))))
+    (let [{:keys [^bytes payload]} (bean data)]
+      (swap! device->flow + (alength payload)))
+    (when-let [source (get (deref sources) source-id)]
+      (.MediaData ^Notify$Iface source data source-id _)))
 
   clojure.lang.IDeref
   (deref [_] {:sources @sources :gateways  @gateways})
@@ -170,7 +168,7 @@
 
    (let [id           (str (UUID/randomUUID))
          executor     (create-exe! manufacturer)
-         device       (Device. id executor manufacturer account (ref {}) (ref {}) (ref 0) (ref 0) (ref :offline) (now))]
+         device       (Device. id executor manufacturer account (ref {}) (ref {}) (atom 0) (atom 0) (ref :offline) (now))]
      (add-device executor device id)
      device)))
 

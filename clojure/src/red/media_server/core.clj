@@ -36,7 +36,7 @@
          ;;设置关闭操作
          (set-disconnect-notify connection #(close-session! client))
          ;;将client 设为 socket 私有变量
-         (ref-set user client)
+         (reset! user client)
          ;;接收头信息
          (read-from connection 4 header-handler))
        (do (log/infof "received %s:%d a uuid not invalid: %s, close!"

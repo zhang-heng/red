@@ -8,7 +8,7 @@
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.types StreamType ConnectType]
            [device.info LoginAccount PlayInfo]
-           [clojure.lang Ref PersistentArrayMap Fn]
+           [clojure.lang Ref PersistentArrayMap Fn Atom]
            [org.joda.time DateTime]
            [java.nio ByteBuffer]
            [java.util UUID]))
@@ -19,8 +19,8 @@
 (deftype Client [^String             session
                  ^Source             source
                  ^PersistentArrayMap connection
-                 ^Ref                device->flow
-                 ^Ref                client->flow
+                 ^Atom               device->flow
+                 ^Atom               client->flow
                  ^Fn                 write-handle
                  ^Fn                 close-handle
                  ^DateTime           start-time]
@@ -81,13 +81,9 @@
   (dosync
    (let [{:keys [remote-addr remote-port]} connection]
      (log/infof "creat client: %s:%d" remote-addr remote-port))
-   (let [client (Client. session-id
-                         source
-                         connection
-                         (ref 0)
-                         (ref 0)
-                         device->client
-                         device->close
+   (let [client (Client. session-id source connection
+                         (atom 0) (atom 0)
+                         device->client device->close
                          (now))]
      (add-client source client session-id)
      client)))

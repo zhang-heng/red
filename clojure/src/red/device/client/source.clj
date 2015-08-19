@@ -7,7 +7,7 @@
            [device.types MediaType]
            [device.info LoginAccount PlayInfo]
            [device.netsdk Sdk$Iface Notify$Iface]
-           [clojure.lang Ref PersistentArrayMap]
+           [clojure.lang Ref PersistentArrayMap Atom]
            [java.util UUID]
            [clojure.lang Keyword]
            [org.joda.time DateTime]))
@@ -25,9 +25,9 @@
                  ^Keyword      source-type ;; :playback :realplay :voicetalk
                  ^PlayInfo     info
                  ^Ref          clients ;;(ref {id client ...})
-                 ^Ref          header-data
-                 ^Ref          device->flow
-                 ^Ref          client->flow
+                 ^Atom         header-data
+                 ^Atom         device->flow
+                 ^Atom         client->flow
                  ^DateTime     start-time]
   ISource
   (connect [this]
@@ -114,12 +114,12 @@
        (.MediaFinish ^Notify$Iface (val pclient) _ _))))
 
   (MediaData [this data _ _]
-    (dosync
-     (let [{:keys [^ByteBuffer payload type]} (bean data)]
-       (when (= type (.getValue MediaType/FileHeader))
-         (ref-set header-data data))
-       (doseq [pclient (deref clients)]
-         (.MediaData ^Notify$Iface (val pclient) data _ _)))))
+    (let [{:keys [^bytes payload type]} (bean data)]
+      (swap! device->flow + (alength payload))
+      (when (= type (.getValue MediaType/FileHeader))
+        (reset! header-data data)))
+    (doseq [pclient (deref clients)]
+      (.MediaData ^Notify$Iface (val pclient) data _ _)))
 
   clojure.lang.IDeref
   (deref [_] @clients)
@@ -144,7 +144,7 @@
    (let [device  (add-device! manufacturer account)
          id      (str (UUID/randomUUID))
          clients (ref {})
-         source  (Source. id device manufacturer account media-type info clients (ref nil) (ref 0) (ref 0) (now))]
+         source  (Source. id device manufacturer account media-type info clients (atom nil) (atom 0) (atom 0) (now))]
      ;;将本source 添加入设备
      (add-source device source id)
      (connect source)

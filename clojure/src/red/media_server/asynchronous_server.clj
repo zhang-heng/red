@@ -1,6 +1,6 @@
 (ns red.media-server.asynchronous-server
   (:require [clojure.tools.logging :as log]
-            [red.utils :refer [correspond-args stack-trace mk-queue-handler]])
+            [red.utils :refer [correspond-args stack-trace]])
   (:import [clojure.lang Ref Fn PersistentArrayMap Atom PersistentVector PersistentQueue Agent]
            [java.nio.channels AsynchronousServerSocketChannel AsynchronousSocketChannel
             CompletionHandler AsynchronousChannelGroup]
@@ -19,9 +19,7 @@
                        ^clojure.lang.Fn           disconnect-notify ;;连接断开通知函数
                        ^java.lang.Boolean         writing?          ;;是否正在写入
                        ^PersistentQueue           write-queue       ;;写入队列
-                       ^Fn                        writer
-                       ^Fn                        reader
-                       ^clojure.lang.Ref          user])            ;;用户数据,供调用层写状态
+                       ^clojure.lang.Atom         user])            ;;用户数据,供调用层写状态
 
 (declare get-socket-info)
 
@@ -58,8 +56,7 @@
       (try
         (io! (.accept server server this)) ;; 继续监听新的连接
         (dosync
-         (let [connection (ref (Connection. socket nil nil false (PersistentQueue/EMPTY)
-                                            (mk-queue-handler) (mk-queue-handler) (ref nil)))]
+         (let [connection (ref (Connection. socket nil nil false (PersistentQueue/EMPTY) (ref nil)))]
            (alter connections conj connection)
            (accept-handler connection)))
         (catch Exception e (log/warn "tcp_server accept: \n" (stack-trace e)))))
@@ -72,37 +69,41 @@
     (completed [^Integer i
                 ^ByteBuffer byte-buffer]
       (try
-        (dosync
-         (let [{:keys [^AsynchronousSocketChannel socket read-handler reader]} (deref connection)]
-           (when (.isOpen socket)
-             (if (neg? i)
-               (close-connection connection)
-               (if (.hasRemaining byte-buffer)
-                 (reader #(.read socket byte-buffer byte-buffer this))
-                 (do (.flip byte-buffer)
-                     (read-handler connection byte-buffer)))))))
+        (let [{:keys [^AsynchronousSocketChannel socket read-handler]} (deref connection)]
+          (when (.isOpen socket)
+            (if (neg? i)
+              (close-connection connection)
+              (if (.hasRemaining byte-buffer)
+                (.read socket byte-buffer byte-buffer this)
+                (do (.flip byte-buffer)
+                    (read-handler connection byte-buffer))))))
         (catch Exception e (log/warn "tcp_server read: \n" (stack-trace e)))))
     (failed [e byte-buffer]
       (log/error "tcp_server read failed: " e)
       (close-connection connection))))
+
+(defn- get-next-buffer [connection]
+  (dosync
+   (let [{:keys [write-queue writing?]} (deref connection)]
+     (if (empty? write-queue)
+       (do (alter connection update-in [:writing?] (constantly false)) nil)
+       (let [next-buffer (peek write-queue)]
+         (alter connection update-in [:write-queue] pop)
+         next-buffer)))))
 
 (defmethod completion* :write [_ ^Ref connection]
   (proxy [CompletionHandler] []
     (completed [^Integer i
                 ^ByteBuffer byte-buffer]
       (try
-        (dosync
-         (let [{:keys [^AsynchronousSocketChannel socket write-queue writing? writer]} (deref connection)]
-           (when (.isOpen socket)
-             (if (neg? i)
-               (close-connection connection)
-               (if (.hasRemaining byte-buffer)
-                 (writer #(.write socket byte-buffer byte-buffer this))
-                 (if (empty? write-queue)
-                   (alter connection update-in [:writing?] (constantly false))
-                   (let [next-buffer (peek write-queue)]
-                     (alter connection update-in [:write-queue] pop)
-                     (writer #(.write socket next-buffer next-buffer this)))))))))
+        (let [{:keys [^AsynchronousSocketChannel socket]} (deref connection)]
+          (when (.isOpen socket)
+            (if (neg? i)
+              (close-connection connection)
+              (if (.hasRemaining byte-buffer)
+                (.write socket byte-buffer byte-buffer this)
+                (when-let [next-buffer (get-next-buffer connection)]
+                  (.write socket next-buffer next-buffer this))))))
         (catch Exception e (log/info "tcp_server write: " (stack-trace e)))))
     (failed [e byte-buffer]
       (log/info "tcp_server write failed: " e)
