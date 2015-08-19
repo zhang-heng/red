@@ -1,6 +1,6 @@
 (ns red.media-server.restful
   (:require [clojure.tools.logging :as log]
-            [environ.core :refer [env]]
+            [red.config :refer [env]]
             [red.utils :refer [now pass-mill correspond-args]])
   (:import [java.util UUID Date]))
 
@@ -31,7 +31,7 @@
 
 (defn check-timeout-task
   "处理请求session的超时"
-  [] (let [timeout (* (env :subscribe-timeout 30) 1000)]
+  [] (let [timeout (* (env :subscribe-timeout) 1000)]
        (dosync
         (doseq [m (vals @subscribes)]
           (when (> (pass-mill (:regist-time m)) timeout)

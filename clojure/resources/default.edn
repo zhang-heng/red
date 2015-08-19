@@ -1,0 +1,7 @@
+{
+ :sdk-path          "./sdk"
+ :subscribe-timeout 30
+ :gtsp-port         7748
+ :rest-port         8080
+ :exe-mux           2
+ }

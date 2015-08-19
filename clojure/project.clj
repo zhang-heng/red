@@ -12,7 +12,8 @@
                                                     javax.jms/jms
                                                     com.sun.jdmk/jmxtools
                                                     com.sun.jmx/jmxri]]
-                 [environ "1.0.0"]
+                 [environ "1.0.0"]  ;;环境变量
+                 [jarohen/nomad "0.7.1"] ;;配置
                  [clj-time "0.7.0"]
                  ;;web
                  [ring/ring "1.4.0"]
@@ -27,21 +28,11 @@
   :global-vars {*warn-on-reflection* true
                 *assert* true}
 
+  :uberjar-name "../../target/red.jar"
+
   :profiles {:dev        {:main red.core
-                          :jvm-opts ["-Dlogfile.level=DEBUG,console"]
-                          :env {:sdk-path          "../target/sdk"
-                                :subscribe-timeout 60
-                                :gtsp-port         7748
-                                :rest-port         8080
-                                :exe-mux           2
-                                :clj-env           :development}}
-             :test       {}
+                          :env {:dev true}}
+
              :uberjar    {:main red.server
-                          :aot :all
-                          :jvm-opts ["-Dlogfile.level=INFO,console,A3"]
-                          :env {:sdk-path          "./"
-                                :subscribe-timeout 30
-                                :gtsp-port         7748
-                                :rest-port         8080
-                                :exe-mux           2
-                                :clj-env           :production}}})
+                          :omit-source true
+                          :aot :all}})

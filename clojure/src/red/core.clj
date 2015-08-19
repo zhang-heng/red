@@ -1,10 +1,10 @@
 (ns red.core
-  (:require [clojure.tools.logging :as log]
+  (:require [red.config :refer [env]]
+            [clojure.tools.logging :as log]
             [red.media-server.restful :refer [check-timeout-task]]
             [ring.adapter.jetty :refer [run-jetty]]
             [red.handler :refer [app]]
-            [red.media-server.core :refer [start-gtsp-server]]
-            [environ.core :refer [env]])
+            [red.media-server.core :refer [start-gtsp-server]])
   (:import [org.eclipse.jetty.server Server])
   (:gen-class))
 

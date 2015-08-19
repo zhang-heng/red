@@ -5,7 +5,7 @@
             [red.device.client.sdk.core :refer [have-exe?]]
             [red.device.client.core :refer [stream-types*]]
             [red.utils :refer [correspond-args ?->long try-do is-ip-addr? string->uuid]]
-            [environ.core :refer [env]]
+            [red.config :refer [env]]
             [clojure.tools.logging :as log]))
 
 (defn realplay [manufacturer addr port user password channel-id stream-type]

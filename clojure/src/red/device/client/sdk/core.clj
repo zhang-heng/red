@@ -3,7 +3,7 @@
             [red.device.client.operate :refer :all]
             [clojure.tools.logging :as log]
             [red.utils :refer [now stack-trace]]
-            [environ.core :refer [env]]
+            [red.config :refer [env]]
             [red.device.client.sdk.callback :refer [start-thrift!]]
             [red.device.client.sdk.launcher :refer [launch! check-proc-status]])
   (:import [red.device.client.sdk.callback Thrift]
