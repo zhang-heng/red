@@ -89,13 +89,14 @@ void Device::Logout(){
   std::cout<<CLIENT_Logout((LLONG)_login_id)<<std::endl;
 }
 
+int r = 0;
 void Media::StartRealPlay(){
   std::cout<<"media: startrealplay: "<<_play_info.channel<<std::endl;
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
     media.type = device::types::MediaType::MediaData;
-    media.reserver = param;
+    media.reserver = r++;
     media.payload = std::string(pBuffer, pBuffer + dwBufSize);
     pthis->HandleDate(media);
   };

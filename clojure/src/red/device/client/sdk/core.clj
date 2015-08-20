@@ -172,10 +172,10 @@
        (log/infof "process lanuched: port=%d" port)
        ;;保存sdk进程的thrift服务端口
        (deliver thrift-sdk port)
-       (do (.Test1 this nil)
-           (.Test2 this nil)
-           (.Test3 this)
-           (.Test4 this))
+       ;; (do (.Test1 this nil)
+       ;;     (.Test2 this nil)
+       ;;     (.Test3 this)
+       ;;     (.Test4 this))
        ;;初始化进程
        (.InitSDK this)
        ;;获取sdk版本信息
@@ -250,18 +250,19 @@
      ;;将当前对象添加入列表
      (alter executors assoc id executor)
 
-     (future
-       (try
-         (do ;;;启动资源
-           ;;启动本地thrift监听
-           (log/debug "start waitting thrift connection from sdk process.")
-           (deliver thrift-notify (start-thrift! executor))
-           (log/debug "launch process ")
-           ;;启动sdk进程
-           (deliver proc (launch! (mk-out-printer executor) (mk-crashed executor)
-                                  exe-path working-path
-                                  (.get-port ^Thrift @thrift-notify))))
-         (catch Exception e (log/errorf "start local resource error: \n%s" (stack-trace e)))))
+     (send (agent nil)
+           (fn [_]
+             (try
+               (do ;;;启动资源
+                 ;;启动本地thrift监听
+                 (log/debug "start waitting thrift connection from sdk process.")
+                 (deliver thrift-notify (start-thrift! executor))
+                 (log/debug "launch process ")
+                 ;;启动sdk进程
+                 (deliver proc (launch! (mk-out-printer executor) (mk-crashed executor)
+                                        exe-path working-path
+                                        (.get-port ^Thrift @thrift-notify))))
+               (catch Exception e (log/errorf "start local resource error: \n%s" (stack-trace e))))))
      executor)))
 
 (defn have-exe?

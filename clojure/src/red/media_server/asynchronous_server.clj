@@ -129,17 +129,24 @@
          (.read socket byte-buffer byte-buffer (completion* :read connection)))
        (catch Exception e (log/debug "read-from" e) (close-connection connection))))
 
+(defn- write-in-queue
+  [^Ref connection
+   ^ByteBuffer byte-buffer]
+  (dosync
+   (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
+     (if writing?
+       (alter connection update-in [:write-queue] conj byte-buffer)
+       (do (alter connection update-in [:writing?] (constantly true))
+           false)))))
+
 (defn write-to
   "将ByteBuffer写入网络，正在写则存入队列"
   [^Ref connection
    ^ByteBuffer byte-buffer]
   (try
     (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
-      (when (.isOpen socket)
-        (.write socket byte-buffer)
-        (if writing?
-          (alter connection update-in [:write-queue] conj byte-buffer)
-          (.write socket byte-buffer))))
+      (when-not (write-in-queue connection byte-buffer)
+        (io! (.write socket byte-buffer byte-buffer (completion* :write connection)))))
     (catch Exception e (log/debug "write-to" e) (close-connection connection))))
 
 (defn sync-write-to
