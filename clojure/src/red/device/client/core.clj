@@ -57,7 +57,7 @@
                     (.putInt (.limit payload))
                     (.flip))]
       (write-handle header)
-      (write-handle payload)))
+      (write-handle (.asReadOnlyBuffer payload))))
 
   Object
   (toString [_]
