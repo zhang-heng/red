@@ -3,7 +3,7 @@
             [ring.util.response :refer [response status redirect not-found]]
             [red.media-server.restful :refer [subscribe! get-session-in-subscribes get-and-remove-subscribe]]
             [red.device.client.sdk.core :refer [have-exe?]]
-            [red.device.client.core :refer [stream-types*]]
+            [red.device.client.client :refer [stream-types*]]
             [red.utils :refer [correspond-args ?->long try-do is-ip-addr? string->uuid]]
             [red.config :refer [env]]
             [clojure.tools.logging :as log]))
