@@ -12,18 +12,23 @@ class Media{
   Media(int client_port, std::string device_id, SESSION_ID login_id,
         std::string media_id,  const device::info::PlayInfo& play_info);
   void HandleDate(const device::info::MediaPackage & media);
+  void MediaFinish();
+
   void StartRealPlay();  //SDK
   void StopRealPlay();   //SDK
+
   void StartVoiceTalk(){ }; //SDK
   void StopVoiceTalk(){ };  //SDK
   void SendVoiceData(const std::string& buffer){}; //SDK
-  void PlayBackByTime(){ };      //SDK
-  void StopPlayBack(){ };        //SDK
+
+  void PlayBackByTime();      //SDK
+  void StopPlayBack();        //SDK
   void PlayBackNormalSpeed(){ }; //SDK
   void PlayBackPause(){ };       //SDK
   void PlayBackFast(){ };        //SDK
   void PlayBackSlow(){ };        //SDK
   void PlayBackSeek(){ };        //SDK
+
  private:
   Client* _client;
   std::string _device_id;

@@ -13,8 +13,12 @@ using namespace device::netsdk;
 
 void CALLBACK DisConnectFunc(LLONG lLoginID, char *pchDVRIP, LONG nDVRPort, LDWORD dwUser)
 {
+  std::cout<<pchDVRIP<<":"<<nDVRPort<<" disconnect"<<std::endl;
   auto pthis = (Server*)dwUser;
-  //todo...
+  auto device = pthis->FindDevice((SESSION_ID)lLoginID);
+  if(device){
+    device->DisConnect();
+  }
 }
 
 std::string LoginErrorTostring(int code){
@@ -85,28 +89,39 @@ void Device::Logout(){
   std::cout<<CLIENT_Logout((LLONG)_login_id)<<std::endl;
 }
 
-int p = 0;
 void Media::StartRealPlay(){
   std::cout<<"media: startrealplay: "<<_play_info.channel<<std::endl;
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
     media.type = device::types::MediaType::MediaData;
-    media.reserver = p;
+    media.reserver = param;
     media.payload = std::string(pBuffer, pBuffer + dwBufSize);
     pthis->HandleDate(media);
+  };
+
+  auto disconnect = []( LLONG lOperateHandle, EM_REALPLAY_DISCONNECT_EVENT_TYPE dwEventType, void* param, LDWORD dwUser){
+    auto pthis = (Media*)dwUser;
+    pthis->MediaFinish();
   };
 
   _handle_id = (SESSION_ID) CLIENT_StartRealPlay((LLONG)_login_id, _play_info.channel, 0,
                                                  _play_info.stream_type == device::types::StreamType::Main ?
                                                  DH_RType_Realplay_0 : DH_RType_Realplay_1,
-                                                 data_callback, 0, (DWORD)this);
+                                                 data_callback, disconnect, (DWORD)this);
   if (_handle_id == 0) {
     std::cout<<"startplay error: "<<CLIENT_GetLastError()<<std::endl;
   }
-};
+}
 
 void Media::StopRealPlay(){
   std::cout<<"media: stoprealplay"<<std::endl;
   CLIENT_StopRealPlay((long)_handle_id);
-};
+}
+
+
+void Media::PlayBackByTime(){
+}
+
+void Media::StopPlayBack(){
+}

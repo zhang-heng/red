@@ -18,18 +18,21 @@
 class Server : virtual public device::netsdk::SdkIf {
  private:
   Device* FindDevice(std::string id);
+
   Client *_client;
   static int const workerCount = 20;
   int _listen_port;
   int _client_port;
   std::map<std::string, Device*> _devices;
-  std::mutex _device_mtx;
+  std::mutex _devices_mtx;
   int GetRandomPort(int from, int to);
 
  public:
   Server(int client_port);
   void ServerStarted();
   ~Server();
+
+  Device* FindDevice(SESSION_ID id);
 
   void Test1(const ::device::info::MediaPackage& mp) {
 	  std::cout<<"->sdkTest1"<<std::endl;

@@ -15,23 +15,28 @@ using namespace device;
 using namespace device::netsdk;
 
 void Server::InitSDK() {
-	bool ret = NET_DVR_Init();
-	if (!ret) {
-      std::cout<<"Fail to init sdk"<<std::endl;
-	}
+  bool ret = NET_DVR_Init();
+  if (!ret) {
+    std::cout<<"Fail to init sdk"<<std::endl;
+  }
 }
 
 void Server::CleanSDK() { return;}
 
 void Server::GetVersion(std::string& _return){
-	_return = "";
+  _return = "";
 }
 
 void Device::Login(){return;}
 void Device::Logout(){return;}
 
 void Media::StartRealPlay(){}
-void Media::StopRealPlay(){}; 
+void Media::StopRealPlay(){};
+
+void Media::PlayBackByTime(){}
+
+void Media::StopPlayBack(){}
+
 // bool Server::Login(const std::string& deviceID, const device::info::LoginAccount& account){
 //   NET_DVR_DEVICEINFO_V30 info;
 //   long login_id = NET_DVR_Login_V30((char*)account.addr.c_str(),

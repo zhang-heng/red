@@ -5,6 +5,9 @@
 class Device{
  public:
   Device(std::string device_id, const device::info::LoginAccount& account, int client_port);
+  SESSION_ID LoginID();
+  Media* FindMedia(std::string id);
+  void DisConnect();
   void Login();
   void Logout();
   void StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info);
@@ -18,6 +21,4 @@ class Device{
   std::mutex _medias_mtx;
   Client* _client;
   int _client_port;
-
-  Media* FindMedia(std::string id);
 };

@@ -5,6 +5,14 @@ Device::Device(std::string device_id, const device::info::LoginAccount& account,
   _client = new Client(_client_port);
 }
 
+SESSION_ID Device::LoginID(){
+  return _login_id;
+}
+
+void Device::DisConnect(){
+  _client->send_offline(_device_id);
+}
+
 Media* Device::FindMedia(std::string id){
   auto it = _medias.find(id);
   if(it == _medias.end())

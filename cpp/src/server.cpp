@@ -100,15 +100,23 @@ Device* Server::FindDevice(std::string id){
   return it->second;
 }
 
+Device* Server::FindDevice(SESSION_ID id){
+  for(auto it=_devices.begin(); it!=_devices.end(); it++){
+    if(it->second->LoginID() == id)
+      return it->second;
+  }
+  return nullptr;
+}
+
 void Server::Login(const device::info::LoginAccount& account, const std::string& device_id){
   auto device = FindDevice(device_id);
   if(device){
     device->Login();
   }else{
     device = new Device(device_id, account, _client_port);
-    _device_mtx.lock();
+    _devices_mtx.lock();
     _devices.insert(std::pair<std::string, Device*>(device_id, device));
-    _device_mtx.unlock();
+    _devices_mtx.unlock();
     device->Login();
   }
 }
@@ -116,9 +124,9 @@ void Server::Login(const device::info::LoginAccount& account, const std::string&
 void Server::Logout(const std::string& device_id) {
   auto device = FindDevice(device_id);
   if(device) {
-    _device_mtx.lock();
+    _devices_mtx.lock();
     _devices.erase(device_id);
-    _device_mtx.unlock();
+    _devices_mtx.unlock();
     device->Logout();
   }
 }
