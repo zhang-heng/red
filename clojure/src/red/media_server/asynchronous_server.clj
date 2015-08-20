@@ -59,7 +59,7 @@
          (let [connection (ref (Connection. socket (atom nil) nil false (PersistentQueue/EMPTY) (atom nil)))]
            (alter connections conj connection)
            (accept-handler connection)))
-        (catch Exception e (log/warn "tcp_server accept: \n" (stack-trace e)))))
+        (catch Exception e (do (log/warn "tcp_server accept: \n" (stack-trace e))))))
 
     (failed [e server]
       (log/error "tcp_server accept failed: " e))))
@@ -77,7 +77,8 @@
                 (.read socket byte-buffer byte-buffer this)
                 (do (.flip byte-buffer)
                     (@read-handler connection byte-buffer))))))
-        (catch Exception e (log/warn "tcp_server read: \n" (stack-trace e)))))
+        (catch Exception e (do (log/warn "tcp_server read: \n" (stack-trace e))
+                               (close-connection connection)))))
     (failed [e byte-buffer]
       (log/error "tcp_server read failed: " e)
       (close-connection connection))))
@@ -122,29 +123,33 @@
   [^Ref  connection
    ^Long l
    ^Fn   finish-handler]
-  (let [{:keys [^AsynchronousSocketChannel socket read-handler]} (deref connection)
-        byte-buffer (ByteBuffer/allocate l)]
-    (reset! read-handler finish-handler)
-    (.read socket byte-buffer byte-buffer (completion* :read connection))))
+  (try (let [{:keys [^AsynchronousSocketChannel socket read-handler]} (deref connection)
+             byte-buffer (ByteBuffer/allocate l)]
+         (reset! read-handler finish-handler)
+         (.read socket byte-buffer byte-buffer (completion* :read connection)))
+       (catch Exception e (log/debug "read-from" e) (close-connection connection))))
 
 (defn write-to
   "将ByteBuffer写入网络，正在写则存入队列"
   [^Ref connection
    ^ByteBuffer byte-buffer]
-  (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
-    (when (.isOpen socket)
-      (.write socket byte-buffer)
-      (if writing?
-        (alter connection update-in [:write-queue] conj byte-buffer)
-        (.write socket byte-buffer)))))
+  (try
+    (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
+      (when (.isOpen socket)
+        (.write socket byte-buffer)
+        (if writing?
+          (alter connection update-in [:write-queue] conj byte-buffer)
+          (.write socket byte-buffer))))
+    (catch Exception e (log/debug "write-to" e) (close-connection connection))))
 
 (defn sync-write-to
   "将ByteBuffer写入网络,等待返回"
   [^Ref connection
    ^ByteBuffer byte-buffer]
-  (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
-    (when (.isOpen socket)
-      (.write socket byte-buffer))))
+  (try (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
+         (when (.isOpen socket)
+           (.write socket byte-buffer)))
+       (catch Exception e (log/debug "sync-write-to" e) (close-connection connection))))
 
 (defn get-socket-info
   "通过socket对象获取地址/端口"

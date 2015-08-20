@@ -15,7 +15,7 @@
            [java.util UUID]
            [org.joda.time DateTime]))
 
-(def ^:private executors (ref {}))
+(defonce ^:private executors (ref {}))
 
 (thrift/import
  (:types    [device.types  MediaType    StreamType]
