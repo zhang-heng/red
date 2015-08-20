@@ -1,4 +1,4 @@
-(ns red.device.client.core
+(ns red.device.client.client
   "主动连接: socket (1->1) client (n->1) source (n->1) device (n*->1) exe"
   (:require [clojure.tools.logging :as log]
             [red.device.client.source :refer [get-all-sources get-source! add-client remove-client source->device]]
