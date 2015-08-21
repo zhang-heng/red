@@ -172,14 +172,8 @@
        (log/infof "process lanuched: port=%d" port)
        ;;保存sdk进程的thrift服务端口
        (deliver thrift-sdk port)
-       ;; (do (.Test1 this nil)
-       ;;     (.Test2 this nil)
-       ;;     (.Test3 this)
-       ;;     (.Test4 this))
        ;;初始化进程
        (.InitSDK this)
-       ;;获取sdk版本信息
-       (.GetVersion this)
        ;;告知所有设备进行访问操作
        (doseq [pdevice (deref devices)]
          (.Lanuched ^Notify$Iface (val pdevice) port)))))
