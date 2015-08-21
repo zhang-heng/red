@@ -44,13 +44,23 @@ struct LoginAccount{
 4: string password,
 }
 
+//时间信息
+struct TimeInfo{
+1: i32 year,
+2: i32 month,
+3: i32 day,
+4: i32 hour,
+5: i32 minute,
+6: i32 second,
+}
+
 //媒体请求信息
 struct PlayInfo{
 1:i32               channel,
 2:types.StreamType  stream_type,
 3:types.ConnectType connect_type,
-4:string            start_time,
-5:string            end_time
+4:TimeInfo          start_time,
+5:TimeInfo          end_time
 }
 
 //异常

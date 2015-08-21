@@ -91,7 +91,7 @@ void Device::Logout(){
 
 int r = 0;
 void Media::StartRealPlay(){
-  std::cout<<"media: startrealplay: "<<_play_info.channel<<std::endl;
+  std::cout<<"media: start realplay: "<<_play_info.channel<<std::endl;
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
@@ -109,20 +109,50 @@ void Media::StartRealPlay(){
   _handle_id = (SESSION_ID) CLIENT_StartRealPlay((LLONG)_login_id, _play_info.channel, 0,
                                                  _play_info.stream_type == device::types::StreamType::Main ?
                                                  DH_RType_Realplay_0 : DH_RType_Realplay_1,
-                                                 data_callback, disconnect, (DWORD)this);
+                                                 data_callback, disconnect, (LDWORD)this);
   if (_handle_id == 0) {
     std::cout<<"startplay error: "<<CLIENT_GetLastError()<<std::endl;
   }
 }
 
 void Media::StopRealPlay(){
-  std::cout<<"media: stoprealplay"<<std::endl;
+  std::cout<<"media: stoprealplay "<<std::endl;
   CLIENT_StopRealPlay((long)_handle_id);
 }
 
 
 void Media::PlayBackByTime(){
+  auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufferSize, LDWORD dwUser)->int{
+    auto pthis = (Media*)dwUser;
+    device::info::MediaPackage media;
+    media.type = device::types::MediaType::MediaData;
+    media.reserver = 0;
+    media.payload = std::string(pBuffer, pBuffer + dwBufferSize);
+    pthis->HandleDate(media);
+    return 1;
+  };
+
+  auto disconnect = []( LLONG lOperateHandle, EM_REALPLAY_DISCONNECT_EVENT_TYPE dwEventType, void* param, LDWORD dwUser){
+    auto pthis = (Media*)dwUser;
+    pthis->MediaFinish();
+  };
+
+  NET_TIME start_time{(DWORD)_play_info.start_time.year, (DWORD)_play_info.start_time.month, (DWORD)_play_info.start_time.day,
+      (DWORD)_play_info.start_time.hour, (DWORD)_play_info.start_time.minute, (DWORD)_play_info.start_time.second};
+
+  NET_TIME end_time{(DWORD)_play_info.end_time.year, (DWORD)_play_info.end_time.month, (DWORD)_play_info.end_time.day,
+      (DWORD)_play_info.end_time.hour, (DWORD)_play_info.end_time.minute, (DWORD)_play_info.end_time.second};
+
+  _handle_id = (SESSION_ID)CLIENT_StartPlayBackByTime((LLONG)_login_id, _play_info.channel, &start_time, &end_time, 0,
+                                                      nullptr,       0,//pos
+                                                      data_callback, (LDWORD)this,
+                                                      disconnect,    (LDWORD)this);
+
+  if (_handle_id == 0) {
+    std::cout<<"Fail to start playback: "<<CLIENT_GetLastError()<<std::endl;
+  }
 }
 
 void Media::StopPlayBack(){
+  CLIENT_StopPlayBack((long)_handle_id);
 }

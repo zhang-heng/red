@@ -135,27 +135,19 @@ class Server : virtual public device::netsdk::SdkIf {
   }
 
   void StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) override;
-
   void StopRealPlay(const std::string& media_id, const std::string& device_id) override;
 
   void StartVoiceTalk(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {  }
-
   void StopVoiceTalk(const std::string& media_id, const std::string& device_id) { }
-
   void SendVoiceData(const std::string& device_id, const std::string& media_id, const std::string& buffer) {  }
 
-  void PlayBackByTime(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {  }
-
-  void StopPlayBack(const std::string& media_id, const std::string& device_id) {  }
+  void PlayBackByTime(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) override;
+  void StopPlayBack(const std::string& media_id, const std::string& device_id) override;
 
   void PlayBackNormalSpeed(const std::string& media_id, const std::string& device_id) {  }
-
   void PlayBackPause(const std::string& media_id, const std::string& device_id) {  }
-
   void PlayBackFast(const std::string& media_id, const std::string& device_id) {  }
-
   void PlayBackSlow(const std::string& media_id, const std::string& device_id) {  }
-
   void PlayBackSeek(const std::string& media_id, const std::string& device_id) {
   }
 };

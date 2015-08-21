@@ -38,11 +38,6 @@
            ;;启动实时
            (POST "/" [manufacturer host port user password channel-id stream-type]
                  (realplay manufacturer host port user password channel-id stream-type))
-
-           (GET "/" [manufacturer addr port user password channel-id stream-type]
-                (when (= (env :clj-env) :development)
-                  (realplay manufacturer addr port user password channel-id stream-type)))
-
            ;;状态
            (context "/:session-id" [session-id]
                     (let [session (string->uuid session-id)]

@@ -12,6 +12,10 @@ class Device{
   void Logout();
   void StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info);
   void StopRealPlay(const std::string& media_id);
+
+  void StartPlayBack(const std::string& media_id, const device::info::PlayInfo& play_info);
+  void StopPlayBack(const std::string& media_id);
+
  private:
   SESSION_ID _login_id;
   std::string _device_id;

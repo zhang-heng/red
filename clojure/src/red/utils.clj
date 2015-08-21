@@ -6,7 +6,8 @@
             [ring.util.response :refer [response status]])
   (:import [java.nio charset.Charset]
            [java.util UUID Date]
-           [java.io StringWriter PrintWriter]))
+           [java.io StringWriter PrintWriter]
+           [device.info TimeInfo]))
 
 (defn ?->long [n]
   (cond
@@ -26,6 +27,12 @@
 (defn zh-cn-time-str ^String [dt]
   (-> (with-zone (:date-time-no-ms formatters) (time/time-zone-for-id "Asia/Shanghai"))
       (unparse dt)))
+
+(defn str-time->Timeinfo ^TimeInfo [s]
+  (try
+    (let [{:keys [year monthOfYear dayOfMonth hourOfDay minuteOfHour secondOfMinute]}  (-> (parse s) bean)]
+      (TimeInfo. year monthOfYear dayOfMonth hourOfDay minuteOfHour secondOfMinute))
+    (catch Exception _)))
 
 (defmacro correspond-args
   "按变量名生成map";;(correspond-args a b)->{:a a :b b}
