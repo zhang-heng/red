@@ -34,19 +34,17 @@
      (let [{:keys [remote-addr remote-port]} connection]
        (log/infof "close client: %s:%d" remote-addr remote-port))
      (remove-client source session)
-     (write-handle (ByteBuffer/allocate 0))
      (close-handle)))
 
   Notify$Iface
   (Offline [this _]
-    (write-handle (ByteBuffer/allocate 0))
     (close this))
 
   (MediaStarted [this _ _]
     (log/info "media start: " this))
 
   (MediaFinish [this _ _]
-    (close this))
+    (write-handle (ByteBuffer/allocate 0)))
 
   (MediaData [this data _ _]
     (let [{:keys [^device.types.MediaType type reserver]} (bean data)

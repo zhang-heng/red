@@ -57,7 +57,7 @@
         (io! (.accept server server this)) ;; 继续监听新的连接
         (dosync
          (let [connection (ref (Connection. socket (atom nil) nil false (PersistentQueue/EMPTY) (atom nil)))]
-           (.setOption socket (java.net.StandardSocketOptions/SO_SNDBUF) (Integer. (* 1024 100)))
+           (.setOption socket (java.net.StandardSocketOptions/SO_SNDBUF) (Integer. (* 1024 500)))
            (alter connections conj connection)
            (accept-handler connection)))
         (catch Exception e (do (log/warn "tcp_server accept: \n" (stack-trace e))))))
