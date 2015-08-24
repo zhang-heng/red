@@ -32,7 +32,7 @@
            ;;回放控制
            (context "/:session-id" [session-id]
                     (GET "/status" [] "status")
-                    (DELETE "/drop" [] "drop")
+                    (DELETE "/" [] "drop")
 
                     (POST "/pause" [] "pause")
                     (POST "/resume" [] "resume")

@@ -42,5 +42,5 @@
                     (let [session (string->uuid session-id)]
                       (GET "/status" []
                            (session-status session))
-                      (DELETE "/drop" [] "drop"
+                      (DELETE "/" [] "drop"
                               (session-status session))))))

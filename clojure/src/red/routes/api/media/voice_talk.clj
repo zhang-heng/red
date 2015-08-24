@@ -11,4 +11,4 @@
            ;;状态
            (context "/:session-id" [session-id]
                     (GET "/status" [] "status")
-                    (DELETE "/drop" [] "drop"))))
+                    (DELETE "/" [] "drop"))))

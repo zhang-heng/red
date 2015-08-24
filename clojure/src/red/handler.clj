@@ -5,6 +5,10 @@
             [ring.middleware.reload :refer [wrap-reload]]
 
             [red.routes.home :refer [base-routes]]
+
+            [red.routes.api.gateway.device :refer [gateway-device-routes]]
+            [red.routes.api.gateway.media :refer [gateway-media-routes]]
+
             [red.routes.api.media.status :refer [status-routes]]
             [red.routes.api.media.realplay :refer [realplay-routes]]
             [red.routes.api.media.playback :refer [playback-routes]]
@@ -12,11 +16,14 @@
 
 (def app
   (api (-> (routes
-            (context "/api" []
+            (context "/api/media" []
                      status-routes
                      realplay-routes
                      playback-routes
                      voice-talk-routes)
+            (context "/api/gateway" []
+                     gateway-device-routes
+                     gateway-media-routes)
             base-routes)
            wrap-json-params
            wrap-json-response
