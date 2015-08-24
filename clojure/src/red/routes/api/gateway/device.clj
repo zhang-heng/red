@@ -1,32 +1,26 @@
 (ns red.routes.api.gateway.device
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]))
 
-(defroutes gateway-device-routes
-  (context "/device" []
+(defroutes device-routes
+  (context "/:device-id" [device-id]
+           (DELETE "/" [])
            (GET "/" [])
-           ;;获取所有设备
-           (GET "/status"[])
-           ;;增
-           (POST "/" [manufacturer addr port user password])
-           ;;删
-           (DELETE "/:device-id" [device-id])
-           ;;查
-           (GET "/:device-id" [device-id])
-           ;;改
-           (POST "/:device-id" [device-id manufacturer addr port user password])
-
-           "媒体"
-           (context "/:device-id/media-channel" [device-id]
-                    ;;获取所有播放通道
+           (POST "/" [device-id manufacturer addr port user password])
+           (context "/media-channel" []
                     (GET "/" [])
                     (GET "/status" [])
                     (context ["/:channle-id", :channel-id #"[0-9]+"] [channel-id]
-                             (POST "realplay" [])
-                             (POST "playback" [])))
-
-           "对讲"
-           (context "/:device-id/talk-channel" [device-id]
-                    ;;获取所有播放通道
+                             (POST "/realplay" [])
+                             (POST "/playback" [])))
+           (context "/talk-channel" []
                     (GET "/" [])
                     (GET "/status" [])
-                    (POST ["/:channle-id", :channel-id #"[0-9]+"] [channel-id]))))
+                    (context ["/:channle-id", :channel-id #"[0-9]+"] [channel-id]
+                             (POST "/" [])))))
+
+(defroutes gateway-device-routes
+  (context "/device" []
+           (GET "/" [])
+           (GET "/status"[])
+           (POST "/" [manufacturer addr port user password])
+           device-routes))
