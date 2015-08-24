@@ -2,7 +2,7 @@
   (:require [clojure.tools.logging :as log]
             [red.device.client.device :refer [add-device! get-all-devices add-source remove-source]]
             [red.device.client.operate :refer :all]
-            [red.utils :refer [now]])
+            [red.utils :refer [now Timeinfo->str-time]])
   (:import [red.device.client.device Device]
            [device.types MediaType]
            [device.info LoginAccount PlayInfo]
@@ -128,8 +128,10 @@
   Object
   (toString [_]
     (let [{:keys [channel stream_type connect_type start_time end_time]} (bean info)]
-      (format "____source: %s %d %s %s %s %s \n%s"
-              source-type channel stream_type connect_type start_time end_time
+      (format "____source: %s %d %s %s %s %s, %d bytes\n%s"
+              source-type channel stream_type connect_type
+              (Timeinfo->str-time start_time) (Timeinfo->str-time end_time)
+              @device->flow
               (->> @clients vals (map str)
                    (clojure.string/join ",\n"))))))
 

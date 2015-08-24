@@ -60,12 +60,13 @@
 
   Object
   (toString [_]
-    (let [{:keys [remote-addr remote-port]} connection]
+    (let [{:keys [remote-addr remote-port]} connection
+          pass-time (inc (pass-mill start-time))]
       (format "______client: %s, %s:%d, %d Bytes, %d ms, %s Bps"
               session
               remote-addr remote-port
               @device->flow (pass-mill start-time)
-              (long (/ @device->flow (/ (pass-mill start-time) 1000)))))))
+              (long (/ @device->flow (/ pass-time 1000)))))))
 
 (defonce stream-types* {:main StreamType/Main
                         :sub  StreamType/Sub
