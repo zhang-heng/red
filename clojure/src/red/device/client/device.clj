@@ -14,15 +14,15 @@
 (defprotocol IDevice
   (add-source [this source id])
   (remove-source [this id])
-  (add-gateway [this gateway id])
-  (remove-gateway [this id]))
+  (add-gateway [this gateway])
+  (remove-gateway [this]))
 
 (deftype Device [^String       id
                  ^Executor     executor
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
                  ^Ref          sources ;;媒体请求列表 (ref {id source ...})
-                 ^Ref          gateways ;;网关列表 (ref {id gateway ...})
+                 ^Ref          gateway ;;网关列表 (ref  gateway)
                  ^Atom         device->flow ;;来自设备的流量统计
                  ^Atom         client->flow ;;来自客户端的流量统计
                  ^Ref          status ;; :connecting :online :offline
@@ -35,17 +35,18 @@
   (remove-source [this id]
     (dosync
      (when (and (empty? (alter sources dissoc id))
-                (empty? @gateways))
+                (nil? @gateway))
        (close this))))
 
-  (add-gateway [this gateway id]
+  (add-gateway [this gateway]
     (dosync
-     (alter gateways assoc id gateway)))
+     (ref-set gateway gateway)))
 
-  (remove-gateway [this id]
-    (when (and (empty? (alter gateways dissoc id))
-               (empty? @sources))
-      (close this)))
+  (remove-gateway [this]
+    (dosync
+     (ref-set gateway nil)
+     (when (and (empty? @sources))
+       (close this))))
 
   IOperate
   (can-multiplex? [this args]
@@ -59,7 +60,7 @@
      ;;从进程层将本对象删除
      (remove-device executor id)
      ;;通知所有子层关闭
-     (doseq [pgateway (deref gateways)]
+     (doseq [pgateway (deref gateway)]
        (close (val pgateway)))
      (doseq [psource (deref sources)]
        (close (val psource)))
@@ -119,7 +120,7 @@
      ;;告知所有子对象,可以做进一步请求
      (doseq [psource (deref sources)]
        (.Connected ^Notify$Iface (val psource) _))
-     (doseq [pgateway (deref gateways)]
+     (doseq [pgateway (deref gateway)]
        (.Connected ^Notify$Iface (val pgateway) _))))
 
   (Offline [this _]
@@ -128,7 +129,7 @@
      ;;告知所有子对象,由子对象决定下一步操作
      (doseq [psource (deref sources)]
        (.Offline ^Notify$Iface (val psource) _))
-     (doseq [pgateway (deref gateways)]
+     (doseq [pgateway (deref gateway)]
        (.Offline ^Notify$Iface (val pgateway) _))))
 
   (MediaStarted [this source-id _]
@@ -149,15 +150,14 @@
       (.MediaData ^Notify$Iface source data source-id _)))
 
   clojure.lang.IDeref
-  (deref [_] {:sources @sources :gateways  @gateways})
+  (deref [_] {:sources @sources :gateway  @gateway})
 
   Object
   (toString [_]
     (let [{:keys [addr port]} (bean account)
-          sources (->> @sources vals (map str))
-          gateways (->> @gateways vals (map str))]
+          sources (->> @sources vals (map str))]
       (format "__device: %s:%d \n%s"
-              addr port (->> (apply conj sources gateways)
+              addr port (->> (apply conj sources gateway)
                              (clojure.string/join ",\n"))))))
 
 (defn- creat-device!
@@ -168,7 +168,7 @@
 
    (let [id           (str (UUID/randomUUID))
          executor     (create-exe! manufacturer)
-         device       (Device. id executor manufacturer account (ref {}) (ref {}) (atom 0) (atom 0) (ref :offline) (now))]
+         device       (Device. id executor manufacturer account (ref {}) (ref nil) (atom 0) (atom 0) (ref :offline) (now))]
      (add-device executor device id)
      device)))
 

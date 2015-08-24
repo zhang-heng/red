@@ -1,7 +1,7 @@
 (ns red.device.client.gateway
-  "网关维护"
+  "网关维护,与运维app对接,维护设备状态"
   (:require [clojure.tools.logging :as log]
-            [red.device.client.device :refer [add-device! get-all-devices add-source remove-source]]
+            [red.device.client.device :refer [add-device! get-all-devices add-gateway]]
             [red.device.client.operate :refer :all]
             [red.utils :refer [now]])
   (:import [red.device.client.device Device]
@@ -12,18 +12,13 @@
            [org.joda.time DateTime]
            [java.util UUID]))
 
-(defprotocol IGateway)
-
 (deftype Gateway [^String       id
                   ^Device       device
+                  ;;运维订阅的通知
                   ^String       manufacturer ;;厂商
                   ^LoginAccount account      ;;设备账号
                   ^DateTime     start-time]
   IOperate
-  (can-multiplex? [this args]
-    (let [[account*] args]
-      (= account* account)))
-
   (close [this])
 
   Sdk$Iface
@@ -43,7 +38,12 @@
   Object
   (toString [_]))
 
-(defn- creat-gateway [])
+(defn- creat-gateway
+  [manufacturer ^LoginAccount account]
+  (let [device  (add-device! manufacturer account)
+        id      (str (UUID/randomUUID))
+        gateway (Gateway. id device manufacturer account (now))]
+    (add-gateway device gateway)))
 
 (defn get-all-gateways []
   (dosync
@@ -55,4 +55,9 @@
 
 (defn close-gateway! [^Gateway gateway])
 
-(defn open-gateway [])
+(defn open-gateway
+  [{:keys [manufacturer addr port user password]}]
+  (let [account (LoginAccount. addr port user password)]
+    (creat-gateway manufacturer account)))
+
+(defn drop-gateway [id])
