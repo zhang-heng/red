@@ -1,4 +1,4 @@
-(ns red.device.client.sdk.launcher
+(ns red.device.sdk.launcher
   (:require [clojure.tools.logging :as log])
   (:import [clojure.lang Fn Ref PersistentQueue]
            [java.io InputStreamReader BufferedReader File]))

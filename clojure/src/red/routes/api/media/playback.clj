@@ -2,7 +2,7 @@
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]
             [ring.util.response :refer [response status redirect not-found]]
             [red.media-server.restful :refer [subscribe! get-session-in-subscribes get-and-remove-subscribe]]
-            [red.device.client.sdk.core :refer [have-exe?]]
+            [red.device.sdk.core :refer [have-exe?]]
             [red.device.client.client :refer [stream-types*]]
             [red.utils :refer [correspond-args ?->long try-do is-ip-addr? string->uuid str-time->Timeinfo]]
             [red.config :refer [env]]

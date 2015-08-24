@@ -11,8 +11,7 @@
 (defonce ^:private server (atom nil))
 
 (defn- start-check-task
-  "启动维护任务@返回关闭函数"
-  []
+  "启动维护任务@返回关闭函数"[]
   (let [running (promise)
         task    (Thread. #(while (deref running 1000 true)
                             (check-timeout-task)))]
