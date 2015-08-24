@@ -1,4 +1,4 @@
-(ns red.device.sdk.core
+(ns red.device.client.exe
   (:require [thrift-clj.core :as thrift]
             [red.device.client.operate :refer :all]
             [clojure.tools.logging :as log]

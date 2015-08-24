@@ -2,7 +2,6 @@
   (:require [compojure.core :refer [defroutes context GET POST DELETE]]
             [ring.util.response :refer [response status redirect not-found]]
             [red.media-server.restful :refer [subscribe! get-session-in-subscribes get-and-remove-subscribe]]
-            [red.device.sdk.core :refer [have-exe?]]
             [red.device.client.client :refer [stream-types*]]
             [red.utils :refer [correspond-args ?->long try-do is-ip-addr? string->uuid str-time->Timeinfo]]
             [red.config :refer [env]]
@@ -14,7 +13,7 @@
         start-time  (str-time->Timeinfo start-time)
         end-time    (str-time->Timeinfo end-time)]
 
-    (try-do [(have-exe? manufacturer)             (str manufacturer "not found")
+    (try-do [;;(have-exe? manufacturer)             (str manufacturer "not found")
              (is-ip-addr? addr)                   "the addr not valid"
              (and port (< 0 port) (< port 65535)) "The port must be valid"
              channel-id                           "the channel-id must be a number"
