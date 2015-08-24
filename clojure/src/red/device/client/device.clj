@@ -156,9 +156,9 @@
   (toString [_]
     (let [{:keys [addr port]} (bean account)
           sources (->> @sources vals (map str))]
-      (format "__device: %s:%d \n%s"
-              addr port (->> (apply conj sources gateway)
-                             (clojure.string/join ",\n"))))))
+      (format "__device: %s:%d \n%s" addr port
+              (->> sources
+                   (clojure.string/join ",\n"))))))
 
 (defn- creat-device!
   [manufacturer ^LoginAccount account]

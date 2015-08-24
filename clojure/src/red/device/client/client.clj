@@ -3,7 +3,7 @@
   (:require [clojure.tools.logging :as log]
             [red.device.client.source :refer [get-all-sources get-source! add-client remove-client source->device]]
             [red.device.client.operate :refer :all]
-            [red.utils :refer [now]])
+            [red.utils :refer [now pass-mill]])
   (:import [red.device.client.source Source]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.types StreamType ConnectType]
@@ -54,14 +54,18 @@
                     (.put (unchecked-byte (bit-and 0xff reserver)))
                     (.putInt (.limit payload))
                     (.flip))]
+      (swap! device->flow + (.limit payload))
       (write-handle header)
       (write-handle (.asReadOnlyBuffer payload))))
 
   Object
   (toString [_]
-    (let [{:keys [remote-addr remote-port]}  connection]
-      (format "______client: %s:%d %s"
-              remote-addr remote-port session))))
+    (let [{:keys [remote-addr remote-port]} connection]
+      (format "______client: %s, %s:%d, %d Bytes, %d ms, %s Bps"
+              session
+              remote-addr remote-port
+              @device->flow (pass-mill start-time)
+              (long (/ @device->flow (/ (pass-mill start-time) 1000)))))))
 
 (defonce stream-types* {:main StreamType/Main
                         :sub  StreamType/Sub
