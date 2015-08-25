@@ -44,19 +44,21 @@
     (log/info "media start: " this))
 
   (MediaFinish [this _ _]
-    (write-handle (ByteBuffer/allocate 0)))
+    (write-handle (ByteBuffer/allocate 0) :block))
 
   (MediaData [this data _ _]
-    (let [{:keys [^device.types.MediaType type reserver]} (bean data)
+    (let [{:keys [^device.types.MediaType type reserver pos block total]} (bean data)
           payload (.bufferForPayload data)
-          header  (doto (ByteBuffer/allocate 6)
+          header  (doto (ByteBuffer/allocate 17)
                     (.put (unchecked-byte (.getValue type)))
-                    (.put (unchecked-byte (bit-and 0xff reserver)))
+                    (.putInt reserver)
+                    (.putInt pos)
+                    (.putInt total)
                     (.putInt (.limit payload))
                     (.flip))]
       (swap! device->flow + (.limit payload))
-      (write-handle header)
-      (write-handle (.asReadOnlyBuffer payload))))
+      (write-handle header block)
+      (write-handle (.asReadOnlyBuffer payload) block)))
 
   Object
   (toString [_]

@@ -12,8 +12,8 @@
            [java.util UUID Date]))
 
 (defn- mk-send-handler [connection]
-  (fn [buffer]
-    (write-to connection buffer)))
+  (fn [buffer &[block]]
+    (write-to connection buffer block)))
 
 (defn- mk-close-handler [connection]
   (fn [] (close-connection connection)))

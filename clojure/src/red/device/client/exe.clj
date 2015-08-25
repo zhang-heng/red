@@ -166,6 +166,12 @@
       (try-do this #(request @thrift-sdk StopPlayBack source-id device-id))))
 
   Notify$Iface
+  (Log [this msg]
+    (let [level :info
+          pid   (:pid (deref proc))
+          header (format "%s<%d>" manufacturer pid)]
+      (log/log header level nil msg)))
+
   (Lanuched [this port]
     (future
       (dosync

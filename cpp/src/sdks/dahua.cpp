@@ -157,6 +157,7 @@ void Media::PlayBackByTime(){//ok
     media.reserver = 0;
     media.pos = pthis->_playback_pos;
     media.total = pthis->_playback_total;
+    media.block = true;
     media.payload = string(pBuffer, pBuffer + dwBufferSize);
     pthis->HandleDate(media);
     return 1;

@@ -132,10 +132,10 @@
 (defn- write-in-queue
   [^Ref connection
    ^ByteBuffer byte-buffer
-   limit]
+   block]
   (let [{:keys [^AsynchronousSocketChannel socket]} (deref connection)]
     ;;限制存包等待
-    (when limit
+    (when block
       (while (and (.isOpen socket)
                   (-> @connection :write-queue count (> 10)))
         (Thread/sleep 100)))
@@ -155,10 +155,10 @@
   "将ByteBuffer写入网络，正在写则存入队列"
   [^Ref connection
    ^ByteBuffer byte-buffer
-   &[limit]]
+   &[block]]
   (try
     (let [{:keys [writing? write-queue ^AsynchronousSocketChannel socket]} (deref connection)]
-      (when-not (write-in-queue connection byte-buffer limit)
+      (when-not (write-in-queue connection byte-buffer block)
         (io! (.write socket byte-buffer byte-buffer (completion* :write connection)))))
     (catch Exception e (log/debug "write-to" e) (close-connection connection))))
 

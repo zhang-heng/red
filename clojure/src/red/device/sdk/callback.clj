@@ -45,21 +45,24 @@
                                 (Test3 [] (log/debug "->sdk test3") (device.info.MediaPackage.))
                                 (Test4 [] (log/debug "->sdk test4") (ByteBuffer/allocate 0))
 
-                                (Lanuched    [port] (try-do #(.Lanuched notifier port)))
+                                (Log [msg] (.Log notifier msg))
 
-                                (Connected   [device-id] (try-do #(.Connected notifier device-id)))
+                                (Lanuched [port] (try-do #(.Lanuched notifier port)))
 
-                                (Offline     [device-id] (try-do #(.Offline notifier device-id)))
+                                (Connected [device-id] (try-do #(.Connected notifier device-id)))
+
+                                (Offline [device-id] (try-do #(.Offline notifier device-id)))
 
                                 (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
 
-                                (MediaData   [{:keys [type reserver ^bytes payload] :as ^MediaPackage data} media-id device-id]
-                                             (try
-                                               (let [d (device.info.MediaPackage.
-                                                        type reserver (ByteBuffer/wrap payload))]
-                                                 (.MediaData notifier d media-id device-id))
-                                               (catch Exception e
-                                                 (log/error e data media-id device-id)))))
+                                (MediaData [{:keys [type reserver pos total block ^bytes payload] :as ^MediaPackage data}
+                                            media-id device-id]
+                                           (try
+                                             (let [d (device.info.MediaPackage.
+                                                      type reserver pos total block (ByteBuffer/wrap payload))]
+                                               (.MediaData notifier d media-id device-id))
+                                             (catch Exception e
+                                               (log/error e data media-id device-id)))))
 
         {:keys [server port]}  (multi-threaded-server handler 0
                                                       :bind "localhost"
