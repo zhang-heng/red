@@ -57,10 +57,9 @@ string LoginErrorTostring(int code){//ok
 /****************method fun****************/
 void Server::InitSDK() {//ok
   if(!CLIENT_Init(DisConnectFunc, (LDWORD)this)){
-    _client->send_log("init sdk error");
     InvalidOperation e;
     e.what = 0;
-    e.why  = "error to init dahua sdk";
+    e.why  = "Fail to init dahua sdk";
     throw e;
   }
 }
@@ -70,10 +69,10 @@ void Server::CleanSDK() {//ok
 }
 
 void Server::GetVersion(string& _return) {//ok
-  stringstream stream;
+  stringstream ss;
   auto version = CLIENT_GetSDKVersion();
-  stream<<version/10000000<<"."<<version/1000000%10<<"."<<version/100000%10<<"."<<version%10000;
-  _return = stream.str();
+  ss<<version/10000000<<"."<<version/1000000%10<<"."<<version/100000%10<<"."<<version%10000;
+  _return = ss.str();
 }
 
 void Device::Login() {//ok
@@ -89,7 +88,7 @@ void Device::Login() {//ok
                                         (char*)_account.user.c_str(), (char*)_account.password.c_str(),
                                         &info, &err_code);
   if (_login_id == 0) {
-    _client->send_log("fail to login, " + LoginErrorTostring(err_code));
+    Log("fail to login, " + LoginErrorTostring(err_code));
     _client->send_offline(_device_id);
     return;
   };
@@ -114,7 +113,6 @@ void Media::StartRealPlay(){//ok
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
     media.type = to_media_type(dwDataType);
-    media.reserver = param;
     media.payload = string(pBuffer, pBuffer + dwBufSize);
     pthis->HandleDate(media);
   };
@@ -129,7 +127,7 @@ void Media::StartRealPlay(){//ok
                                                  DH_RType_Realplay_0 : DH_RType_Realplay_1,
                                                  data_callback, disconnect, (LDWORD)this);
   if (_handle_id == 0) {
-    _client->send_log("startplay error: " + CLIENT_GetLastError());
+    Log("startplay error: " + CLIENT_GetLastError());
     MediaFinish();
   }
 }
@@ -154,7 +152,6 @@ void Media::PlayBackByTime(){//ok
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
     media.type = to_media_type(dwDataType);
-    media.reserver = 0;
     media.pos = pthis->_playback_pos;
     media.total = pthis->_playback_total;
     media.block = true;

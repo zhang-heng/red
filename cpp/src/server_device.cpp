@@ -10,6 +10,12 @@ SESSION_ID Device::LoginID(){
   return _login_id;
 }
 
+void Device::Log(std::string msg){
+  std::stringstream ss;
+  ss <<_account.addr<<":"<<_account.port<<". "<<msg;
+  _client->send_log(ss.str());
+}
+
 void Device::DisConnect(){
   std::stringstream ss;
   ss<<_device_id<<" "<<_account.addr<<":"<<_account.port<<" "<<"disconnect";
@@ -27,7 +33,7 @@ Media* Device::FindMedia(std::string id){
 void Device::StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info){
   auto media = FindMedia(media_id);
   if(!media){
-    media = new Media(_client_port, _device_id, _login_id, media_id, play_info);
+    media = new Media(_client_port, _device_id, _login_id, this, media_id, play_info);
     _medias_mtx.lock();
     std::cout<<"device: startrealplay<<<"<<_device_id<<std::endl;
     _medias.insert(std::pair<std::string, Media*>(media_id, media));
@@ -52,7 +58,7 @@ void Device::StopRealPlay(const std::string& media_id){
 void Device::StartPlayBack(const std::string& media_id, const device::info::PlayInfo& play_info){
   auto media = FindMedia(media_id);
   if(!media){
-    media = new Media(_client_port, _device_id, _login_id, media_id, play_info);
+    media = new Media(_client_port, _device_id, _login_id, this, media_id, play_info);
     _medias_mtx.lock();
     std::cout<<"device: StartPlayBack<<<"<<_device_id<<std::endl;
     _medias.insert(std::pair<std::string, Media*>(media_id, media));

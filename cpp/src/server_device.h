@@ -1,3 +1,6 @@
+#ifndef __SERVER_DEVICE
+#define __SERVER_DEVICE
+
 #include "server_media.h"
 #include "client.h"
 #include <mutex>
@@ -5,6 +8,7 @@
 class Device{
  public:
   Device(std::string device_id, const device::info::LoginAccount& account, int client_port);
+  void Log(std::string msg);
   SESSION_ID LoginID();
   Media* FindMedia(std::string id);
   void DisConnect();
@@ -26,3 +30,5 @@ class Device{
   Client* _client;
   int _client_port;
 };
+
+#endif

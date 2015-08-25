@@ -132,25 +132,25 @@ void Server::Logout(const std::string& device_id) {
 }
 
 void Server::StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: startrealplay"<<media_id<<std::endl;
+  std::cout<<"server: startrealplay "<<media_id<<std::endl;
   auto device = FindDevice(device_id);
   if(device) device->StartRealPlay(media_id, play_info);
 }
 
 void Server::StopRealPlay(const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: stoprealplay"<<media_id<<std::endl;
+  std::cout<<"server: stoprealplay "<<media_id<<std::endl;
   auto device = FindDevice(device_id);
   if(device) device->StopRealPlay(media_id);
 }
 
 void Server::PlayBackByTime(const device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: startrealplay"<<media_id<<std::endl;
+  std::cout<<"server: startrealplay "<<media_id<<std::endl;
   auto device = FindDevice(device_id);
   if(device) device->StartPlayBack(media_id, play_info);
 }
 
 void Server::StopPlayBack(const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: stoprealplay"<<media_id<<std::endl;
+  std::cout<<"server: stoprealplay "<<media_id<<std::endl;
   auto device = FindDevice(device_id);
   if(device) device->StopPlayBack(media_id);
 }

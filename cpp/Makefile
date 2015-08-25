@@ -39,7 +39,7 @@ $(main_obj_path)/%.o : $(main_src_path)/%.cpp
 #**********hik************
 hik_include = -I $(libs_path)/hik $(main_include)
 hik_links_path = -L$(libs_path)/hik $(thrift_links_path)
-hik_links = $(main_links) -lhcnetsdk -lHCCore -lhpr
+hik_links = $(main_links) -lhcnetsdk -lhpr
 $(shell mkdir -p $(TARGET)/hik)
 hik.exe :$(main_objs)
 	$(COMPILE) src/sdks/hik.cpp $(main_objs) $(hik_include) $(hik_links_path) $(hik_links) -o $(TARGET)/hik/hik.exe

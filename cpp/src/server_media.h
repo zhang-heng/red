@@ -7,10 +7,13 @@
 
 #define SESSION_ID void*
 
+class Device;
+
 class Media{
  public:
-  Media(int client_port, std::string device_id, SESSION_ID login_id,
+  Media(int client_port, std::string device_id, SESSION_ID login_id, Device* device,
         std::string media_id,  const device::info::PlayInfo& play_info);
+  void Log(std::string msg);
   void HandleDate(const device::info::MediaPackage & media);
   void MediaFinish();
 
@@ -34,6 +37,8 @@ class Media{
 
  private:
   Client* _client;
+  Device* _device;
+
   std::string _device_id;
   SESSION_ID _login_id;
 

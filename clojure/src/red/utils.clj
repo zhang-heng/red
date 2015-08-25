@@ -35,8 +35,10 @@
     (catch Exception _)))
 
 (defn Timeinfo->str-time [^TimeInfo info]
-  (let [{:keys [year month day hour minute second]} (bean info)]
-    (format "%04d-%02d-%02dT%02d:%02d:%02d" year month day hour minute second)))
+  (if info
+    (let [{:keys [year month day hour minute second]} (bean info)]
+      (format "%04d-%02d-%02dT%02d:%02d:%02d" year month day hour minute second))
+    ""))
 
 (defmacro correspond-args
   "按变量名生成map";;(correspond-args a b)->{:a a :b b}
