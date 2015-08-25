@@ -3,7 +3,7 @@ OBJ_DIR = .obj
 COMPILE = g++ -O2 -s -std=c++11 -m32 -pthread
 TARGET = ../target/sdk
 
-all: hik.exe dahua.exe
+all: hik.exe dahua.exe gt.exe
 
 clean:
 	rm -rf $(OBJ_DIR)
@@ -53,3 +53,11 @@ $(shell mkdir -p $(TARGET)/dahua)
 dahua.exe :$(main_objs)
 	$(COMPILE) src/sdks/dahua.cpp $(main_objs) $(dahua_include) $(dahua_links_path) $(dahua_links) -o $(TARGET)/dahua/dahua.exe
 	$(shell cp $(libs_path)/dahua/*.so $(TARGET)/dahua/)
+
+#**********gt**********
+gt_include = -I $(libs_path)/gt $(main_include)
+gt_links_path = -L$(libs_path)/gt $(thrift_links_path)
+gt_links = $(main_links) -lip_netsdk
+$(shell mkdir -p $(TARGET)/gt)
+gt.exe :$(main_objs)
+	$(COMPILE) src/sdks/gt.cpp $(main_objs) $(gt_include) $(gt_links_path) $(gt_links) -o $(TARGET)/gt/gt.exe

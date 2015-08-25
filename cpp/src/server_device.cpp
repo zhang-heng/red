@@ -1,4 +1,5 @@
 #include "server_device.h"
+#include <sstream>
 
 Device::Device(std::string device_id, const device::info::LoginAccount& account, int client_port)
   :_device_id(device_id),_account(account), _client_port(client_port){
@@ -10,6 +11,9 @@ SESSION_ID Device::LoginID(){
 }
 
 void Device::DisConnect(){
+  std::stringstream ss;
+  ss<<_device_id<<" "<<_account.addr<<":"<<_account.port<<" "<<"disconnect";
+  _client->send_log(ss.str());
   _client->send_offline(_device_id);
 }
 

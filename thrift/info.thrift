@@ -24,7 +24,9 @@ struct DeviceInfo{
 struct MediaPackage{
 1: types.MediaType  type,
 2: i32              reserver,
-3: binary           payload,
+3: i32              pos,
+4: i32              total,
+5: binary           payload,
 }
 
 //音频描述

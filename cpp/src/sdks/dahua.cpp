@@ -10,10 +10,26 @@
 #include <sstream>
 
 using namespace device::netsdk;
+using namespace device::info;
+using namespace device::types;
+using namespace std;
 
-void CALLBACK DisConnectFunc(LLONG lLoginID, char *pchDVRIP, LONG nDVRPort, LDWORD dwUser)
-{
-  std::cout<<pchDVRIP<<":"<<nDVRPort<<" disconnect"<<std::endl;
+/****************help fun****************/
+MediaType::type to_media_type(DWORD t) {//ok
+  switch (t) {
+  case 0:  return MediaType::MediaData;
+  case 1:  return MediaType::VideoFrame;
+  case 3:  return MediaType::AudioData;
+  default: return MediaType::PrivatePack;
+  }
+}
+
+NET_TIME to_dvr_time(TimeInfo &t) {//ok
+  return NET_TIME {(DWORD)t.year, (DWORD)t.month, (DWORD)t.day,
+      (DWORD)t.hour, (DWORD)t.minute, (DWORD)t.second};
+}
+
+void CALLBACK DisConnectFunc(LLONG lLoginID, char *pchDVRIP, LONG nDVRPort, LDWORD dwUser){//ok
   auto pthis = (Server*)dwUser;
   auto device = pthis->FindDevice((SESSION_ID)lLoginID);
   if(device){
@@ -21,7 +37,7 @@ void CALLBACK DisConnectFunc(LLONG lLoginID, char *pchDVRIP, LONG nDVRPort, LDWO
   }
 }
 
-std::string LoginErrorTostring(int code){
+string LoginErrorTostring(int code){//ok
   switch (code) {
   case 1: return "密码不正确";
   case 2: return "用户名不存在";
@@ -37,29 +53,35 @@ std::string LoginErrorTostring(int code){
   };
 }
 
-void Server::InitSDK() {
-  bool ret = CLIENT_Init(DisConnectFunc, (LDWORD)this);
-  std::cout<<"init dahua sdk "<< ret <<std::endl;
-  return;
+
+/****************method fun****************/
+void Server::InitSDK() {//ok
+  if(!CLIENT_Init(DisConnectFunc, (LDWORD)this)){
+    _client->send_log("init sdk error");
+    InvalidOperation e;
+    e.what = 0;
+    e.why  = "error to init dahua sdk";
+    throw e;
+  }
 }
 
-void Server::CleanSDK() {
-  //todo...
-  return;}
+void Server::CleanSDK() {//ok
+  CLIENT_Cleanup();
+}
 
-void Server::GetVersion(std::string& _return) {
-  std::stringstream stream;
+void Server::GetVersion(string& _return) {//ok
+  stringstream stream;
   auto version = CLIENT_GetSDKVersion();
   stream<<version/10000000<<"."<<version/1000000%10<<"."<<version/100000%10<<"."<<version%10000;
   _return = stream.str();
 }
 
-void Device::Login() {
-  std::cout<<"login: "
-           <<"addr="<<_account.addr
-           <<", port="<<_account.port
-           <<", user="<<_account.user
-           <<", password="<<_account.password<< std::endl;
+void Device::Login() {//ok
+  cout<<"login: "
+      <<"addr="<<_account.addr
+      <<", port="<<_account.port
+      <<", user="<<_account.user
+      <<", password="<<_account.password<< endl;
 
   NET_DEVICEINFO info;
   int err_code = 0;
@@ -67,37 +89,33 @@ void Device::Login() {
                                         (char*)_account.user.c_str(), (char*)_account.password.c_str(),
                                         &info, &err_code);
   if (_login_id == 0) {
-    std::cout<< "Fail to login, " + LoginErrorTostring(err_code)<< std::endl;
+    _client->send_log("fail to login, " + LoginErrorTostring(err_code));
     _client->send_offline(_device_id);
+    return;
   };
   //序列号
-  _info.serial_number = std::string(info.sSerialNumber, info.sSerialNumber + DH_SERIALNO_LEN);
+  _info.serial_number = string(info.sSerialNumber, info.sSerialNumber + DH_SERIALNO_LEN);
   //报警输入个数
   _info.n_alarm_in = info.byAlarmInPortNum;
   //报警输出个数
   _info.n_alarm_out = info.byAlarmOutPortNum;
   //硬盘个数
   _info.n_disk = info.byDiskNum;
-
-  std::cout<<_info.serial_number<<std::endl;
   _client->send_connected(_device_id);
-  return;
 }
 
-void Device::Logout(){
-  std::cout<<"logout: "<<std::endl;
-  std::cout<<CLIENT_Logout((LLONG)_login_id)<<std::endl;
+void Device::Logout(){//ok
+  CLIENT_Logout((LLONG)_login_id);
 }
 
-int r = 0;
-void Media::StartRealPlay(){
-  std::cout<<"media: start realplay: "<<_play_info.channel<<std::endl;
+void Media::StartRealPlay(){//ok
+  cout<<"media: start realplay: "<<_play_info.channel<<endl;
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
-    media.type = device::types::MediaType::MediaData;
-    media.reserver = r++;
-    media.payload = std::string(pBuffer, pBuffer + dwBufSize);
+    media.type = to_media_type(dwDataType);
+    media.reserver = param;
+    media.payload = string(pBuffer, pBuffer + dwBufSize);
     pthis->HandleDate(media);
   };
 
@@ -111,48 +129,53 @@ void Media::StartRealPlay(){
                                                  DH_RType_Realplay_0 : DH_RType_Realplay_1,
                                                  data_callback, disconnect, (LDWORD)this);
   if (_handle_id == 0) {
-    std::cout<<"startplay error: "<<CLIENT_GetLastError()<<std::endl;
+    _client->send_log("startplay error: " + CLIENT_GetLastError());
+    MediaFinish();
   }
 }
 
-void Media::StopRealPlay(){
-  std::cout<<"media: stoprealplay "<<std::endl;
+void Media::StopRealPlay(){//ok
+  cout<<"media: stoprealplay "<<endl;
   CLIENT_StopRealPlay((long)_handle_id);
 }
 
 
-void Media::PlayBackByTime(){
+void Media::PlayBackByTime(){//ok
+  auto st = to_dvr_time(_play_info.start_time);
+  auto et = to_dvr_time(_play_info.end_time);
+
+  auto pos_callback = []( LLONG lPlayHandle, DWORD dwTotalSize, DWORD dwDownLoadSize, LDWORD dwUser){
+    auto pthis = (Media*)dwUser;
+    pthis->_playback_total = dwTotalSize*1000;
+    pthis->_playback_pos = dwDownLoadSize*1000;
+  };
+
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufferSize, LDWORD dwUser)->int{
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
-    media.type = device::types::MediaType::MediaData;
+    media.type = to_media_type(dwDataType);
     media.reserver = 0;
-    media.payload = std::string(pBuffer, pBuffer + dwBufferSize);
+    media.pos = pthis->_playback_pos;
+    media.total = pthis->_playback_total;
+    media.payload = string(pBuffer, pBuffer + dwBufferSize);
     pthis->HandleDate(media);
     return 1;
   };
-
   auto disconnect = []( LLONG lOperateHandle, EM_REALPLAY_DISCONNECT_EVENT_TYPE dwEventType, void* param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     pthis->MediaFinish();
   };
 
-  NET_TIME start_time{(DWORD)_play_info.start_time.year, (DWORD)_play_info.start_time.month, (DWORD)_play_info.start_time.day,
-      (DWORD)_play_info.start_time.hour, (DWORD)_play_info.start_time.minute, (DWORD)_play_info.start_time.second};
-
-  NET_TIME end_time{(DWORD)_play_info.end_time.year, (DWORD)_play_info.end_time.month, (DWORD)_play_info.end_time.day,
-      (DWORD)_play_info.end_time.hour, (DWORD)_play_info.end_time.minute, (DWORD)_play_info.end_time.second};
-
-  _handle_id = (SESSION_ID)CLIENT_StartPlayBackByTime((LLONG)_login_id, _play_info.channel, &start_time, &end_time, 0,
-                                                      nullptr,       0,//pos
+  _handle_id = (SESSION_ID)CLIENT_StartPlayBackByTime((LLONG)_login_id, _play_info.channel, &st, &et, 0,
+                                                      pos_callback,  (LDWORD)this,
                                                       data_callback, (LDWORD)this,
                                                       disconnect,    (LDWORD)this);
-
   if (_handle_id == 0) {
-    std::cout<<"Fail to start playback: "<<CLIENT_GetLastError()<<std::endl;
+    cout<<"Fail to start playback: "<<CLIENT_GetLastError()<<endl;
+    MediaFinish();
   }
 }
 
-void Media::StopPlayBack(){
+void Media::StopPlayBack(){//ok
   CLIENT_StopPlayBack((long)_handle_id);
 }

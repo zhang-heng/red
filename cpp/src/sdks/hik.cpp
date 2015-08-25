@@ -13,6 +13,26 @@
 
 using namespace device;
 using namespace device::netsdk;
+using namespace device::types;
+
+MediaType::type to_media_type(int t) {
+  switch (t) {
+  case NET_DVR_SYSHEAD:         return MediaType::FileHeader;
+  case NET_DVR_STREAMDATA:      return MediaType::MediaData;
+  case NET_DVR_AUDIOSTREAMDATA: return MediaType::AudioData;
+  case NET_DVR_PRIVATE_DATA:    return MediaType::PrivatePack;
+  default:                      return MediaType::PrivatePack;
+  }
+}
+
+NET_DVR_TIME to_dvr_time(info::TimeInfo &t) {
+  return NET_DVR_TIME {(DWORD)t.year, (DWORD)t.month, (DWORD)t.day,
+      (DWORD)t.hour, (DWORD)t.minute, (DWORD)t.second};
+}
+
+
+
+
 
 void Server::InitSDK() {
   bool ret = NET_DVR_Init();
@@ -21,103 +41,71 @@ void Server::InitSDK() {
   }
 }
 
-void Server::CleanSDK() { return;}
+void Server::CleanSDK() {
+  NET_DVR_Cleanup();
+}
 
 void Server::GetVersion(std::string& _return){
   _return = "";
 }
 
-void Device::Login(){return;}
-void Device::Logout(){return;}
+void Device::Login(){
+  NET_DVR_DEVICEINFO_V30 info;
+  _login_id = (SESSION_ID) NET_DVR_Login_V30((char*)_account.addr.c_str(),
+                                             _account.port,
+                                             (char*)_account.user.c_str(),
+                                             (char*)_account.password.c_str(),
+                                             &info);
+  if (_login_id < 0) {}
+}
 
-void Media::StartRealPlay(){}
-void Media::StopRealPlay(){};
+void Device::Logout(){
+  NET_DVR_Logout((long)_login_id);
+}
 
-void Media::PlayBackByTime(){}
+void Media::StartRealPlay(){
+  NET_DVR_PREVIEWINFO info;
+  memset(&info, 0, sizeof(NET_DVR_PREVIEWINFO));
+  info.lChannel     = _play_info.channel;
+  info.dwStreamType = _play_info.stream_type == StreamType::Main ? 0 : 1;
+  info.dwLinkMode   = _play_info.connect_type == ConnectType::Tcp ? 0 : 1;
 
-void Media::StopPlayBack(){}
+  auto data_callback = [] (LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser){
 
-// bool Server::Login(const std::string& deviceID, const device::info::LoginAccount& account){
-//   NET_DVR_DEVICEINFO_V30 info;
-//   long login_id = NET_DVR_Login_V30((char*)account.addr.c_str(),
-//                                     account.port,
-//                                     (char*)account.user.c_str(),
-//                                     (char*)account.password.c_str(),
-//                                     &info);
-//   if(login_id < 0){
-//     info::InvalidOperation io;
-//     io.what = NET_DVR_GetLastError();
-//     io.why = "Fail to login device";
-//     throw io;
-//   }
+  };
+  auto handle_id = NET_DVR_RealPlay_V40((long)_login_id, &info, data_callback, 0);
 
-//   // auto device = new DeviceInfo();
-//   // device->_device_id = account.device_id;
-//   // device->_login_id = (SESSION_ID)login_id;
-//   // device->_info.serial_number = std::string(info.sSerialNumber, info.sSerialNumber + SERIALNO_LEN);
-//   // device->_info.n_an_video_channels = info.byChanNum;
-//   // device->_info.start_an_video_channel = info.byStartDChan;
-//   // device->_info.n_alarm_in = info.byAlarmInPortNum;
-//   // device->_info.n_alarm_out = info.byAlarmOutPortNum;
-//   // device->_info.device_model = "hik";
-//   // device->_info.n_an_video_channels = info.byChanNum;
-//   // device->_info.n_audio_channels = info.byAudioChanNum;
-//   // device->_info.start_an_video_channel = 1;
-//   // device->_info.n_dig_video_channels = info.byHighDChanNum;
-//   // device->_info.start_dig_video_channels = info.byStartDChan;
-//   // device->_info.n_talk_channels = info.byAudioChanNum;
-//   // device->_info.start_talk_channels = info.byStartDTalkChan;
-//   // device->_info.n_com = 0;
+  if (handle_id == -1) {
+    LONG err = NET_DVR_GetLastError();
+    std::cout<<NET_DVR_GetErrorMsg((LONG*)&err)<<std::endl;
+  }
+  _handle_id = (SESSION_ID)handle_id;
+}
 
-//   //  _devices.insert(std::pair<SESSION_ID, DeviceInfo*>((SESSION_ID)login_id, device));
-//   return true;
-// }
+void Media::StopRealPlay(){
+  NET_DVR_StopRealPlay((long)_handle_id);
+}
 
-// bool Server::Logout(const std::string& device_id) {
-//   //  auto device = FindDeviceInfo(device_id);
-//   //   if(device){
-//   //     NET_DVR_Logout((long)device->_login_id);
-//   //   }else{
-//   //     info::InvalidOperation io;
-//   //     io.what = 0;
-//   //     io.why = "device not found";
-//   //   }
-// }
+void Media::PlayBackByTime(){
+  NET_DVR_TIME st = to_dvr_time(_play_info.start_time);
+  NET_DVR_TIME et  = to_dvr_time(_play_info.end_time);
+  auto data_callback = [] (LONG lPlayHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser){
+  };
 
-// bool Server::StartRealPlay(const std::string& device_id,
-//                            const std::string& media_id,
-//                            const ::device::info::PlayInfo& play_info){
-//   // auto it = _devices.find(device_id);
-//   // if(it != _devices.end()){
-//   //   auto login_id = (long)it->second->_login_id;
-//   //   NET_DVR_PREVIEWINFO info;
-//   //   memset(&info, 0, sizeof(NET_DVR_PREVIEWINFO));
-//   //   info.lChannel     = play_info.channel;
-//   //   info.dwStreamType = play_info.stream_type == types::StreamType::Main ? 0 : 1;
-//   //   info.dwLinkMode   = play_info.connect_type == types::ConnectType::Tcp ? 0 : 1;
+  auto session_id = NET_DVR_PlayBackByTime((long)_login_id, _play_info.channel, &st, &et, 0);
+  if (session_id == -1){
+  }
 
-//   //   auto data_callback = [](LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser){
-//   //     auto info = (MediaInfo*)pUser;
-//   //     info::MediaPackage media;
-//   //     switch (dwDataType) {
-//   //     case NET_DVR_SYSHEAD:         media.type = types::MediaType::FileHeader;break;
-//   //     case NET_DVR_STREAMDATA:      media.type = types::MediaType::MediaData;break;
-//   //     case NET_DVR_AUDIOSTREAMDATA: media.type = types::MediaType::AudioData;break;
-//   //     case NET_DVR_PRIVATE_DATA:    media.type = types::MediaType::PrivatePack;break;
-//   //     default:                      media.type = types::MediaType::PrivatePack;break;
-//   //     }
-//   //     media.payload = std::string(pBuffer, pBuffer + dwBufSize);
-//   //     client->send_media_data(info->_device_id, info->_media_id, media);
-//   //   };
+  auto ret_code = NET_DVR_PlayBackControl(session_id, NET_DVR_PLAYSTART, 0, 0);
+  if (!ret_code){
+    NET_DVR_StopPlayBack(session_id);
+  };
 
-//   //   auto media_info = new MediaInfo();
-//   //   long session_id = NET_DVR_RealPlay_V40(login_id, &info, data_callback, media_info);
-//   //   if (session_id == -1) {
-//   //     delete media_info;
-//   //     LONG err = NET_DVR_GetLastError();
-//   //     throw domain_error(string("Fail to start realplay, msg:") + string(NET_DVR_GetErrorMsg((LONG*)&err)));
-//   //   }
+  if (!NET_DVR_SetPlayDataCallBack_V40(session_id, data_callback, 0)){
+    NET_DVR_StopPlayBack(session_id);
+  }
+}
 
-//   //   return session_id;
-//   // }
-// }
+void Media::StopPlayBack(){
+  NET_DVR_StopPlayBack((long)_handle_id);
+}

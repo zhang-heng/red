@@ -29,6 +29,9 @@ class Media{
   void PlayBackSlow(){ };        //SDK
   void PlayBackSeek(){ };        //SDK
 
+  long _playback_pos;
+  long _playback_total;
+
  private:
   Client* _client;
   std::string _device_id;

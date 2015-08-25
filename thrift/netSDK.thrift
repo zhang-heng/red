@@ -82,4 +82,7 @@ oneway void MediaFinish  (1:string media_id, 2:string device_id), //结束通知
 void        MediaData    (1:info.MediaPackage data, 2:string media_id, 3:string device_id), //媒体数据
 //**********报警通知**********/
 oneway void xAlarmNotify (),
+
+//************log*************/
+oneway void Log(1:string msg),
 }
