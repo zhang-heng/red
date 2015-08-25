@@ -10,6 +10,10 @@ Media::Media(int client_port, std::string device_id, SESSION_ID login_id, Device
   _client = new Client(client_port);
 }
 
+SESSION_ID Media::HandleID(){
+  return _handle_id;
+}
+
 void Media::Log(std::string msg){
   std::stringstream ss;
   ss<<_play_info.channel<<". "<<msg;

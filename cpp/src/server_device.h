@@ -11,6 +11,7 @@ class Device{
   void Log(std::string msg);
   SESSION_ID LoginID();
   Media* FindMedia(std::string id);
+  Media* FindMedia(SESSION_ID id);
   void DisConnect();
   void Login();
   void Logout();

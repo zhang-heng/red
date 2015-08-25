@@ -108,6 +108,14 @@ Device* Server::FindDevice(SESSION_ID id){
   return nullptr;
 }
 
+Media* Server::FindMedia(SESSION_ID id){
+  for(auto it=_devices.begin(); it!=_devices.end(); it++){
+    auto m = it->second->FindMedia(id);
+    if(m) return m;
+  }
+  return nullptr;
+}
+
 void Server::Login(const device::info::LoginAccount& account, const std::string& device_id){
   auto device = FindDevice(device_id);
   if(device){

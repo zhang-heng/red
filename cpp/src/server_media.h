@@ -13,6 +13,7 @@ class Media{
  public:
   Media(int client_port, std::string device_id, SESSION_ID login_id, Device* device,
         std::string media_id,  const device::info::PlayInfo& play_info);
+  SESSION_ID HandleID();
   void Log(std::string msg);
   void HandleDate(const device::info::MediaPackage & media);
   void MediaFinish();

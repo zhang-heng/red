@@ -33,6 +33,7 @@ class Server : virtual public device::netsdk::SdkIf {
   ~Server();
 
   Device* FindDevice(SESSION_ID id);
+  Media* FindMedia(SESSION_ID id);
 
   void Test1(const ::device::info::MediaPackage& mp) {
 	  std::cout<<"->sdkTest1"<<std::endl;

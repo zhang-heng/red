@@ -30,6 +30,14 @@ Media* Device::FindMedia(std::string id){
   return it->second;
 }
 
+Media* Device::FindMedia(SESSION_ID id){
+  for(auto it=_medias.begin(); it!=_medias.end(); it++){
+    if(it->second->HandleID() == id)
+      return it->second;
+  }
+  return nullptr;
+}
+
 void Device::StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info){
   auto media = FindMedia(media_id);
   if(!media){

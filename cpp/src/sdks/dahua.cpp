@@ -130,6 +130,7 @@ void Media::StartRealPlay(){//ok
     Log("startplay error: " + CLIENT_GetLastError());
     MediaFinish();
   }
+  _client->send_media_started(_device_id, _media_id);
 }
 
 void Media::StopRealPlay(){//ok
@@ -172,6 +173,7 @@ void Media::PlayBackByTime(){//ok
     cout<<"Fail to start playback: "<<CLIENT_GetLastError()<<endl;
     MediaFinish();
   }
+  _client->send_media_started(_device_id, _media_id);
 }
 
 void Media::StopPlayBack(){//ok

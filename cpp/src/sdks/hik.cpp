@@ -71,6 +71,7 @@ void Device::Login(){//ok
     ss<<"fail to login, "<<err<<"."<<NET_DVR_GetErrorMsg((LONG*)&err);
     Log (ss.str());
     _client->send_offline(_device_id);
+    return;
   }
   _login_id = (SESSION_ID)login_id;
   _client->send_connected(_device_id);
@@ -102,8 +103,10 @@ void Media::StartRealPlay(){//ok
     ss<<"fail to realplay, "<<err<<"."<<NET_DVR_GetErrorMsg((LONG*)&err);
     Log(ss.str());
     MediaFinish();
+    return;
   }
   _handle_id = (SESSION_ID)handle_id;
+  _client->send_media_started(_device_id, _media_id);
 }
 
 void Media::StopRealPlay(){//ok
@@ -124,16 +127,20 @@ void Media::PlayBackByTime(){//ok
   auto session_id = NET_DVR_PlayBackByTime((long)_login_id, _play_info.channel, &st, &et, 0);
   if (session_id == -1){
     MediaFinish();
+    return;
   }
   if (!NET_DVR_SetPlayDataCallBack_V40(session_id, data_callback, this)){
     NET_DVR_StopPlayBack(session_id);
     MediaFinish();
+    return;
   }
   if (!NET_DVR_PlayBackControl(session_id, NET_DVR_PLAYSTART, 0, 0)){
     NET_DVR_StopPlayBack(session_id);
     MediaFinish();
+    return;
   };
   _handle_id = (SESSION_ID) session_id;
+  _client->send_media_started(_device_id, _media_id);
 }
 
 void Media::StopPlayBack(){//ok

@@ -53,6 +53,8 @@
 
                                 (Offline [device-id] (try-do #(.Offline notifier device-id)))
 
+                                (MediaStarted [media-id device-id])
+
                                 (MediaFinish [media-id device-id] (try-do #(.MediaFinish notifier media-id device-id)))
 
                                 (MediaData [{:keys [type reserver pos total block ^bytes payload] :as ^MediaPackage data}
