@@ -30,9 +30,10 @@
 
   :uberjar-name "../../target/red.jar"
 
+  :aot :all
+
   :profiles {:dev        {:main red.core
                           :env {:dev true}}
 
              :uberjar    {:main red.server
-                          :omit-source true
-                          :aot :all}})
+                          :omit-source true}})
