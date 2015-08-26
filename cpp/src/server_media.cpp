@@ -24,7 +24,7 @@ void Media::_HandleDate(const device::info::MediaPackage & media){
   _client->send_media_data(media, _media_id, _device_id);
 }
 
-void Media::_MediaFinish(){
+void Media::_MediaFinish(){//todo...
   _client->send_media_finish(_media_id, _device_id);
 }
 

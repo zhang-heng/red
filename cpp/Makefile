@@ -3,7 +3,7 @@ OBJ_DIR = .obj
 COMPILE = g++ -O2 -s -std=c++11 -m32 -pthread
 TARGET = ../target/sdk
 
-all: hik.exe dahua.exe gt.exe
+all: hik.exe dahua.exe gt.exe xm.exe
 
 clean:
 	rm -rf $(OBJ_DIR)
@@ -61,3 +61,11 @@ gt_links = $(main_links) -lip_netsdk
 $(shell mkdir -p $(TARGET)/gt)
 gt.exe :$(main_objs)
 	$(COMPILE) src/sdks/gt.cpp $(main_objs) $(gt_include) $(gt_links_path) $(gt_links) -o $(TARGET)/gt/gt.exe
+
+#**********xm**********
+xm_include = -I $(libs_path)/xm $(main_include)
+xm_links_path = -L$(libs_path)/xm $(thrift_links_path)
+xm_links = $(main_links) -lxmnetsdk
+$(shell mkdir -p $(TARGET)/xm)
+xm.exe :$(main_objs)
+	$(COMPILE) src/sdks/xm.cpp $(main_objs) $(xm_include) $(xm_links_path) $(xm_links) -o $(TARGET)/xm/xm.exe -Wno-conversion-null
