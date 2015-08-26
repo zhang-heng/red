@@ -14,16 +14,20 @@ SESSION_ID Media::HandleID(){
   return _handle_id;
 }
 
-void Media::Log(std::string msg){
+void Media::_Log(std::string msg){
   std::stringstream ss;
   ss<<_play_info.channel<<". "<<msg;
-  _device->Log(ss.str());
+  _device->_Log(ss.str());
 }
 
-void Media::HandleDate(const device::info::MediaPackage & media){
+void Media::_HandleDate(const device::info::MediaPackage & media){
   _client->send_media_data(media, _media_id, _device_id);
 }
 
-void Media::MediaFinish(){
+void Media::_MediaFinish(){
   _client->send_media_finish(_media_id, _device_id);
+}
+
+void Media::_MediaStart(){
+  _client->send_media_started(_device_id, _media_id);
 }

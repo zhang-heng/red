@@ -75,13 +75,14 @@ const string log_file_path = "./";
 
 Server * pServer = nullptr;
 
+/****************server method fun****************/
 void Server::InitSDK(){//ok
   pServer = this;
   gt_netsdk_init(log_file_path.c_str());
   auto disconnect_callback = [](gt_dev_handle_t login_handle) -> int {
     auto device = pServer->FindDevice((SESSION_ID)login_handle);
     if(device){
-      device->DisConnect();
+      device->_Offline();
     }
   };
   if(gt_set_disconnect_callback(disconnect_callback) < 0)
@@ -96,19 +97,21 @@ void Server::GetVersion(string& _return){//ok
   _return = "1.0.0.5";
 }
 
+/****************device method fun****************/
 void Device::Login(){//ok
   long login_id = gt_register_dev(_account.addr.c_str(), _account.port, 0, _account.user.c_str(), _account.password.c_str());
   if (login_id < 0) {
-    _client->send_offline(_device_id);
+    _Offline();
     return;
   }
-  _client->send_connected(_device_id);
+  _Online();
 }
 
 void Device::Logout(){//ok
   gt_unregister_dev((long)_login_id);
 }
 
+/****************media method fun****************/
 void Media::StartRealPlay(){//ok
   auto data_callback = [] (gt_session_handle_t real_handle, void * frame_buf, int frame_size,
                            frametype_t frame_type, stream_format_t *format) {
@@ -117,24 +120,26 @@ void Media::StartRealPlay(){//ok
       device::info::MediaPackage media;
       media.type = to_media_type(frame_type);
       media.payload = string((char*)frame_buf, (char*)frame_buf + frame_size);
-      m->HandleDate(media);
+      m->_HandleDate(media);
     }else{
       gt_stop_rt_av_service(real_handle);
     }
   };
   auto finsh_callback = [](gt_session_handle_t handle) {
     auto m = pServer->FindMedia((SESSION_ID)handle);
-    if(m) m->MediaFinish();
+    if(m) m->_MediaFinish();
   };
 
   auto handle = gt_require_rt_av_service((long)_login_id, _play_info.channel, 1, "0.0.0.0", data_callback, finsh_callback);
   if (handle < 0) {
-    Log("startplay error: " + get_error_description(gt_get_last_error()));
-    MediaFinish();
+    stringstream ss;
+    ss<<"startplay error: "<<handle<<" "<< gt_get_last_error()<<". "<<get_error_description(gt_get_last_error());
+    _Log(ss.str());
+    _MediaFinish();
     return;
   }
   _handle_id = (SESSION_ID)handle;
-  _client->send_media_started(_device_id, _media_id);
+  _MediaStart();
 }
 
 void Media::StopRealPlay(){//ok
@@ -152,21 +157,21 @@ void Media::PlayBackByTime(){
       device::info::MediaPackage media;
       media.type = to_media_type(frame_type);
       media.payload = string((char*)frame_buf, (char*)frame_buf + frame_size);
-      m->HandleDate(media);
+      m->_HandleDate(media);
     }else{
       gt_stop_pb_av_service(playback_handle);
     }
   };
   auto finish_callback = [] (gt_session_handle_t playback_handle) {
     auto m = pServer->FindMedia((SESSION_ID)playback_handle);
-    if(m) m->MediaFinish();
+    if(m) m->_MediaFinish();
   };
   auto handle = gt_require_pb_av_service((long)_login_id, _play_info.channel, NSPEED, "0.0.0.0",&st, &et,
                                          data_callback, finish_callback);
   if (handle < 0) {
-    MediaFinish();
+    _MediaFinish();
   }
-  _client->send_media_started(_device_id, _media_id);
+  _MediaStart();
 }
 
 void Media::StopPlayBack(){

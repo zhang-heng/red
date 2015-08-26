@@ -29,14 +29,6 @@ NET_TIME to_dvr_time(TimeInfo &t) {//ok
       (DWORD)t.hour, (DWORD)t.minute, (DWORD)t.second};
 }
 
-void CALLBACK DisConnectFunc(LLONG lLoginID, char *pchDVRIP, LONG nDVRPort, LDWORD dwUser){//ok
-  auto pthis = (Server*)dwUser;
-  auto device = pthis->FindDevice((SESSION_ID)lLoginID);
-  if(device){
-    device->DisConnect();
-  }
-}
-
 string LoginErrorTostring(int code){//ok
   switch (code) {
   case 1: return "密码不正确";
@@ -54,7 +46,15 @@ string LoginErrorTostring(int code){//ok
 }
 
 
-/****************method fun****************/
+/****************server method fun****************/
+void CALLBACK DisConnectFunc(LLONG lLoginID, char *pchDVRIP, LONG nDVRPort, LDWORD dwUser){//ok
+  auto pthis = (Server*)dwUser;
+  auto device = pthis->FindDevice((SESSION_ID)lLoginID);
+  if(device){
+    device->_Offline();
+  }
+}
+
 void Server::InitSDK() {//ok
   if(!CLIENT_Init(DisConnectFunc, (LDWORD)this)){
     InvalidOperation e;
@@ -75,6 +75,7 @@ void Server::GetVersion(string& _return) {//ok
   _return = ss.str();
 }
 
+/****************device method fun****************/
 void Device::Login() {//ok
   cout<<"login: "
       <<"addr="<<_account.addr
@@ -88,8 +89,8 @@ void Device::Login() {//ok
                                         (char*)_account.user.c_str(), (char*)_account.password.c_str(),
                                         &info, &err_code);
   if (_login_id == 0) {
-    Log("fail to login, " + LoginErrorTostring(err_code));
-    _client->send_offline(_device_id);
+    _Log("fail to login, " + LoginErrorTostring(err_code));
+    _Offline();
     return;
   };
   //序列号
@@ -100,13 +101,14 @@ void Device::Login() {//ok
   _info.n_alarm_out = info.byAlarmOutPortNum;
   //硬盘个数
   _info.n_disk = info.byDiskNum;
-  _client->send_connected(_device_id);
+  _Online();
 }
 
 void Device::Logout(){//ok
   CLIENT_Logout((LLONG)_login_id);
 }
 
+/****************media method fun****************/
 void Media::StartRealPlay(){//ok
   cout<<"media: start realplay: "<<_play_info.channel<<endl;
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
@@ -114,12 +116,12 @@ void Media::StartRealPlay(){//ok
     device::info::MediaPackage media;
     media.type = to_media_type(dwDataType);
     media.payload = string(pBuffer, pBuffer + dwBufSize);
-    pthis->HandleDate(media);
+    pthis->_HandleDate(media);
   };
 
   auto disconnect = []( LLONG lOperateHandle, EM_REALPLAY_DISCONNECT_EVENT_TYPE dwEventType, void* param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
-    pthis->MediaFinish();
+    pthis->_MediaFinish();
   };
 
   _handle_id = (SESSION_ID) CLIENT_StartRealPlay((LLONG)_login_id, _play_info.channel, 0,
@@ -127,10 +129,10 @@ void Media::StartRealPlay(){//ok
                                                  DH_RType_Realplay_0 : DH_RType_Realplay_1,
                                                  data_callback, disconnect, (LDWORD)this);
   if (_handle_id == 0) {
-    Log("startplay error: " + CLIENT_GetLastError());
-    MediaFinish();
+    _Log("startplay error: " + CLIENT_GetLastError());
+    _MediaFinish();
   }
-  _client->send_media_started(_device_id, _media_id);
+  _MediaStart();
 }
 
 void Media::StopRealPlay(){//ok
@@ -157,12 +159,12 @@ void Media::PlayBackByTime(){//ok
     media.total = pthis->_playback_total;
     media.block = true;
     media.payload = string(pBuffer, pBuffer + dwBufferSize);
-    pthis->HandleDate(media);
+    pthis->_HandleDate(media);
     return 1;
   };
   auto disconnect = []( LLONG lOperateHandle, EM_REALPLAY_DISCONNECT_EVENT_TYPE dwEventType, void* param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
-    pthis->MediaFinish();
+    pthis->_MediaFinish();
   };
 
   _handle_id = (SESSION_ID)CLIENT_StartPlayBackByTime((LLONG)_login_id, _play_info.channel, &st, &et, 0,
@@ -171,9 +173,9 @@ void Media::PlayBackByTime(){//ok
                                                       disconnect,    (LDWORD)this);
   if (_handle_id == 0) {
     cout<<"Fail to start playback: "<<CLIENT_GetLastError()<<endl;
-    MediaFinish();
+    _MediaFinish();
   }
-  _client->send_media_started(_device_id, _media_id);
+  _MediaStart();
 }
 
 void Media::StopPlayBack(){//ok

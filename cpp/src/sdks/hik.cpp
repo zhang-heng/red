@@ -34,7 +34,7 @@ NET_DVR_TIME to_dvr_time(TimeInfo &t) {//ok
       (DWORD)t.hour, (DWORD)t.minute, (DWORD)t.second};
 }
 
-/****************method fun****************/
+/****************server method fun****************/
 void Server::InitSDK() {//ok
   if (!NET_DVR_Init()) {
     auto ie = NET_DVR_GetLastError();
@@ -60,6 +60,7 @@ void Server::GetVersion(std::string& _return){//ok
   _return = ss.str();
 }
 
+/****************device method fun****************/
 void Device::Login(){//ok
   NET_DVR_DEVICEINFO_V30 info;
   auto login_id = NET_DVR_Login_V30((char*)_account.addr.c_str(), _account.port,
@@ -69,18 +70,19 @@ void Device::Login(){//ok
     auto err = NET_DVR_GetLastError();
     stringstream ss;
     ss<<"fail to login, "<<err<<"."<<NET_DVR_GetErrorMsg((LONG*)&err);
-    Log (ss.str());
-    _client->send_offline(_device_id);
+    _Log (ss.str());
+    _Offline();
     return;
   }
   _login_id = (SESSION_ID)login_id;
-  _client->send_connected(_device_id);
+  _Online();
 }
 
 void Device::Logout(){//ok
   NET_DVR_Logout((long)_login_id);
 }
 
+/****************media method fun****************/
 void Media::StartRealPlay(){//ok
   NET_DVR_PREVIEWINFO info;
   memset(&info, 0, sizeof(NET_DVR_PREVIEWINFO));
@@ -93,7 +95,7 @@ void Media::StartRealPlay(){//ok
     device::info::MediaPackage media;
     media.type = to_media_type(dwDataType);
     media.payload = string(pBuffer, pBuffer + dwBufSize);
-    pthis->HandleDate(media);
+    pthis->_HandleDate(media);
   };
   auto handle_id = NET_DVR_RealPlay_V40((long)_login_id, &info, data_callback, this);
 
@@ -101,12 +103,12 @@ void Media::StartRealPlay(){//ok
     LONG err = NET_DVR_GetLastError();
     stringstream ss;
     ss<<"fail to realplay, "<<err<<"."<<NET_DVR_GetErrorMsg((LONG*)&err);
-    Log(ss.str());
-    MediaFinish();
+    _Log(ss.str());
+    _MediaFinish();
     return;
   }
   _handle_id = (SESSION_ID)handle_id;
-  _client->send_media_started(_device_id, _media_id);
+  _MediaStart();
 }
 
 void Media::StopRealPlay(){//ok
@@ -121,26 +123,26 @@ void Media::PlayBackByTime(){//ok
     device::info::MediaPackage media;
     media.type = to_media_type(dwDataType);
     media.payload = string(pBuffer, pBuffer + dwBufSize);
-    pthis->HandleDate(media);
+    pthis->_HandleDate(media);
   };
 
   auto session_id = NET_DVR_PlayBackByTime((long)_login_id, _play_info.channel, &st, &et, 0);
   if (session_id == -1){
-    MediaFinish();
+    _MediaFinish();
     return;
   }
   if (!NET_DVR_SetPlayDataCallBack_V40(session_id, data_callback, this)){
     NET_DVR_StopPlayBack(session_id);
-    MediaFinish();
+    _MediaFinish();
     return;
   }
   if (!NET_DVR_PlayBackControl(session_id, NET_DVR_PLAYSTART, 0, 0)){
     NET_DVR_StopPlayBack(session_id);
-    MediaFinish();
+    _MediaFinish();
     return;
   };
   _handle_id = (SESSION_ID) session_id;
-  _client->send_media_started(_device_id, _media_id);
+  _MediaStart();
 }
 
 void Media::StopPlayBack(){//ok

@@ -8,11 +8,13 @@
 class Device{
  public:
   Device(std::string device_id, const device::info::LoginAccount& account, int client_port);
-  void Log(std::string msg);
+  void _Log(std::string msg);
+  void _Online();
+  void _Offline();
   SESSION_ID LoginID();
   Media* FindMedia(std::string id);
   Media* FindMedia(SESSION_ID id);
-  void DisConnect();
+
   void Login();
   void Logout();
   void StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info);

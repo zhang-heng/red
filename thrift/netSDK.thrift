@@ -73,16 +73,15 @@ info.MediaPackage Test3(),
 binary            Test4(),
 
 //**********状态通知**********/
-oneway void Lanuched     (1:i32 thrift_port),  //启动完成
-oneway void Connected    (1:string device_id), //连接成功
-oneway void Offline      (1:string device_id), //断线通知
+void Lanuched     (1:i32 thrift_port),  //启动完成
+void Connected    (1:string device_id), //连接成功
+void Offline      (1:string device_id), //断线通知
 //**********媒体通知**********/
-oneway void MediaStarted (1:string media_id, 2:string device_id), //媒体连接成功
-oneway void MediaFinish  (1:string media_id, 2:string device_id), //结束通知
+void MediaStarted (1:string media_id, 2:string device_id), //媒体连接成功
+void MediaFinish  (1:string media_id, 2:string device_id), //结束通知
 void        MediaData    (1:info.MediaPackage data, 2:string media_id, 3:string device_id), //媒体数据
 //**********报警通知**********/
-oneway void xAlarmNotify (),
-
+void xAlarmNotify (),
 //************log*************/
-oneway void Log(1:string msg),
+void Log(1:string msg),
 }

@@ -10,13 +10,17 @@ SESSION_ID Device::LoginID(){
   return _login_id;
 }
 
-void Device::Log(std::string msg){
+void Device::_Log(std::string msg){
   std::stringstream ss;
   ss <<_account.addr<<":"<<_account.port<<". "<<msg;
   _client->send_log(ss.str());
 }
 
-void Device::DisConnect(){
+void Device::_Online(){
+  _client->send_connected(_device_id);
+}
+
+void Device::_Offline(){
   std::stringstream ss;
   ss<<_device_id<<" "<<_account.addr<<":"<<_account.port<<" "<<"disconnect";
   _client->send_log(ss.str());
