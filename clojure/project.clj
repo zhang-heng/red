@@ -4,6 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.6.0"]
+                 [org.clojure/tools.nrepl "0.2.3"]
                  [org.slf4j/slf4j-log4j12 "1.7.10"]
                  [commons-daemon/commons-daemon "1.0.15"]
                  ;;环境配置
@@ -28,12 +29,11 @@
   :global-vars {*warn-on-reflection* true
                 *assert* true}
 
-  :uberjar-name "../../target/red.jar"
+  :uberjar-name "../red.jar"
 
   :aot :all
 
   :profiles {:dev        {:main red.core
                           :env {:dev true}}
 
-             :uberjar    {:main red.server
-                          :omit-source true}})
+             :uberjar    {:main red.server}})

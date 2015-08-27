@@ -1,7 +1,7 @@
 OBJ_DIR = .obj
 
 COMPILE = g++ -O2 -s -std=c++11 -m32 -pthread
-TARGET = ../target/sdk
+TARGET = ../clojure/resources/sdk
 
 all: hik.exe dahua.exe gt.exe xm.exe
 

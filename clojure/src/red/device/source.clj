@@ -18,8 +18,7 @@
            :prefix "-"
            :constructors {[red.device.source.State] []}
            :init init
-           :methods [[open [] void]
-                     [send [java.nio.ByteBuffer] void]])
+           :methods [[open [] void]])
 
 (defn -init [] [[] {}])
 
@@ -33,5 +32,3 @@
 (defn realplay-init [] [[] {}])
 
 (defn realplay-open [])
-
-(defn realplay-send [])

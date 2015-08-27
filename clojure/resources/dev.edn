@@ -1,6 +1,6 @@
 {
  :dev               true
- :sdk-path          "../target/sdk"
+ :sdk-path          "./resources/sdk"
  :subscribe-timeout 60
  :gtsp-port         7748
  :rest-port         8080
