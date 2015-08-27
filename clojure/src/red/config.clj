@@ -1,18 +1,45 @@
 (ns red.config
   (:require [clojure.java.io :as io]
+            [clojure.tools.logging :as log]
             [clojure.tools.nrepl.server :as nrepl]
             [nomad :refer [defconfig]]
             [environ.core :as environ])
   (:import [java.util Properties]
            [org.apache.log4j PropertyConfigurator]))
 
+(defn- get-this-jar []
+  (->> (.getPath (io/resource "sdk"))
+       (re-find #":(/.+)!/")
+       (last)))
+
+(defn- get-files-in-jar [^String jar ^String local]
+  (let [jf (java.util.jar.JarFile. jar)
+        en (.entries jf)]
+    (->> (repeatedly #(.nextElement en))
+         (take-while (fn [_] (.hasMoreElements en)))
+         (map str)
+         (filter #(re-find #"^sdk/.+(?<!/)$" %)))))
+
+(defn- write-jar-to-files [jar files]
+  (let [jf (java.util.jar.JarFile. jar)]
+    (doseq [file files]
+      (log/info "extract:" file)
+      (let [je (.getJarEntry jf file)
+            is (.getInputStream jf je)]
+        (clojure.java.io/make-parents file)
+        (with-open [o (clojure.java.io/output-stream file)]
+          (while (not (let [bs   (byte-array 1024)
+                            read (.read is bs)]
+                        (if (= read -1)
+                          true
+                          (.write o bs 0 read))))))))))
+
 (defn init-sdks []
   (nrepl/start-server :bind "127.0.0.1" :port 44434)
   (when-not (environ/env :dev)
-    (prn str (io/resource "dev.edn"))
-    (doseq [l (file-seq (java.io.File. (str (io/resource "sdk"))))]
-      (prn l))
-    ))
+    (let [jar (get-this-jar)]
+      (->> (get-files-in-jar jar "")
+           (write-jar-to-files jar)))))
 
 (defn init-log []
   (let [config "log4j.properties"
@@ -37,14 +64,3 @@
 (defn env
   ([key] (env key nil))
   ([key not-found] (get (read-config) key not-found)))
-
-
-;; (let [p (.getPath (io/resource "sdk"))]
-;;   (.substring p (.indexOf p "/")))
-
-;; (def jf (java.util.jar.JarFile. "/home/kay/project/red2/clojure/red.jar"))
-;; (def je (.getJarEntry xxx "sdk/gt/gt.exe"))
-
-;; (def is (.getInputStream jf je))
-
-;; (def of (java.io.FileOutputStream. "gggt.exe"))

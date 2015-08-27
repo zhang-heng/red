@@ -27,6 +27,7 @@ pom.xml.asc
 *.obj
 *.tlog
 *.pdb
+*.exe
 *.vcxproj.user
 *.lastbuildstate
 *.props
@@ -41,3 +42,4 @@ bin/
 cpp/.obj/
 main.lib
 clojure/resources/sdk/
+clojure/sdk/
