@@ -39,3 +39,5 @@ cpp/build/
 
 bin/
 cpp/.obj/
+main.lib
+clojure/resources/sdk/

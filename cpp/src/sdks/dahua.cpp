@@ -25,8 +25,10 @@ MediaType::type to_media_type(DWORD t) {//ok
 }
 
 NET_TIME to_dvr_time(TimeInfo &t) {//ok
-  return NET_TIME {(DWORD)t.year, (DWORD)t.month, (DWORD)t.day,
-      (DWORD)t.hour, (DWORD)t.minute, (DWORD)t.second};
+  NET_TIME tt;
+  tt.dwYear = t.year; tt.dwMonth  = t.month;  tt.dwDay    = t.day;
+  tt.dwHour = t.hour; tt.dwMinute = t.minute; tt.dwSecond = t.second;
+  return tt;
 }
 
 string LoginErrorTostring(int code){//ok

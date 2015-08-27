@@ -59,7 +59,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>../../thrift/gen-cpp;$(third-part-path)/thrift;$(IncludePath)</IncludePath>
-    <OutDir>../../target/sdk/</OutDir>
+    <OutDir>./</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>

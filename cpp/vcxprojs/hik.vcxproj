@@ -30,7 +30,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(third-part-path)/hik/;../../thrift/gen-cpp;$(third-part-path)/thrift;$(IncludePath)</IncludePath>
-    <OutDir>../../target/sdk/hik/</OutDir>
+    <OutDir>$(target)/hik/</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -45,7 +45,7 @@
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>$(third-part-path)/hik/;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
