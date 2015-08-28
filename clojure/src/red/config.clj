@@ -12,7 +12,7 @@
        (re-find #":(/.+)!/")
        (last)))
 
-(defn- get-files-in-jar [^String jar ^String local]
+(defn- get-files-in-jar [^String jar]
   (let [jf (java.util.jar.JarFile. jar)
         en (.entries jf)]
     (->> (repeatedly #(.nextElement en))
@@ -20,9 +20,10 @@
          (map str)
          (filter #(re-find #"^sdk/.+(?<!/)$" %)))))
 
-(defn- create-file [^String path]
+(defn- set-file-executable [^String path]
   (let [f (clojure.java.io/file path)]
     (when (re-find #".exe$" path)
+      (log/info "set executable!")
       (.setExecutable f true))))
 
 (defn- write-jar-to-files [^String jar files]
@@ -30,7 +31,6 @@
     (doseq [^String file files]
       (log/info "extract:" file)
       (clojure.java.io/make-parents file)
-      (create-file file)
       (let [je (.getJarEntry jf file)
             is (.getInputStream jf je)]
         (with-open [o (clojure.java.io/output-stream file)]
@@ -38,13 +38,14 @@
                             read (.read is bs)]
                         (if (= read -1)
                           true
-                          (.write o bs 0 read))))))))))
+                          (.write o bs 0 read))))))
+        (set-file-executable file)))))
 
 (defn init-sdks []
-  (nrepl/start-server :bind "127.0.0.1" :port 44434)
+  ;;(nrepl/start-server :bind "127.0.0.1" :port 44434)
   (when-not (environ/env :dev)
     (let [jar (get-this-jar)]
-      (->> (get-files-in-jar jar "")
+      (->> (get-files-in-jar jar)
            (write-jar-to-files jar)))))
 
 (defn init-log []
