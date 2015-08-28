@@ -20,13 +20,19 @@
          (map str)
          (filter #(re-find #"^sdk/.+(?<!/)$" %)))))
 
-(defn- write-jar-to-files [jar files]
+(defn- create-file [^String path]
+  (let [f (clojure.java.io/file path)]
+    (when (re-find #".exe$" path)
+      (.setExecutable f true))))
+
+(defn- write-jar-to-files [^String jar files]
   (let [jf (java.util.jar.JarFile. jar)]
-    (doseq [file files]
+    (doseq [^String file files]
       (log/info "extract:" file)
+      (clojure.java.io/make-parents file)
+      (create-file file)
       (let [je (.getJarEntry jf file)
             is (.getInputStream jf je)]
-        (clojure.java.io/make-parents file)
         (with-open [o (clojure.java.io/output-stream file)]
           (while (not (let [bs   (byte-array 1024)
                             read (.read is bs)]

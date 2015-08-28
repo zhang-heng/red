@@ -29,8 +29,6 @@
   :global-vars {*warn-on-reflection* true
                 *assert* true}
 
-  :uberjar-name "../red.jar"
-
   :aot :all
 
   :profiles {:dev        {:main red.core
