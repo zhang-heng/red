@@ -1,9 +1,9 @@
-(ns red.device.client.source
+(ns red.device.source
   (:require [clojure.tools.logging :as log]
-            [red.device.client.device :refer [add-device! get-all-devices add-source remove-source]]
-            [red.device.client.operate :refer :all]
+            [red.device.device :refer [add-device! get-all-devices add-source remove-source]]
+            [red.device.operate :refer :all]
             [red.utils :refer [now Timeinfo->str-time]])
-  (:import [red.device.client.device Device]
+  (:import [red.device.device Device]
            [device.types MediaType]
            [device.info LoginAccount PlayInfo]
            [device.netsdk Sdk$Iface Notify$Iface]

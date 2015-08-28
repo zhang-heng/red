@@ -1,9 +1,9 @@
-(ns red.device.client.device
+(ns red.device.device
   (:require [clojure.tools.logging :as log]
-            [red.device.client.exe :refer [create-exe! get-all-executors add-device remove-device]]
-            [red.device.client.operate :refer :all]
+            [red.device.exe :refer [create-exe! get-all-executors add-device remove-device]]
+            [red.device.operate :refer :all]
             [red.utils :refer [now]])
-  (:import [red.device.client.exe Executor]
+  (:import [red.device.exe Executor]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.info LoginAccount]
            [clojure.lang Ref PersistentArrayMap Atom]

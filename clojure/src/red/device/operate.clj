@@ -1,4 +1,4 @@
-(ns red.device.client.operate)
+(ns red.device.operate)
 
 (defprotocol IOperate
   (can-multiplex? [this args] "能否复用")

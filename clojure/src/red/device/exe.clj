@@ -1,13 +1,13 @@
-(ns red.device.client.exe
+(ns red.device.exe
   (:require [thrift-clj.core :as thrift]
-            [red.device.client.operate :refer :all]
+            [red.device.operate :refer :all]
             [clojure.tools.logging :as log]
             [red.utils :refer [now stack-trace]]
             [red.config :refer [env]]
-            [red.device.sdk.callback :refer [start-thrift!]]
-            [red.device.sdk.launcher :refer [launch! check-proc-status]])
-  (:import [red.device.sdk.callback Thrift]
-           [red.device.sdk.launcher Proc]
+            [red.device.callback :refer [start-thrift!]]
+            [red.device.launcher :refer [launch! check-proc-status]])
+  (:import [red.device.callback Thrift]
+           [red.device.launcher Proc]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.info InvalidOperation]
            [clojure.lang Ref PersistentArrayMap Fn]

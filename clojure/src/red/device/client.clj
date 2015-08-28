@@ -1,10 +1,10 @@
-(ns red.device.client.client
+(ns red.device.client
   "主动连接: socket (1->1) client (n->1) source (n->1) device (n*->1) exe"
   (:require [clojure.tools.logging :as log]
-            [red.device.client.source :refer [get-all-sources get-source! add-client remove-client source->device]]
-            [red.device.client.operate :refer :all]
+            [red.device.source :refer [get-all-sources get-source! add-client remove-client source->device]]
+            [red.device.operate :refer :all]
             [red.utils :refer [now pass-mill]])
-  (:import [red.device.client.source Source]
+  (:import [red.device.source Source]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.types StreamType ConnectType]
            [device.info LoginAccount PlayInfo]

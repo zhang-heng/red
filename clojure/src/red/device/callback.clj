@@ -1,4 +1,4 @@
-(ns red.device.sdk.callback
+(ns red.device.callback
   (:require [thrift-clj.core :as thrift]
             [clojure.tools.logging :as log]
             [red.utils :refer [stack-trace]]

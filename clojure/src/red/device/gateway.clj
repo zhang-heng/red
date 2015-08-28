@@ -1,10 +1,10 @@
-(ns red.device.client.gateway
+(ns red.device.gateway
   "网关维护,与运维app对接,维护设备状态"
   (:require [clojure.tools.logging :as log]
-            [red.device.client.device :refer [add-device! get-all-devices add-gateway]]
-            [red.device.client.operate :refer :all]
+            [red.device.device :refer [add-device! get-all-devices add-gateway]]
+            [red.device.operate :refer :all]
             [red.utils :refer [now]])
-  (:import [red.device.client.device Device]
+  (:import [red.device.device Device]
            [device.netsdk Sdk$Iface Notify$Iface]
            [device.types StreamType ConnectType]
            [device.info LoginAccount PlayInfo]

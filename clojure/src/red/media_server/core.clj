@@ -3,7 +3,7 @@
             [red.media-server.asynchronous-server :refer [run-server read-from write-to set-disconnect-notify
                                                           get-socket-info close-connection]]
             [red.media-server.restful :refer [get-and-remove-subscribe]]
-            [red.device.client.client :refer [open-session! close-session! client->data]]
+            [red.device.client :refer [open-session! close-session! client->data]]
             [red.utils :refer [string->uuid buffer->string]])
   (:import [java.nio ByteBuffer charset.Charset]
            [java.nio.channels AsynchronousSocketChannel]
