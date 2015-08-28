@@ -29,9 +29,8 @@
   :global-vars {*warn-on-reflection* true
                 *assert* true}
 
-  :aot :all
-
   :profiles {:dev        {:main red.core
                           :env {:dev true}}
 
-             :uberjar    {:main red.server}})
+             :uberjar    {:main red.server
+                          :aot :all}})
