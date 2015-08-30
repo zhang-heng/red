@@ -23,7 +23,7 @@
                  ;;thrift
                  [thrift-clj "0.2.1"]]
 
-  :java-source-paths ["../thrift/gen-java/"]
+  :java-source-paths ["gen-java/"]
 
   :global-vars {*warn-on-reflection* true
                 *assert* true}

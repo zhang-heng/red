@@ -1,0 +1,5 @@
+docker run -v "$PWD:/data" index.alauda.cn/zhangheng/red:thrift thrift -o /data/clojure --gen java /data/thrift/netSDK.thrift
+
+docker run -v "$PWD:/data" index.alauda.cn/zhangheng/red:thrift thrift -o /data/cpp     --gen cpp  /data/thrift/netSDK.thrift
+
+docker run -v "$PWD:/build" -w /build/cpp index.alauda.cn/zhangheng/red:cppbuild make -j4
