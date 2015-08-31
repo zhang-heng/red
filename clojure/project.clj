@@ -17,6 +17,7 @@
                  [jarohen/nomad "0.7.1"] ;;配置
                  [clj-time "0.7.0"]
                  ;;web
+                 [clj-http "2.0.0"]
                  [ring/ring "1.4.0"]
                  [ring/ring-json "0.3.1"]
                  [compojure "1.3.1"]

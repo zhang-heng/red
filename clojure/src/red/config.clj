@@ -2,6 +2,7 @@
   (:require [clojure.java.io :as io]
             [clojure.tools.logging :as log]
             [clojure.tools.nrepl.server :as nrepl]
+            [clj-http.client :as client]
             [nomad :refer [defconfig]]
             [environ.core :as environ])
   (:import [java.util Properties]
@@ -71,3 +72,7 @@
 (defn env
   ([key] (env key nil))
   ([key not-found] (get (read-config) key not-found)))
+
+
+;; (client/get "https://api.alauda.cn/v1/auth/zhangheng/profile/"
+;;             {:headers {:Authorization "c98512f37b60c418264440ab787a15f500b861a1"}})

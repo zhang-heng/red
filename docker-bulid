@@ -1,11 +1,11 @@
 #!/bin/sh
 
-sudo rm -rf gen-*
-sudo docker run -v "$PWD:/data" index.alauda.cn/zhangheng/red:thrift thrift -r -o /data/thrift --gen java /data/thrift/netSDK.thrift
-sudo docker run -v "$PWD:/data" index.alauda.cn/zhangheng/red:thrift thrift -r -o /data/thrift --gen cpp  /data/thrift/netSDK.thrift
+rm -rf gen-*
+docker run -v "$PWD:/data" index.alauda.cn/zhangheng/red:thrift thrift -r -o /data/thrift --gen java /data/thrift/netSDK.thrift
+docker run -v "$PWD:/data" index.alauda.cn/zhangheng/red:thrift thrift -r -o /data/thrift --gen cpp  /data/thrift/netSDK.thrift
 
-sudo docker run -v "$PWD:/build" -w /build/cpp index.alauda.cn/zhangheng/red:cppbuild make  x64 PLAT=64
+docker run -v "$PWD:/build" -w /build/cpp index.alauda.cn/zhangheng/red:cppbuild make  x64 PLAT=64
 
-sudo docker run -v "$PWD:/build" -w /build/clojure index.alauda.cn/zhangheng/red:cljbuild lein uberjar
+docker run -v "$PWD:/build" -w /build/clojure index.alauda.cn/zhangheng/red:cljbuild lein uberjar
 
-sudo docker run -v "$PWD:/build" -w /build/clojure java:8u66 java -jar target/red-2.0.0-SNAPSHOT-standalone.jar
+#docker run -v "$PWD:/build" -w /build/clojure java:8u66 java -jar target/red-2.0.0-SNAPSHOT-standalone.jar
