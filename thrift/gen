@@ -1,5 +1,5 @@
 #!/bin/sh
 rm -rf gen-*
 
-thrift -r -o ../clojure -gen java netSDK.thrift
-thrift -r -o ../cpp     -gen cpp  netSDK.thrift
+thrift -r -gen java netSDK.thrift
+thrift -r -gen cpp  netSDK.thrift

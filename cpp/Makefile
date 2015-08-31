@@ -1,16 +1,19 @@
 OBJ_DIR = .obj
 
-COMPILE = g++ -O2 -s -std=c++11 -m32 -pthread
+PLAT = 32
+COMPILE = g++ -O2 -s -std=c++11 -m$(PLAT) -pthread
 TARGET = ../clojure/resources/sdk
 
 all: hik.exe dahua.exe gt.exe xm.exe
+
+x64: dahua.exe
 
 clean:
 	rm -rf $(OBJ_DIR)
 	rm -rf $(TARGET)
 
 #*********libs*********
-libs_path = ../third-part/linux
+libs_path = ../third-part/linux$(PLAT)
 
 thrift_include_path = $(libs_path)/thrift
 thrift_links_path = -L$(libs_path)/thrift
