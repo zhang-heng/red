@@ -1,5 +1,6 @@
 (ns red.config
   (:require [clojure.java.io :as io]
+            [cheshire.core :as json]
             [clojure.tools.logging :as log]
             [clojure.tools.nrepl.server :as nrepl]
             [clj-http.client :as client]
@@ -7,6 +8,23 @@
             [environ.core :as environ])
   (:import [java.util Properties]
            [org.apache.log4j PropertyConfigurator]))
+
+(defn req-api [path]
+  (let [host "https://api.alauda.cn"
+        args {:headers {:Authorization "Token c98512f37b60c418264440ab787a15f500b861a1"}}
+        body (-> (client/get (str host path) args) :body)]
+    (json/parse-string body (fn [k] (keyword k)))))
+
+(defn get-container-port [port]
+  (let [dname  (->> (environ/env :__default_domain_name__)
+                    (re-find #"(.*)-(.*).myalauda.cn"))
+        namespace (second dname)
+        service-name (last dname)]
+    (->> (format "/v1/services/%s/%s" namespace service-name)
+         req-api
+         :instance_ports
+         (some #(when (= port (:container_port %))
+                  (:service_port %))))))
 
 (defn- get-this-jar []
   (->> (.getPath (io/resource "sdk"))
@@ -43,6 +61,10 @@
         (set-file-executable file)))))
 
 (defn init-sdks []
+  (try (do (log/info "8080 <-" (get-container-port 8080))
+           (log/info "7748 <-" (get-container-port 7748)))
+       (catch Exception _))
+
   ;;(nrepl/start-server :bind "127.0.0.1" :port 44434)
   (when-not (environ/env :dev)
     (let [jar (get-this-jar)]
@@ -72,7 +94,3 @@
 (defn env
   ([key] (env key nil))
   ([key not-found] (get (read-config) key not-found)))
-
-
-;; (client/get "https://api.alauda.cn/v1/auth/zhangheng/profile/"
-;;             {:headers {:Authorization "c98512f37b60c418264440ab787a15f500b861a1"}})

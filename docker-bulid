@@ -8,4 +8,4 @@ docker run -v "$PWD:/build" -w /build/cpp index.alauda.cn/zhangheng/red:cppbuild
 
 docker run -v "$PWD:/build" -w /build/clojure index.alauda.cn/zhangheng/red:cljbuild lein uberjar
 
-#docker run -v "$PWD:/build" -w /build/clojure java:8u66 java -jar target/red-2.0.0-SNAPSHOT-standalone.jar
+docker build -t index.alauda.cn/zhangheng/red .
