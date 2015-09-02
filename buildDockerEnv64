@@ -1,2 +1,0 @@
-#!/bin/sh
-docker build -f DockerfileEnv64 -t zhhkay/u64-j7-t90 .

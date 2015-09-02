@@ -1,4 +1,4 @@
-FROM zhhkay/u64-j7-t90
+FROM zhhkay/red-docker-build-env
 COPY . /usr/src
 WORKDIR /usr/src/thrift
 RUN ./gen
