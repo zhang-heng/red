@@ -1,9 +1,12 @@
-FROM zhhkay/red-docker-build-env:x86
+FROM zhhkay/red-docker-build-env
 COPY . /usr/src
+WORKDIR /usr/src
+RUN git submodule init
+RUN git submodule update
 WORKDIR /usr/src/thrift
 RUN ./gen
 WORKDIR /usr/src/cpp
-RUN make -j4
+RUN make x64 -j4 PLAT=64
 WORKDIR /usr/src/clojure
 RUN lein uberjar
 WORKDIR /usr/app

@@ -1,5 +1,8 @@
-FROM zhhkay/red-docker-build-env:x64
+FROM index.alauda.cn/zhangheng/red-docker-build-env
 COPY . /usr/src
+WORKDIR /usr/src
+RUN git submodule init
+RUN git submodule update
 WORKDIR /usr/src/thrift
 RUN ./gen
 WORKDIR /usr/src/cpp
