@@ -1,0 +1,6 @@
+.git/
+third-part/.git/
+thrift/gen-*
+cpp/.obj
+clojure/target/
+clojure/resources/sdk/
