@@ -2,4 +2,4 @@
 # rm -rf clojure/resources/sdk/
 # rm -rf thrift/gen-*
 # rm -rf cpp/.obj
-docker build -f Dockerfile64 -t index.alauda.cn/zhangheng/red:rt64 .
+docker build -f Dockerfile -t index.alauda.cn/zhangheng/red:rt64 .
