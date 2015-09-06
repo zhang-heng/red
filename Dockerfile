@@ -1,4 +1,4 @@
-FROM index.alauda.cn/zhangheng/red-docker-build-env
+FROM zhhkay/red-docker-build-env
 COPY . /usr/src
 WORKDIR /usr/src/thrift
 RUN ./gen
