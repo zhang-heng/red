@@ -24,6 +24,8 @@
                  ;;thrift
                  [thrift-clj "0.2.1"]]
 
+  :plugins [[lein-environ "1.0.0"]]
+
   :java-source-paths ["../thrift/gen-java/"]
 
   :global-vars {*warn-on-reflection* true

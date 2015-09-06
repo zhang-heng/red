@@ -95,9 +95,9 @@
   (StopVoiceTalk [this source-id _]
     (.StopVoiceTalk executor source-id id))
 
-  (SendVoiceData [this {^ByteBuffer payload :payload :as data} source-id _]
+  (SendVoiceData [this data source-id _]
     (dosync
-     (swap! client->flow + (.limit payload)))
+     (swap! client->flow + (.limit data)))
     (.SendVoiceData executor data source-id id))
 
   (PlayBackByTime [this info source-id _]

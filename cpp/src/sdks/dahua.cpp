@@ -183,3 +183,27 @@ void Media::PlayBackByTime(){//ok
 void Media::StopPlayBack(){//ok
   CLIENT_StopPlayBack((long)_handle_id);
 }
+
+void Media::StartVoiceTalk(){
+  auto data_callback = [] (LLONG lTalkHandle, char *pDataBuf, DWORD dwBufSize, BYTE byAudioFlag, LDWORD dwUser){
+    auto pthis = (Media*)dwUser;
+    device::info::MediaPackage media;
+    media.type = MediaType::TalkData;
+    media.payload = string(pDataBuf, pDataBuf + dwBufSize);
+    pthis->_HandleDate(media);
+  };
+  _handle_id = (SESSION_ID)CLIENT_StartTalkEx((LLONG)_login_id, data_callback, (LDWORD)this);
+  if (not _handle_id) {
+    cout<<"Fail to start voice talk, code:"<<CLIENT_GetLastError()<<endl;
+    _MediaFinish();
+  }
+  _MediaStart();
+}
+
+void Media::StopVoiceTalk(){
+  CLIENT_StopTalkEx((long)_handle_id);
+}
+
+void Media::SendVoiceData(const std::string& buffer){
+  CLIENT_TalkSendData((long)_handle_id, const_cast<char*>(buffer.c_str()), buffer.size());
+}

@@ -23,6 +23,10 @@ class Device{
   void StartPlayBack(const std::string& media_id, const device::info::PlayInfo& play_info);
   void StopPlayBack(const std::string& media_id);
 
+  void StartVoiceTalk(const std::string& media_id, const device::info::PlayInfo& play_info);
+  void StopVoiceTalk(const std::string& media_id);
+  void SendVoiceData(const std::string& media_id, const std::string& buffer);
+
  private:
   SESSION_ID _login_id;
   std::string _device_id;

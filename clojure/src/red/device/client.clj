@@ -36,10 +36,6 @@
      (remove-client source session)
      (close-handle)))
 
-  Sdk$Iface
-  (SendVoiceData [this data _ _]
-    (.SendVoiceData source data _ _))
-
   Notify$Iface
   (Offline [this _]
     (close this))
@@ -111,7 +107,7 @@
    ))
 
 (defn client->data [^Client client ^ByteBuffer byte-buffer]
-  (.SendVoiceData client byte-buffer nil nil))
+  (client->source client byte-buffer))
 
 (defn close-session! [^Client client]
   (close client))

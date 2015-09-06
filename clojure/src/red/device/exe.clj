@@ -151,7 +151,7 @@
 
   (StartVoiceTalk [this info source-id device-id]
     (future
-      (try-do this #(request @thrift-sdk StartVoiceTalk device-id source-id info))))
+      (try-do this #(request @thrift-sdk StartVoiceTalk info source-id device-id))))
   (StopVoiceTalk [this source-id device-id]
     (try-do this #(request @thrift-sdk StopVoiceTalk source-id device-id)))
   (SendVoiceData [this data source-id device-id]

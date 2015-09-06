@@ -162,3 +162,19 @@ void Server::StopPlayBack(const std::string& media_id, const std::string& device
   auto device = FindDevice(device_id);
   if(device) device->StopPlayBack(media_id);
 }
+
+void Server::StartVoiceTalk(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {
+  std::cout<<"server: StartVoiceTalk "<<media_id<<std::endl;
+  auto device = FindDevice(device_id);
+  if(device) device->StartVoiceTalk(media_id, play_info);
+}
+
+void Server::StopVoiceTalk(const std::string& media_id, const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->StopVoiceTalk(media_id);
+}
+
+void Server::SendVoiceData(const std::string& buffer, const std::string& media_id, const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->SendVoiceData(media_id, buffer);
+}

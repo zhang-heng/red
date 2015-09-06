@@ -22,9 +22,9 @@ class Media{
   void StartRealPlay();  //SDK
   void StopRealPlay();   //SDK
 
-  void StartVoiceTalk(){ }; //SDK
-  void StopVoiceTalk(){ };  //SDK
-  void SendVoiceData(const std::string& buffer){}; //SDK
+  void StartVoiceTalk(); //SDK
+  void StopVoiceTalk();  //SDK
+  void SendVoiceData(const std::string& buffer); //SDK
 
   void PlayBackByTime();      //SDK
   void StopPlayBack();        //SDK

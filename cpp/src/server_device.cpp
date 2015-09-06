@@ -106,3 +106,35 @@ void Device::StopPlayBack(const std::string& media_id){
     delete media;
   }
 }
+
+void Device::StartVoiceTalk(const std::string& media_id, const device::info::PlayInfo& play_info){
+  auto media = FindMedia(media_id);
+  if(!media){
+    media = new Media(_client_port, _device_id, _login_id, this, media_id, play_info);
+    _medias_mtx.lock();
+    std::cout<<"device: StartVoiceTalk<<<"<<_device_id<<std::endl;
+    _medias.insert(std::pair<std::string, Media*>(media_id, media));
+    _medias_mtx.unlock();
+    media->StartVoiceTalk();
+    std::cout<<">>>device: StartVoiceTalk "<<_device_id<<std::endl;
+  }
+}
+
+void Device::StopVoiceTalk(const std::string& media_id){
+  std::cout<<"device: StopVoiceTalk "<<_device_id<<std::endl;
+  auto media = FindMedia(media_id);
+  if(media){
+    _medias_mtx.lock();
+    _medias.erase(media_id);
+    _medias_mtx.unlock();
+    media->StopPlayBack();
+    delete media;
+  }
+}
+
+void Device::SendVoiceData(const std::string& media_id, const std::string& buffer){
+  auto media = FindMedia(media_id);
+  if(media){
+    media->SendVoiceData(buffer);
+  }
+}

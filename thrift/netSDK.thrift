@@ -48,7 +48,7 @@ oneway void StopRealPlay  (1:string media_id, 2:string device_id),     //关闭�
 //**********对讲**********/
 oneway void StartVoiceTalk (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //启动对讲
 oneway void StopVoiceTalk  (1:string media_id, 2:string device_id),    //关闭对讲
-       void SendVoiceData (1:string device_id, 2:string media_id, 3:binary buffer), //发送对讲音频
+       void SendVoiceData  (1:binary buffer, 2:string media_id, 3:string device_id), //发送对讲音频
 
 //**********回放**********/
 oneway void PlayBackByTime (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //按时间点播

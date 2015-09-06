@@ -150,3 +150,12 @@ void Media::PlayBackByTime(){//ok
 void Media::StopPlayBack(){//ok
   NET_DVR_StopPlayBack((long)_handle_id);
 }
+
+void Media::StartVoiceTalk(){
+}
+
+void Media::StopVoiceTalk(){
+}
+
+void Media::SendVoiceData(const std::string& buffer){
+}

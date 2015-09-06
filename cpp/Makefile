@@ -1,12 +1,12 @@
 OBJ_DIR = .obj
 
-PLAT = 32
+PLAT = 64
 COMPILE = g++ -O2 -s -std=c++11 -m$(PLAT) -pthread
 TARGET = ../clojure/resources/sdk
 
-all: hik.exe dahua.exe gt.exe xm.exe
+all: dahua.exe hik.exe
 
-x64: dahua.exe hik.exe
+x86: hik.exe dahua.exe gt.exe xm.exe
 
 clean:
 	rm -rf $(OBJ_DIR)
