@@ -156,3 +156,12 @@ void Media::PlayBackByTime(){//ok
 void Media::StopPlayBack(){//ok
   H264_DVR_StopPlayBack((long)_handle_id);
 }
+
+void Media::StartVoiceTalk(){
+}
+
+void Media::StopVoiceTalk(){
+}
+
+void Media::SendVoiceData(const std::string& buffer){
+}

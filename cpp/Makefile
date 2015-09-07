@@ -1,12 +1,16 @@
 OBJ_DIR = .obj
 
+ifeq ($(x64),1)
 PLAT = 64
+all: hik.exe dahua.exe
+else
+PLAT = 32
+all: hik.exe dahua.exe gt.exe xm.exe
+endif
+
 COMPILE = g++ -O2 -s -std=c++11 -m$(PLAT) -pthread
 TARGET = ../clojure/resources/sdk
 
-all: dahua.exe hik.exe
-
-x86: hik.exe dahua.exe gt.exe xm.exe
 
 clean:
 	rm -rf $(OBJ_DIR)
@@ -71,4 +75,4 @@ xm_links_path = -L$(libs_path)/xm $(thrift_links_path)
 xm_links = $(main_links) -lxmnetsdk
 $(shell mkdir -p $(TARGET)/xm)
 xm.exe :$(main_objs)
-	$(COMPILE) src/sdks/xm.cpp $(main_objs) $(xm_include) $(xm_links_path) $(xm_links) -o $(TARGET)/xm/xm.exe -Wno-conversion-null
+	$(COMPILE) src/sdks/xm.cpp $(main_objs) $(xm_include) $(xm_links_path) $(xm_links) -o $(TARGET)/xm/xm.exe

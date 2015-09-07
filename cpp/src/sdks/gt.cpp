@@ -177,3 +177,27 @@ void Media::PlayBackByTime(){
 void Media::StopPlayBack(){
   gt_stop_pb_av_service((long)_handle_id);
 }
+
+void Media::StartVoiceTalk(){
+  auto handle = gt_require_speak_service((long)_login_id, _play_info.channel, 8097, 1, 7900);
+  if (handle < 0) {
+    stringstream ss;
+    ss<<"start voice talk error: "<<handle<<" "<< gt_get_last_error()<<". "<<get_error_description(gt_get_last_error());
+    _Log(ss.str());
+    _MediaFinish();
+  }
+  _handle_id = (SESSION_ID)handle;
+  _MediaStart();
+}
+
+void Media::StopVoiceTalk(){
+  gt_stop_speak_service((long)_handle_id);
+}
+
+void Media::SendVoiceData(const std::string& buffer){
+  int rt = gt_write_speak_data((long)_handle_id, reinterpret_cast<unsigned char*>(const_cast<char*>(buffer.c_str())), buffer.size());
+  if (rt < 0) {
+    _MediaFinish();
+    StopVoiceTalk();
+  }
+}
