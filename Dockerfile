@@ -3,7 +3,7 @@ COPY . /usr/src
 WORKDIR /usr/src/thrift
 RUN ./gen
 WORKDIR /usr/src/cpp
-RUN make x64 -j4 PLAT=64
+RUN make x64=1
 WORKDIR /usr/src/clojure
 RUN lein uberjar
 WORKDIR /usr/app
