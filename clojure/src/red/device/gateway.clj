@@ -1,7 +1,7 @@
 (ns red.device.gateway
   "网关维护,与运维app对接,维护设备状态"
   (:require [clojure.tools.logging :as log]
-            [red.device.device :refer [add-device! get-all-devices set-gateway get-device-id]]
+            [red.device.device :refer [add-device! get-all-devices set-gateway remove-gateway get-device-id]]
             [red.device.operate :refer :all]
             [red.utils :refer [now]])
   (:import [device.netsdk Sdk$Iface Notify$Iface]
@@ -20,7 +20,9 @@
   (close [this])
 
   Sdk$Iface
-  (GetVersion [this])
+  (GetVersion [this]
+    (.GetVersion device))
+
   (xDownloadRecordByFile [this])
   (xDownloadRecordByTime [this])
   (xStopDownload [this])
@@ -36,10 +38,6 @@
   Object
   (toString [_]))
 
-(defn get-gateway-by-id [^String id])
-
-(defn close-gateway! [^Gateway gateway])
-
 (defn open-gateway
   [manufacturer addr port user password]
   (let [account (LoginAccount. addr port user password)
@@ -47,4 +45,6 @@
     (set-gateway device (Gateway. device manufacturer account (now)))
     (get-device-id device)))
 
-(defn drop-gateway [id])
+(defn drop-gateway [device-id]
+  (when-let [device (get (get-all-devices) device-id)]
+    (remove-gateway device)))

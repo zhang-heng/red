@@ -15,7 +15,7 @@
   (get-device-id [this])
   (add-source [this source id])
   (remove-source [this id])
-  (set-gateway [this gateway])
+  (set-gateway [this gw])
   (remove-gateway [this]))
 
 (deftype Device [^String       id
@@ -42,9 +42,9 @@
                 (nil? @gateway))
        (close this))))
 
-  (set-gateway [this gateway]
+  (set-gateway [this gw]
     (dosync
-     (ref-set gateway gateway)))
+     (ref-set gateway gw)))
 
   (remove-gateway [this]
     (dosync
@@ -124,8 +124,8 @@
      ;;告知所有子对象,可以做进一步请求
      (doseq [psource (deref sources)]
        (.Connected ^Notify$Iface (val psource) _))
-     (doseq [pgateway (deref gateway)]
-       (.Connected ^Notify$Iface (val pgateway) _))))
+     (when @gateway
+       (.Connected ^Notify$Iface @gateway _))))
 
   (Offline [this _]
     (dosync
@@ -133,8 +133,8 @@
      ;;告知所有子对象,由子对象决定下一步操作
      (doseq [psource (deref sources)]
        (.Offline ^Notify$Iface (val psource) _))
-     (doseq [pgateway (deref gateway)]
-       (.Offline ^Notify$Iface (val pgateway) _))))
+     (when @gateway
+       (.Offline ^Notify$Iface @gateway _))))
 
   (MediaStarted [this source-id _]
     "当无对应，则应该关闭媒体 todo..."
