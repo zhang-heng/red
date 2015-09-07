@@ -133,37 +133,30 @@
     (try-do this #(request @thrift-sdk CleanSDK)))
 
   (Login [this account device-id]
-    (future
-      (try (request @thrift-sdk Login account device-id)
-           (catch InvalidOperation e (log/info "login:" (.what e) (.why e)))
-           (finally false))))
+    ;;todo... 当进程崩溃，需要重新启动
+    (try (request @thrift-sdk Login account device-id)
+         (catch InvalidOperation e (log/info "login:" (.what e) (.why e)))
+         (finally false)))
 
   (Logout [this device-id]
-    (future
-      (try-do this #(request @thrift-sdk Logout device-id))))
+    (try-do this #(request @thrift-sdk Logout device-id)))
 
   (StartRealPlay [this info source-id device-id]
-    (future
-      (try-do this #(request @thrift-sdk StartRealPlay info source-id device-id))))
+    (try-do this #(request @thrift-sdk StartRealPlay info source-id device-id)))
   (StopRealPlay [this source-id device-id]
-    (future
-      (try-do this #(request @thrift-sdk StopRealPlay source-id device-id))))
+    (try-do this #(request @thrift-sdk StopRealPlay source-id device-id)))
 
   (StartVoiceTalk [this info source-id device-id]
-    (future
-      (try-do this #(request @thrift-sdk StartVoiceTalk info source-id device-id))))
+    (try-do this #(request @thrift-sdk StartVoiceTalk info source-id device-id)))
   (StopVoiceTalk [this source-id device-id]
     (try-do this #(request @thrift-sdk StopVoiceTalk source-id device-id)))
   (SendVoiceData [this data source-id device-id]
-    (future
-      (try-do this #(request @thrift-sdk SendVoiceData data source-id device-id))))
+    (try-do this #(request @thrift-sdk SendVoiceData data source-id device-id)))
 
   (PlayBackByTime [this info source-id device-id]
-    (future
-      (try-do this #(request @thrift-sdk PlayBackByTime info source-id device-id))))
+    (try-do this #(request @thrift-sdk PlayBackByTime info source-id device-id)))
   (StopPlayBack [this source-id device-id]
-    (future
-      (try-do this #(request @thrift-sdk StopPlayBack source-id device-id))))
+    (try-do this #(request @thrift-sdk StopPlayBack source-id device-id)))
 
   Notify$Iface
   (Log [this msg]

@@ -1,6 +1,7 @@
 (ns red.core
   (:require [red.config :refer [env]]
             [clojure.tools.logging :as log]
+            [red.device.gateway :refer [gateway-timer-task]]
             [red.media-server.restful :refer [check-timeout-task]]
             [ring.adapter.jetty :refer [run-jetty]]
             [red.handler :refer [app]]
@@ -14,7 +15,8 @@
   "启动维护任务@返回关闭函数"[]
   (let [running (promise)
         task    (Thread. #(while (deref running 1000 true)
-                            (check-timeout-task)))]
+                            (check-timeout-task)
+                            (gateway-timer-task)))]
     (.start task)
     #(try (do (deliver running false)
               (.join task)
@@ -31,6 +33,7 @@
 
 (defn stop []
   (when-let [{:keys [gtsp checker restful]} (deref server)]
+
     (checker)
     (.stop ^Server restful)
     (gtsp)))

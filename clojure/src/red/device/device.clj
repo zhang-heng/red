@@ -13,8 +13,11 @@
 
 (defprotocol IDevice
   (get-device-id [this])
+
   (add-source [this source id])
   (remove-source [this id])
+
+  (get-device-status [this])
   (set-gateway [this gw])
   (remove-gateway [this]))
 
@@ -29,6 +32,9 @@
                  ^Ref          status ;; :connecting :online :offline
                  ^DateTime     start-time]
   IDevice
+  (get-device-status [this]
+    @status)
+
   (get-device-id [this]
     id)
 
@@ -73,28 +79,24 @@
 
   Sdk$Iface
   (Login [this _ _]
-    (dosync
-     (when (= :offline @status)
-       (ref-set status :connecting)
-       (.Login executor account id))))
+    (when (= :offline @status)
+      (dosync (ref-set status :connecting))
+      (.Login executor account id)))
 
   (Logout [this _]
-    (dosync
-     (when (= :online @status)
-       (.Logout executor id))))
+    (when (= :online @status)
+      (.Logout executor id)))
 
   (StartRealPlay [this info source-id _]
-    (dosync
-     (when (= :online @status)
-       (.StartRealPlay executor info source-id id))))
+    (when (= :online @status)
+      (.StartRealPlay executor info source-id id)))
 
   (StopRealPlay [this source-id _]
     (.StopRealPlay executor source-id id))
 
   (StartVoiceTalk [this info source-id _]
-    (dosync
-     (when (= :online @status)
-       (.StartVoiceTalk executor info source-id id))))
+    (when (= :online @status)
+      (.StartVoiceTalk executor info source-id id)))
 
   (StopVoiceTalk [this source-id _]
     (.StopVoiceTalk executor source-id id))
@@ -105,9 +107,8 @@
     (.SendVoiceData executor data source-id id))
 
   (PlayBackByTime [this info source-id _]
-    (dosync
-     (when (= :online @status)
-       (.PlayBackByTime executor info source-id id))))
+    (when (= :online @status)
+      (.PlayBackByTime executor info source-id id)))
 
   (StopPlayBack [this source-id _]
     (.StopPlayBack executor source-id id))
@@ -120,12 +121,12 @@
   (Connected [this _]
     (log/infof "device connected: %s" id)
     (dosync
-     (ref-set status :online)
-     ;;告知所有子对象,可以做进一步请求
-     (doseq [psource (deref sources)]
-       (.Connected ^Notify$Iface (val psource) _))
-     (when @gateway
-       (.Connected ^Notify$Iface @gateway _))))
+     (ref-set status :online))
+    ;;告知所有子对象,可以做进一步请求
+    (doseq [psource (deref sources)]
+      (.Connected ^Notify$Iface (val psource) _))
+    (when @gateway
+      (.Connected ^Notify$Iface @gateway _)))
 
   (Offline [this _]
     (dosync
@@ -154,7 +155,7 @@
       (.MediaData ^Notify$Iface source data source-id _)))
 
   clojure.lang.IDeref
-  (deref [_] {:sources @sources :gateway  @gateway})
+  (deref [_] {:sources @sources :gateway @gateway})
 
   Object
   (toString [_]
