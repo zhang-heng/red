@@ -17,7 +17,7 @@
   (client->source [this data]))
 
 (deftype Client [^String             session
-                 ^Source             source
+                 ^Sdk$Iface          source
                  ^PersistentArrayMap connection
                  ^Atom               device->flow
                  ^Atom               client->flow

@@ -12,13 +12,14 @@
            [org.joda.time DateTime]))
 
 (defprotocol IDevice
+  (get-device-id [this])
   (add-source [this source id])
   (remove-source [this id])
-  (add-gateway [this gateway])
+  (set-gateway [this gateway])
   (remove-gateway [this]))
 
 (deftype Device [^String       id
-                 ^Executor     executor
+                 ^Sdk$Iface    executor
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
                  ^Ref          sources ;;媒体请求列表 (ref {id source ...})
@@ -28,6 +29,9 @@
                  ^Ref          status ;; :connecting :online :offline
                  ^DateTime     start-time]
   IDevice
+  (get-device-id [this]
+    id)
+
   (add-source [this source id]
     (dosync
      (alter sources assoc id source)))
@@ -38,7 +42,7 @@
                 (nil? @gateway))
        (close this))))
 
-  (add-gateway [this gateway]
+  (set-gateway [this gateway]
     (dosync
      (ref-set gateway gateway)))
 

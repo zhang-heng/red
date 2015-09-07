@@ -1,5 +1,8 @@
 (ns red.routes.api.gateway.device
-  (:require [compojure.core :refer [defroutes context GET POST DELETE]]))
+  (:require [compojure.core :refer [defroutes context GET POST DELETE]]
+            [ring.util.response :refer [response status redirect not-found]]
+            [red.utils :refer [correspond-args]]
+            [red.device.gateway :refer [open-gateway]]))
 
 (defroutes device-routes
   (context "/:device-id" [device-id]
@@ -22,5 +25,8 @@
   (context "/device" []
            (GET "/" [])
            (GET "/status"[])
-           (POST "/" [manufacturer addr port user password])
+           (POST "/" [manufacturer addr port user password]
+                 (->> (open-gateway manufacturer addr port user password)
+                      (array-map :device-id)
+                      response))
            device-routes))

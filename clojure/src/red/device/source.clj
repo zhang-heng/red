@@ -19,7 +19,7 @@
   (source->device [this data]))
 
 (deftype Source [^String       id
-                 ^Device       device
+                 ^Sdk$Iface    device
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
                  ^Keyword      source-type ;; :playback :realplay :voicetalk
