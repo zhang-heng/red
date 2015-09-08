@@ -19,13 +19,13 @@ using namespace std;
 #include <sstream>
 
 /****************help fun****************/
-MediaType::type to_media_type(DWORD t) {//ok
+MediaPayloadType::type to_media_type(DWORD t) {//ok
   switch (t) {
-  case NET_DVR_SYSHEAD:         return MediaType::FileHeader;
-  case NET_DVR_STREAMDATA:      return MediaType::MediaData;
-  case NET_DVR_AUDIOSTREAMDATA: return MediaType::AudioData;
-  case NET_DVR_PRIVATE_DATA:    return MediaType::PrivatePack;
-  default:                      return MediaType::PrivatePack;
+  case NET_DVR_SYSHEAD:         return MediaPayloadType::FileHeader;
+  case NET_DVR_STREAMDATA:      return MediaPayloadType::MediaData;
+  case NET_DVR_AUDIOSTREAMDATA: return MediaPayloadType::AudioData;
+  case NET_DVR_PRIVATE_DATA:    return MediaPayloadType::PrivatePack;
+  default:                      return MediaPayloadType::PrivatePack;
   }
 }
 

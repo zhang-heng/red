@@ -19,6 +19,10 @@ class Media{
   void _MediaStart();
   void _MediaFinish();
 
+  void StartMedia();
+  void StopMedia();
+  void SendMediaData(const std::string& buffer);
+
   void StartRealPlay();  //SDK
   void StopRealPlay();   //SDK
 

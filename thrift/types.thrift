@@ -1,8 +1,16 @@
 namespace java device.types
 namespace cpp  device.types
 
-//媒体类型
+//媒体请求类型
 enum MediaType{
+RealPlay,      //实时
+VoiceTalk,     //对讲
+PlaybackByTime,//按时回放
+PlaybackByFile,//按文件回放
+}
+
+//媒体负载类型
+enum MediaPayloadType{
 FileHeader  = 1,//头
 MediaData   = 2,//媒体,不区分类型
 VideoFrame  = 3,//视频

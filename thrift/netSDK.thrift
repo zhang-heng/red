@@ -8,12 +8,6 @@ const string version = "1.0.0"
 
 //请求操作
 service Sdk{
-//**********TEST***********/
-oneway void       Test1(1:info.MediaPackage mp),
-oneway void       Test2(1:binary bytes),
-info.MediaPackage Test3(),
-binary            Test4(),
-
 //********初始化库*********/
 void InitSDK(),  //初始化sdk
 void CleanSDK(), //释放SDK,退出
@@ -36,23 +30,11 @@ bool xSerialStart(), //透明串口
 bool xSerialStop(),
 oneway void xSerialSend(),
 
-//**********下载**********/
-bool xDownloadRecordByFile(), //按文件名下载
-bool xDownloadRecordByTime(), //按时间下载
-bool xStopDownload(),         //停止下载
-
-//**********预览**********/
-oneway void StartRealPlay (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //打开预览
-oneway void StopRealPlay  (1:string media_id, 2:string device_id),     //关闭预览
-
-//**********对讲**********/
-oneway void StartVoiceTalk (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //启动对讲
-oneway void StopVoiceTalk  (1:string media_id, 2:string device_id),    //关闭对讲
-       void SendVoiceData  (1:binary buffer, 2:string media_id, 3:string device_id), //发送对讲音频
-
 //**********回放**********/
-oneway void PlayBackByTime (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //按时间点播
-oneway void StopPlayBack   (1:string media_id, 2:string device_id), //停止点播
+oneway void StartMedia (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //启动媒体
+oneway void StopMedia  (1:string media_id, 2:string device_id), //停止媒体
+void SendMediaData     (1:binary buffer, 2:string media_id, 3:string device_id), //发送对讲音频
+
 //->回放控制
 oneway void PlayBackNormalSpeed (1:string media_id, 2:string device_id), //正常速度
 oneway void PlayBackPause       (1:string media_id, 2:string device_id), //暂停
@@ -61,17 +43,8 @@ oneway void PlayBackSlow        (1:string media_id, 2:string device_id), //慢�
 oneway void PlayBackSeek        (1:string media_id, 2:string device_id), //改变进度
 }
 
-
-
-
 //通知反馈
 service Notify{
-//**********TEST***********/
-oneway void       Test1(1:info.MediaPackage mp),
-oneway void       Test2(1:binary bytes),
-info.MediaPackage Test3(),
-binary            Test4(),
-
 //**********状态通知**********/
 void Lanuched     (1:i32 thrift_port),  //启动完成
 void Connected    (1:string device_id), //连接成功
@@ -79,7 +52,7 @@ void Offline      (1:string device_id), //断线通知
 //**********媒体通知**********/
 void MediaStarted (1:string media_id, 2:string device_id), //媒体连接成功
 void MediaFinish  (1:string media_id, 2:string device_id), //结束通知
-void        MediaData    (1:info.MediaPackage data, 2:string media_id, 3:string device_id), //媒体数据
+void MediaData    (1:info.MediaPackage data, 2:string media_id, 3:string device_id), //媒体数据
 //**********报警通知**********/
 void xAlarmNotify (),
 //************log*************/

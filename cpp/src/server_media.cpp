@@ -31,3 +31,48 @@ void Media::_MediaFinish(){//todo...
 void Media::_MediaStart(){
   _client->send_media_started(_device_id, _media_id);
 }
+
+void Media::StartMedia(){
+  SESSION_ID handle_id =0;
+
+  switch(_play_info.type){
+  case device::types::MediaType::RealPlay:
+    // if(RealPlay(_login_id, &handle_id, _play_info)){
+
+    // }
+    break;
+  case device::types::MediaType::VoiceTalk:
+    // if(RealPlay(_login_id, &handle_id, _play_info)){
+    // }
+    break;
+  case device::types::MediaType::PlaybackByTime:
+    // if(RealPlay(_login_id, &handle_id, _play_info)){
+    // }
+    break;
+  case device::types::MediaType::PlaybackByFile:
+    // if(RealPlay(_login_id, &handle_id, _play_info)){
+    // }
+    break;
+  }
+}
+
+void Media::StopMedia(){
+}
+
+void Media::SendMediaData(const std::string& buffer){
+}
+
+    // std::cout<<
+    //   play_info.start_time.year  <<"/"<<
+    //   play_info.start_time.month <<"/"<<
+    //   play_info.start_time.day   <<" "<<
+    //   play_info.start_time.hour  <<":"<<
+    //   play_info.start_time.minute<<":"<<
+    //   play_info.start_time.second<<" - ";
+    // std::cout<<
+    //   play_info.end_time.year  <<"/"<<
+    //   play_info.end_time.month <<"/"<<
+    //   play_info.end_time.day   <<" "<<
+    //   play_info.end_time.hour  <<":"<<
+    //   play_info.end_time.minute<<":"<<
+    //   play_info.end_time.second<<std::endl;

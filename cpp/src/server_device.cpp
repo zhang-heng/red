@@ -27,14 +27,15 @@ void Device::_Offline(){
   _client->send_offline(_device_id);
 }
 
-Media* Device::FindMedia(std::string id){
+std::shared_ptr<Media> Device::FindMedia(std::string id){
+  std::shared_ptr<int> p2 (nullptr);
   auto it = _medias.find(id);
   if(it == _medias.end())
     return nullptr;
   return it->second;
 }
 
-Media* Device::FindMedia(SESSION_ID id){
+std::shared_ptr<Media> Device::FindMedia(SESSION_ID id){
   for(auto it=_medias.begin(); it!=_medias.end(); it++){
     if(it->second->HandleID() == id)
       return it->second;
@@ -42,99 +43,53 @@ Media* Device::FindMedia(SESSION_ID id){
   return nullptr;
 }
 
-void Device::StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info){
+void Device::StartMedia(const device::info::PlayInfo& play_info, const std::string& media_id){
   auto media = FindMedia(media_id);
   if(!media){
-    media = new Media(_client_port, _device_id, _login_id, this, media_id, play_info);
+    auto m = std::make_shared<Media>(Media(_client_port, _device_id, _login_id, this, media_id, play_info));
     _medias_mtx.lock();
-    std::cout<<"device: startrealplay<<<"<<_device_id<<std::endl;
-    _medias.insert(std::pair<std::string, Media*>(media_id, media));
+    _medias.insert(std::pair<std::string, std::shared_ptr<Media> >(media_id, m));
     _medias_mtx.unlock();
-    media->StartRealPlay();
-    std::cout<<">>>device: startrealplay "<<_device_id<<std::endl;
+    m->StartMedia();
   }
 }
 
-void Device::StopRealPlay(const std::string& media_id){
-  std::cout<<"device: stoprealplay "<<_device_id<<std::endl;
+void Device::StopMedia(const std::string& media_id){
   auto media = FindMedia(media_id);
   if(media){
     _medias_mtx.lock();
     _medias.erase(media_id);
     _medias_mtx.unlock();
-    media->StopRealPlay();
-    delete media;
+    media->StopMedia();
   }
 }
 
-void Device::StartPlayBack(const std::string& media_id, const device::info::PlayInfo& play_info){
+void Device::SendMediaData(const std::string& buffer, const std::string& media_id){
   auto media = FindMedia(media_id);
-  if(!media){
-    media = new Media(_client_port, _device_id, _login_id, this, media_id, play_info);
-    _medias_mtx.lock();
-    std::cout<<"device: StartPlayBack<<<"<<_device_id<<std::endl;
-    _medias.insert(std::pair<std::string, Media*>(media_id, media));
-    _medias_mtx.unlock();
-    std::cout<<
-      play_info.start_time.year  <<"/"<<
-      play_info.start_time.month <<"/"<<
-      play_info.start_time.day   <<" "<<
-      play_info.start_time.hour  <<":"<<
-      play_info.start_time.minute<<":"<<
-      play_info.start_time.second<<" - ";
-    std::cout<<
-      play_info.end_time.year  <<"/"<<
-      play_info.end_time.month <<"/"<<
-      play_info.end_time.day   <<" "<<
-      play_info.end_time.hour  <<":"<<
-      play_info.end_time.minute<<":"<<
-      play_info.end_time.second<<std::endl;
-
-    media->PlayBackByTime();
-    std::cout<<">>>device: StartPlayBack "<<_device_id<<std::endl;
-  }
+  if(media){media->SendMediaData(buffer);}
 }
 
-void Device::StopPlayBack(const std::string& media_id){
-  std::cout<<"device: StopPlayBack "<<_device_id<<std::endl;
+void Device::PlayBackNormalSpeed(const std::string& media_id) {
   auto media = FindMedia(media_id);
-  if(media){
-    _medias_mtx.lock();
-    _medias.erase(media_id);
-    _medias_mtx.unlock();
-    media->StopPlayBack();
-    delete media;
-  }
+  if(media){media->PlayBackNormalSpeed();}
 }
 
-void Device::StartVoiceTalk(const std::string& media_id, const device::info::PlayInfo& play_info){
+void Device::PlayBackPause(const std::string& media_id) {
   auto media = FindMedia(media_id);
-  if(!media){
-    media = new Media(_client_port, _device_id, _login_id, this, media_id, play_info);
-    _medias_mtx.lock();
-    std::cout<<"device: StartVoiceTalk<<<"<<_device_id<<std::endl;
-    _medias.insert(std::pair<std::string, Media*>(media_id, media));
-    _medias_mtx.unlock();
-    media->StartVoiceTalk();
-    std::cout<<">>>device: StartVoiceTalk "<<_device_id<<std::endl;
-  }
+  if(media){media->PlayBackPause();}
 }
 
-void Device::StopVoiceTalk(const std::string& media_id){
-  std::cout<<"device: StopVoiceTalk "<<_device_id<<std::endl;
+void Device::PlayBackFast(const std::string& media_id) {
   auto media = FindMedia(media_id);
-  if(media){
-    _medias_mtx.lock();
-    _medias.erase(media_id);
-    _medias_mtx.unlock();
-    media->StopPlayBack();
-    delete media;
-  }
+  if(media){media->PlayBackFast();}
 }
 
-void Device::SendVoiceData(const std::string& media_id, const std::string& buffer){
+void Device::PlayBackSlow(const std::string& media_id) {
   auto media = FindMedia(media_id);
-  if(media){
-    media->SendVoiceData(buffer);
-  }
+  if(media){media->PlayBackSlow();}
+}
+
+void Device::PlayBackSeek(const std::string& media_id) {
+  auto media = FindMedia(media_id);
+  if(media){media->PlayBackSeek();}
 }

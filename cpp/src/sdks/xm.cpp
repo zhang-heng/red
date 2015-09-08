@@ -10,12 +10,12 @@ using namespace std;
 #include <sstream>
 
 /****************help fun****************/
-MediaType::type to_media_type(DWORD t) {//ok
+MediaPayloadType::type to_media_type(DWORD t) {//ok
   switch (t) {
-  case FILE_HEAD:     return MediaType::FileHeader;
-  case VIDEO_I_FRAME: return MediaType::VideoFrame;
-  case AUDIO_PACKET:  return MediaType::AudioData;
-  default:            return MediaType::MediaData;
+  case FILE_HEAD:     return MediaPayloadType::FileHeader;
+  case VIDEO_I_FRAME: return MediaPayloadType::VideoFrame;
+  case AUDIO_PACKET:  return MediaPayloadType::AudioData;
+  default:            return MediaPayloadType::MediaData;
   }
 }
 

@@ -108,12 +108,11 @@ Device* Server::FindDevice(SESSION_ID id){
   return nullptr;
 }
 
-Media* Server::FindMedia(SESSION_ID id){
+std::shared_ptr<Media> Server::FindMedia(SESSION_ID id){
   for(auto it=_devices.begin(); it!=_devices.end(); it++){
     auto m = it->second->FindMedia(id);
     if(m) return m;
   }
-  return nullptr;
 }
 
 void Server::Login(const device::info::LoginAccount& account, const std::string& device_id){
@@ -139,42 +138,42 @@ void Server::Logout(const std::string& device_id) {
   }
 }
 
-void Server::StartRealPlay(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: startrealplay "<<media_id<<std::endl;
+void Server::StartMedia(const device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
   auto device = FindDevice(device_id);
-  if(device) device->StartRealPlay(media_id, play_info);
+  if(device) device->StartMedia(play_info, media_id);
 }
 
-void Server::StopRealPlay(const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: stoprealplay "<<media_id<<std::endl;
+void Server::StopMedia(const std::string& media_id, const std::string& device_id){
   auto device = FindDevice(device_id);
-  if(device) device->StopRealPlay(media_id);
+  if(device) device->StopMedia(media_id);
 }
 
-void Server::PlayBackByTime(const device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: startrealplay "<<media_id<<std::endl;
+void Server::SendMediaData(const std::string& buffer, const std::string& media_id, const std::string& device_id){
   auto device = FindDevice(device_id);
-  if(device) device->StartPlayBack(media_id, play_info);
+  if(device) device->SendMediaData(buffer, media_id);
 }
 
-void Server::StopPlayBack(const std::string& media_id, const std::string& device_id){
-  std::cout<<"server: stoprealplay "<<media_id<<std::endl;
+void Server::PlayBackNormalSpeed(const std::string& media_id, const std::string& device_id) {
   auto device = FindDevice(device_id);
-  if(device) device->StopPlayBack(media_id);
+  if(device) device->PlayBackNormalSpeed(media_id);
 }
 
-void Server::StartVoiceTalk(const  ::device::info::PlayInfo& play_info, const std::string& media_id, const std::string& device_id) {
-  std::cout<<"server: StartVoiceTalk "<<media_id<<std::endl;
+void Server::PlayBackPause(const std::string& media_id, const std::string& device_id) {
   auto device = FindDevice(device_id);
-  if(device) device->StartVoiceTalk(media_id, play_info);
+  if(device) device->PlayBackPause(media_id);
 }
 
-void Server::StopVoiceTalk(const std::string& media_id, const std::string& device_id) {
+void Server::PlayBackFast(const std::string& media_id, const std::string& device_id) {
   auto device = FindDevice(device_id);
-  if(device) device->StopVoiceTalk(media_id);
+  if(device) device->PlayBackFast(media_id);
 }
 
-void Server::SendVoiceData(const std::string& buffer, const std::string& media_id, const std::string& device_id) {
+void Server::PlayBackSlow(const std::string& media_id, const std::string& device_id) {
   auto device = FindDevice(device_id);
-  if(device) device->SendVoiceData(media_id, buffer);
+  if(device) device->PlayBackSlow(media_id);
+}
+
+void Server::PlayBackSeek(const std::string& media_id, const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->PlayBackSeek(media_id);
 }

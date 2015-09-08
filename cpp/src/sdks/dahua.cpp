@@ -15,12 +15,12 @@ using namespace device::types;
 using namespace std;
 
 /****************help fun****************/
-MediaType::type to_media_type(DWORD t) {//ok
+MediaPayloadType::type to_media_type(DWORD t) {//ok
   switch (t) {
-  case 0:  return MediaType::MediaData;
-  case 1:  return MediaType::VideoFrame;
-  case 3:  return MediaType::AudioData;
-  default: return MediaType::PrivatePack;
+  case 0:  return MediaPayloadType::MediaData;
+  case 1:  return MediaPayloadType::VideoFrame;
+  case 3:  return MediaPayloadType::AudioData;
+  default: return MediaPayloadType::PrivatePack;
   }
 }
 
@@ -188,7 +188,7 @@ void Media::StartVoiceTalk(){
   auto data_callback = [] (LLONG lTalkHandle, char *pDataBuf, DWORD dwBufSize, BYTE byAudioFlag, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     device::info::MediaPackage media;
-    media.type = MediaType::TalkData;
+    media.type = MediaPayloadType::TalkData;
     media.payload = string(pDataBuf, pDataBuf + dwBufSize);
     pthis->_HandleDate(media);
   };

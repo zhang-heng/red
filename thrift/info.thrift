@@ -22,12 +22,12 @@ struct DeviceInfo{
 
 //媒体包
 struct MediaPackage{
-1: types.MediaType  type,
-2: i32              reserver,
-3: i32              pos,
-4: i32              total,
-5: bool             block,
-6: binary           payload,
+1: types.MediaPayloadType  type,
+2: i32                     reserver,
+3: i32                     pos,
+4: i32                     total,
+5: bool                    block,
+6: binary                  payload,
 }
 
 //音频描述
@@ -59,11 +59,13 @@ struct TimeInfo{
 
 //媒体请求信息
 struct PlayInfo{
-1:i32               channel,
-2:types.StreamType  stream_type,
-3:types.ConnectType connect_type,
-4:TimeInfo          start_time,
-5:TimeInfo          end_time
+1:types.MediaType   type,
+2:i32               channel,
+3:types.StreamType  stream_type,
+4:types.ConnectType connect_type,
+5:TimeInfo          start_time,
+6:TimeInfo          end_time,
+7:string            file_path,
 }
 
 //异常

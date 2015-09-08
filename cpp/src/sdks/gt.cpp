@@ -57,12 +57,12 @@ string get_error_description(int id) {//ok
   return "";
 }
 
-MediaType::type to_media_type(int t) {//ok
+MediaPayloadType::type to_media_type(int t) {//ok
   switch (t) {
-  case FRAMETYPE_H:   return MediaType::FileHeader;
-  case FRAMETYPE_V:   return MediaType::VideoFrame;
-  case FRAMETYPE_A:   return MediaType::AudioData;
-  default:            return MediaType::MediaData;
+  case FRAMETYPE_H:   return MediaPayloadType::FileHeader;
+  case FRAMETYPE_V:   return MediaPayloadType::VideoFrame;
+  case FRAMETYPE_A:   return MediaPayloadType::AudioData;
+  default:	      return MediaPayloadType::MediaData;
   }
 }
 

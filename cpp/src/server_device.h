@@ -4,6 +4,7 @@
 #include "server_media.h"
 #include "client.h"
 #include <mutex>
+#include <memory>
 
 class Device{
  public:
@@ -12,27 +13,29 @@ class Device{
   void _Online();
   void _Offline();
   SESSION_ID LoginID();
-  Media* FindMedia(std::string id);
-  Media* FindMedia(SESSION_ID id);
+  std::shared_ptr<Media> FindMedia(std::string id);
+  std::shared_ptr<Media> FindMedia(SESSION_ID id);
 
   void Login();
   void Logout();
-  void StartRealPlay(const std::string& media_id, const device::info::PlayInfo& play_info);
-  void StopRealPlay(const std::string& media_id);
 
-  void StartPlayBack(const std::string& media_id, const device::info::PlayInfo& play_info);
-  void StopPlayBack(const std::string& media_id);
+  void StartMedia(const device::info::PlayInfo& play_info, const std::string& media_id);
+  void StopMedia(const std::string& media_id);
 
-  void StartVoiceTalk(const std::string& media_id, const device::info::PlayInfo& play_info);
-  void StopVoiceTalk(const std::string& media_id);
-  void SendVoiceData(const std::string& media_id, const std::string& buffer);
+  void SendMediaData(const std::string& buffer, const std::string& media_id);
+
+  void PlayBackNormalSpeed(const std::string& media_id);
+  void PlayBackPause(const std::string& media_id);
+  void PlayBackFast(const std::string& media_id);
+  void PlayBackSlow(const std::string& media_id);
+  void PlayBackSeek(const std::string& media_id);
 
  private:
   SESSION_ID _login_id;
   std::string _device_id;
   device::info::LoginAccount _account;
   device::info::DeviceInfo _info;
-  std::map<std::string, Media*> _medias;
+  std::map<std::string, std::shared_ptr<Media>> _medias;
   std::mutex _medias_mtx;
   Client* _client;
   int _client_port;
