@@ -48,10 +48,11 @@
 (defn- write-jar-to-files [^String jar files]
   (let [jf (java.util.jar.JarFile. jar)]
     (doseq [^String file files]
-      (log/info "extract:" file)
-      (clojure.java.io/make-parents file)
       (let [je (.getJarEntry jf file)
-            is (.getInputStream jf je)]
+            is (.getInputStream jf je)
+            file (str (System/getProperty "user.dir") "/" file)]
+        (log/info "extract:" file)
+        (clojure.java.io/make-parents file)
         (with-open [o (clojure.java.io/output-stream file)]
           (while (not (let [bs   (byte-array 1024)
                             read (.read is bs)]
@@ -75,7 +76,8 @@
   (let [config "log4j.properties"
         inside (doto (Properties.)
                  (.load (.. clojure.lang.RT baseLoader (getResourceAsStream config)))
-                 (.setProperty "log4j.rootLogger" "INFO,console,A3"))
+                 (.setProperty "log4j.rootLogger" "INFO,console,A3")
+                 (.setProperty "log4j.appender.A3.File" (str (System/getProperty "user.dir") "/log/red.log")))
         outside  (str (System/getProperty "user.dir") "/" config)]
     (if (.. (io/file outside) exists)
       (PropertyConfigurator/configure outside)
