@@ -76,3 +76,55 @@ void Media::SendMediaData(const std::string& buffer){
     //   play_info.end_time.hour  <<":"<<
     //   play_info.end_time.minute<<":"<<
     //   play_info.end_time.second<<std::endl;
+
+// #include <iostream>
+// #include <memory>
+// #include <vector>
+// #include <thread>
+
+// using namespace std;
+
+// class CCC
+// {
+// public:
+//   static shared_ptr<CCC> MK(){
+//     auto c = new CCC();
+//     return c->pthis;
+//   };
+
+//   shared_ptr<CCC> pthis;
+
+//   CCC(){
+//     pthis = shared_ptr<CCC>(this);
+//   }
+
+//   void Work(){
+//     auto ppp = pthis;
+//     cout<< "A "<<ppp.use_count()<<endl;
+//     this_thread::sleep_for(chrono::milliseconds(100));
+//     cout<<"B "<<ppp.use_count()<<endl;
+//     pthis = nullptr;
+//     cout<<"0000000000 "<<endl;
+//     new thread([ppp](){
+//         cout<<"C "<<ppp.use_count()<<endl;
+//         this_thread::sleep_for(chrono::milliseconds(500));
+//         cout<<"D "<<ppp.use_count()<<endl;
+//       });
+//   }
+//   ~CCC(){
+//     cout<<"CCC deleted"<<endl;};
+// };
+
+// void W(){
+//   auto c = CCC::MK();
+//   new thread([&](){c->Work();});
+//   this_thread::sleep_for(chrono::milliseconds(10));
+//   new thread([&](){c->Work();});
+//   this_thread::sleep_for(chrono::milliseconds(50));
+// }
+
+// int main (){
+//   W();
+//   this_thread::sleep_for(chrono::milliseconds(1000));
+//   cout<<"...."<<endl;
+// }
