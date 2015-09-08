@@ -153,7 +153,7 @@ void Media::PlayBackByTime(){//ok
   _MediaStart();
 }
 
-void Media::StopPlayBack(){//ok
+void Media::StopPlayBackByTime(){//ok
   H264_DVR_StopPlayBack((long)_handle_id);
 }
 

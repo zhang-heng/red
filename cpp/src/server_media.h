@@ -23,6 +23,7 @@ class Media{
   void StopMedia();
   void SendMediaData(const std::string& buffer);
 
+
   void StartRealPlay();  //SDK
   void StopRealPlay();   //SDK
 
@@ -31,15 +32,16 @@ class Media{
   void SendVoiceData(const std::string& buffer); //SDK
 
   void PlayBackByTime();      //SDK
-  void StopPlayBack();        //SDK
-  void PlayBackNormalSpeed(){ }; //SDK
-  void PlayBackPause(){ };       //SDK
-  void PlayBackFast(){ };        //SDK
-  void PlayBackSlow(){ };        //SDK
-  void PlayBackSeek(){ };        //SDK
+  void StopPlayBackByTime();  //SDK
 
-  long _playback_pos;
-  long _playback_total;
+  void PlayBackByFile(){};      //SDK
+  void StopPlayBackByFile(){};  //SDK
+
+  void PlayBackNormalSpeed(){}; //SDK
+  void PlayBackPause(){};       //SDK
+  void PlayBackFast(){};        //SDK
+  void PlayBackSlow(){};        //SDK
+  void PlayBackSeek(){};        //SDK
 
  private:
   Client* _client;
@@ -52,6 +54,9 @@ class Media{
   SESSION_ID _handle_id;
 
   device::info::PlayInfo _play_info;
+
+  long _playback_pos;
+  long _playback_total;
 };
 
 #endif

@@ -180,7 +180,7 @@ void Media::PlayBackByTime(){//ok
   _MediaStart();
 }
 
-void Media::StopPlayBack(){//ok
+void Media::StopPlayBackByTime(){//ok
   CLIENT_StopPlayBack((long)_handle_id);
 }
 

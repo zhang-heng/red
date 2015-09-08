@@ -174,7 +174,7 @@ void Media::PlayBackByTime(){
   _MediaStart();
 }
 
-void Media::StopPlayBack(){
+void Media::StopPlayBackByTime(){
   gt_stop_pb_av_service((long)_handle_id);
 }
 

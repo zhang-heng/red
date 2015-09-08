@@ -177,3 +177,57 @@ void Server::PlayBackSeek(const std::string& media_id, const std::string& device
   auto device = FindDevice(device_id);
   if(device) device->PlayBackSeek(media_id);
 }
+
+
+bool Server::GetStatus(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->GetStatus();
+  return false;
+}
+
+bool Server::Updata(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->Updata();
+  return false;
+}
+
+bool Server::Restart(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->Restart();
+  return false;
+}
+
+bool Server::SetTime(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->SetTime();
+  return false;
+}
+
+bool Server::ResetPassword(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->ResetPassword();
+  return false;
+}
+
+bool Server::PTZControl(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->PTZControl();
+  return false;
+}
+
+bool Server::SerialStart(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->SerialStart();
+  return false;
+}
+
+bool Server::SerialStop(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->SerialStop();
+  return false;
+}
+
+void Server::SerialSend(const std::string& device_id) {
+  auto device = FindDevice(device_id);
+  if(device) device->SerialSend();
+}

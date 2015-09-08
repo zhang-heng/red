@@ -16,9 +16,6 @@ class Device{
   std::shared_ptr<Media> FindMedia(std::string id);
   std::shared_ptr<Media> FindMedia(SESSION_ID id);
 
-  void Login();
-  void Logout();
-
   void StartMedia(const device::info::PlayInfo& play_info, const std::string& media_id);
   void StopMedia(const std::string& media_id);
 
@@ -29,6 +26,19 @@ class Device{
   void PlayBackFast(const std::string& media_id);
   void PlayBackSlow(const std::string& media_id);
   void PlayBackSeek(const std::string& media_id);
+
+  void Login(); //SDK
+  void Logout();//SDK
+
+  bool GetStatus(){};//SDK
+  bool Updata(){};//SDK
+  bool Restart(){};//SDK
+  bool SetTime(){};//SDK
+  bool ResetPassword(){};//SDK
+  bool PTZControl(){};//SDK
+  bool SerialStart(){};//SDK
+  bool SerialStop(){};//SDK
+  void SerialSend(){};//SDK
 
  private:
   SESSION_ID _login_id;

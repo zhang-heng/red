@@ -44,13 +44,12 @@ std::shared_ptr<Media> Device::FindMedia(SESSION_ID id){
 }
 
 void Device::StartMedia(const device::info::PlayInfo& play_info, const std::string& media_id){
-  auto media = FindMedia(media_id);
-  if(!media){
-    auto m = std::make_shared<Media>(Media(_client_port, _device_id, _login_id, this, media_id, play_info));
+  if(!FindMedia(media_id)){
+    auto media = std::make_shared<Media>(Media(_client_port, _device_id, _login_id, this, media_id, play_info));
     _medias_mtx.lock();
-    _medias.insert(std::pair<std::string, std::shared_ptr<Media> >(media_id, m));
+    _medias.insert(std::pair<std::string, std::shared_ptr<Media> >(media_id, media));
     _medias_mtx.unlock();
-    m->StartMedia();
+    media->StartMedia();
   }
 }
 

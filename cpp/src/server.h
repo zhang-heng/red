@@ -53,41 +53,15 @@ class Server : virtual public device::netsdk::SdkIf {
   void PlayBackSlow(const std::string& media_id, const std::string& device_id) override;
   void PlayBackSeek(const std::string& media_id, const std::string& device_id) override;
 
-  void GetVersion(std::string& _return) override;
+  void GetVersion(std::string& _return) override; //SDK
 
-
-  bool xGetStatus() override {
-    return false;
-  }
-
-  bool xUpdata() override {
-    return true;
-  }
-
-  bool xRestart() override {
-    return true;
-  }
-
-  bool xSetTime() override {
-    return true;
-  }
-
-  bool xResetPassword() override {
-    return true;
-  }
-
-  bool xPTZControl() override {
-    return true;
-  }
-
-  bool xSerialStart() override {
-    return true;
-  }
-
-  bool xSerialStop() override {
-    return true;
-  }
-
-  void xSerialSend() override {
-  }
+  bool GetStatus(const std::string& device_id) override;
+  bool Updata(const std::string& device_id) override;
+  bool Restart(const std::string& device_id) override;
+  bool SetTime(const std::string& device_id) override;
+  bool ResetPassword(const std::string& device_id) override;
+  bool PTZControl(const std::string& device_id) override;
+  bool SerialStart(const std::string& device_id) override;
+  bool SerialStop(const std::string& device_id) override;
+  void SerialSend(const std::string& device_id) override;
 };
