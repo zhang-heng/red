@@ -36,11 +36,10 @@ oneway void StopMedia  (1:string media_id, 2:string device_id), //停止媒体
 void SendMediaData     (1:binary buffer, 2:string media_id, 3:string device_id), //发送对讲音频
 
 //->回放控制
-oneway void PlayBackNormalSpeed (1:string media_id, 2:string device_id), //正常速度
-oneway void PlayBackPause       (1:string media_id, 2:string device_id), //暂停
-oneway void PlayBackFast        (1:string media_id, 2:string device_id), //快放
-oneway void PlayBackSlow        (1:string media_id, 2:string device_id), //慢放
-oneway void PlayBackSeek        (1:string media_id, 2:string device_id), //改变进度
+oneway void PlayBackPause  (1:string media_id, 2:string device_id), //暂停
+oneway void PlayBackResume (1:string media_id, 2:string device_id), //恢复
+oneway void PlayBackSpeed  (1:string media_id, 2:string device_id, 3:double speed), //调整速度
+oneway void PlayBackSeek   (1:string media_id, 2:string device_id, 3:info.TimeInfo start_time, 4:info.TimeInfo end_time), //改变进度
 }
 
 //通知反馈
