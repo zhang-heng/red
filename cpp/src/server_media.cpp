@@ -18,7 +18,7 @@ SESSION_ID Media::HandleID(){
   return _handle_id;
 }
 
-void Media::_MediaFinish(){//todo...
+void Media::_MediaFinish(){
   _client->send_media_finish(_media_id, _device_id);
 }
 
@@ -88,19 +88,9 @@ void Media::StopMedia(){
 }
 
 void Media::SendMediaData(const std::string& buffer){
-
+  if(_play_info.type == device::types::MediaType::VoiceTalk)
+    SendVoiceData(_handle_id, buffer);
 }
-
-
-
-
-
-
-
-
-
-
-
 
 void Media::_Log(std::string msg){
   std::stringstream ss;
@@ -111,19 +101,3 @@ void Media::_Log(std::string msg){
 void Media::_MediaStart(){
   _client->send_media_started(_device_id, _media_id);
 }
-
-
-// std::cout<<
-//   play_info.start_time.year  <<"/"<<
-//   play_info.start_time.month <<"/"<<
-//   play_info.start_time.day   <<" "<<
-//   play_info.start_time.hour  <<":"<<
-//   play_info.start_time.minute<<":"<<
-//   play_info.start_time.second<<" - ";
-// std::cout<<
-//   play_info.end_time.year  <<"/"<<
-//   play_info.end_time.month <<"/"<<
-//   play_info.end_time.day   <<" "<<
-//   play_info.end_time.hour  <<":"<<
-//   play_info.end_time.minute<<":"<<
-//   play_info.end_time.second<<std::endl;

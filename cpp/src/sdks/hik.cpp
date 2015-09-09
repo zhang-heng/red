@@ -144,8 +144,24 @@ void Media::StopPlaybackByTime(SESSION_ID handle_id){
 }
 
 SESSION_ID Media::StartVoiceTalk(SESSION_ID login_id, long channel,
-                                 StreamType::type stream_type, ConnectType::type){}
+                                 StreamType::type stream_type, ConnectType::type){
+  auto data_callback = [] (LONG lVoiceComHandle, char *pRecvDataBuffer, DWORD dwBufSize, BYTE byAudioFlag, void *pUser) {
+    auto pthis = (Media*)pUser;
+    pthis->_HandleDate(pRecvDataBuffer, dwBufSize, MediaPayloadType::TalkData);
+  };
+  long session_id = NET_DVR_StartVoiceCom_MR_V30((LONG)login_id, channel, data_callback, this);
+  if (session_id == -1){
+    auto err = NET_DVR_GetLastError();
+    NET_DVR_GetErrorMsg((LONG*)&err);
+    return 0;
+  }
+  return (SESSION_ID)session_id;
+}
 
-void Media::StopVoiceTalk(SESSION_ID handle_id){}
+void Media::StopVoiceTalk(SESSION_ID handle_id){
+  NET_DVR_StopVoiceCom((LONG)handle_id);
+}
 
-void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){}
+void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){
+  NET_DVR_VoiceComSendData((LONG)handle_id, const_cast<char*>(buffer.c_str()), buffer.size());
+}
