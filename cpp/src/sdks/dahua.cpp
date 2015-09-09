@@ -111,14 +111,12 @@ void Device::Logout(){//ok
 }
 
 /****************media method fun****************/
-void Media::StartRealPlay(){//ok
-  cout<<"media: start realplay: "<<_play_info.channel<<endl;
+SESSION_ID Media::StartRealPlay(SESSION_ID login_id, long channel,
+                                device::types::StreamType::type stream_type, device::types::ConnectType::type){
+  cout<<"media: start realplay: "<<channel<<endl;
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, LONG param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
-    device::info::MediaPackage media;
-    media.type = to_media_type(dwDataType);
-    media.payload = string(pBuffer, pBuffer + dwBufSize);
-    pthis->_HandleDate(media);
+    pthis->_HandleDate((char*)pBuffer, (long)dwBufSize, to_media_type(dwDataType));
   };
 
   auto disconnect = []( LLONG lOperateHandle, EM_REALPLAY_DISCONNECT_EVENT_TYPE dwEventType, void* param, LDWORD dwUser){
@@ -126,26 +124,28 @@ void Media::StartRealPlay(){//ok
     pthis->_MediaFinish();
   };
 
-  _handle_id = (SESSION_ID) CLIENT_StartRealPlay((LLONG)_login_id, _play_info.channel, 0,
-                                                 _play_info.stream_type == device::types::StreamType::Main ?
+  auto handle_id = (SESSION_ID) CLIENT_StartRealPlay((LLONG)_login_id, channel, 0,
+                                                 stream_type == device::types::StreamType::Main ?
                                                  DH_RType_Realplay_0 : DH_RType_Realplay_1,
                                                  data_callback, disconnect, (LDWORD)this);
-  if (_handle_id == 0) {
+  if (handle_id == 0) {
     _Log("startplay error: " + CLIENT_GetLastError());
-    _MediaFinish();
+    return 0;
   }
-  _MediaStart();
+  return (SESSION_ID)handle_id;
 }
 
-void Media::StopRealPlay(){//ok
+void Media::StopRealPlay(SESSION_ID handle_id){
   cout<<"media: stoprealplay "<<endl;
-  CLIENT_StopRealPlay((long)_handle_id);
+  CLIENT_StopRealPlay((long)handle_id);
 }
 
 
-void Media::PlayBackByTime(){//ok
-  auto st = to_dvr_time(_play_info.start_time);
-  auto et = to_dvr_time(_play_info.end_time);
+SESSION_ID Media::StartPlaybackByTime(SESSION_ID login_id, long channel,
+                                      TimeInfo start_time, TimeInfo end_time,
+                                      StreamType::type stream_type, ConnectType::type){
+  auto st = to_dvr_time(start_time);
+  auto et = to_dvr_time(end_time);
 
   auto pos_callback = []( LLONG lPlayHandle, DWORD dwTotalSize, DWORD dwDownLoadSize, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
@@ -155,55 +155,49 @@ void Media::PlayBackByTime(){//ok
 
   auto data_callback = [] (LLONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufferSize, LDWORD dwUser)->int{
     auto pthis = (Media*)dwUser;
-    device::info::MediaPackage media;
-    media.type = to_media_type(dwDataType);
-    media.pos = pthis->_playback_pos;
-    media.total = pthis->_playback_total;
-    media.block = true;
-    media.payload = string(pBuffer, pBuffer + dwBufferSize);
-    pthis->_HandleDate(media);
+    pthis->_HandleDate((char*)pBuffer, (long)dwBufferSize, to_media_type(dwDataType),
+                       pthis->_playback_pos, pthis->_playback_total, true);
     return 1;
   };
+
   auto disconnect = []( LLONG lOperateHandle, EM_REALPLAY_DISCONNECT_EVENT_TYPE dwEventType, void* param, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
     pthis->_MediaFinish();
   };
 
-  _handle_id = (SESSION_ID)CLIENT_StartPlayBackByTime((LLONG)_login_id, _play_info.channel, &st, &et, 0,
+  auto handle_id = (SESSION_ID)CLIENT_StartPlayBackByTime((LLONG)login_id, channel, &st, &et, 0,
                                                       pos_callback,  (LDWORD)this,
                                                       data_callback, (LDWORD)this,
                                                       disconnect,    (LDWORD)this);
-  if (_handle_id == 0) {
+  if (handle_id == 0) {
     cout<<"Fail to start playback: "<<CLIENT_GetLastError()<<endl;
-    _MediaFinish();
+    return 0;
   }
-  _MediaStart();
+  return (SESSION_ID) handle_id;
 }
 
-void Media::StopPlayBackByTime(){//ok
-  CLIENT_StopPlayBack((long)_handle_id);
+void Media::StopPlaybackByTime(SESSION_ID handle_id){
+  CLIENT_StopPlayBack((long)handle_id);
 }
 
-void Media::StartVoiceTalk(){
+SESSION_ID Media::StartVoiceTalk(SESSION_ID login_id, long channel,
+                                 StreamType::type stream_type, ConnectType::type){
   auto data_callback = [] (LLONG lTalkHandle, char *pDataBuf, DWORD dwBufSize, BYTE byAudioFlag, LDWORD dwUser){
     auto pthis = (Media*)dwUser;
-    device::info::MediaPackage media;
-    media.type = MediaPayloadType::TalkData;
-    media.payload = string(pDataBuf, pDataBuf + dwBufSize);
-    pthis->_HandleDate(media);
+    pthis->_HandleDate(pDataBuf, dwBufSize, MediaPayloadType::TalkData);
   };
-  _handle_id = (SESSION_ID)CLIENT_StartTalkEx((LLONG)_login_id, data_callback, (LDWORD)this);
-  if (not _handle_id) {
+  auto handle_id = (SESSION_ID)CLIENT_StartTalkEx((LLONG)_login_id, data_callback, (LDWORD)this);
+  if (!handle_id) {
     cout<<"Fail to start voice talk, code:"<<CLIENT_GetLastError()<<endl;
-    _MediaFinish();
+    return 0;
   }
-  _MediaStart();
+  return (SESSION_ID) handle_id;
 }
 
-void Media::StopVoiceTalk(){
-  CLIENT_StopTalkEx((long)_handle_id);
+void Media::StopVoiceTalk(SESSION_ID handle_id){
+  CLIENT_StopTalkEx((long)handle_id);
 }
 
-void Media::SendVoiceData(const std::string& buffer){
-  CLIENT_TalkSendData((long)_handle_id, const_cast<char*>(buffer.c_str()), buffer.size());
+void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){
+  CLIENT_TalkSendData((long)handle_id, const_cast<char*>(buffer.c_str()), buffer.size());
 }

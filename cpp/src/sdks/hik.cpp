@@ -85,77 +85,67 @@ void Device::Logout(){//ok
 }
 
 /****************media method fun****************/
-void Media::StartRealPlay(){//ok
+SESSION_ID Media::StartRealPlay(SESSION_ID login_id, long channel,
+                                device::types::StreamType::type stream_type, device::types::ConnectType::type connect_type){
   NET_DVR_PREVIEWINFO info;
   memset(&info, 0, sizeof(NET_DVR_PREVIEWINFO));
-  info.lChannel     = _play_info.channel;
-  info.dwStreamType = _play_info.stream_type == StreamType::Main ? 0 : 1;
-  info.dwLinkMode   = _play_info.connect_type == ConnectType::Tcp ? 0 : 1;
+  info.lChannel     = channel;
+  info.dwStreamType = stream_type == StreamType::Main ? 0 : 1;
+  info.dwLinkMode   = connect_type == ConnectType::Tcp ? 0 : 1;
 
   auto data_callback = [] (LONG lRealHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser){
     auto pthis = (Media*)pUser;
-    device::info::MediaPackage media;
-    media.type = to_media_type(dwDataType);
-    media.payload = string(pBuffer, pBuffer + dwBufSize);
-    pthis->_HandleDate(media);
+    pthis->_HandleDate((char*)pBuffer, dwBufSize, to_media_type(dwDataType));
   };
-  auto handle_id = NET_DVR_RealPlay_V40((long)_login_id, &info, data_callback, this);
+  auto handle_id = NET_DVR_RealPlay_V40((long)login_id, &info, data_callback, this);
 
   if (handle_id == -1) {
     LONG err = NET_DVR_GetLastError();
     stringstream ss;
     ss<<"fail to realplay, "<<err<<"."<<NET_DVR_GetErrorMsg((LONG*)&err);
     _Log(ss.str());
-    _MediaFinish();
-    return;
+    return 0;
   }
-  _handle_id = (SESSION_ID)handle_id;
-  _MediaStart();
+  return (SESSION_ID)handle_id;
 }
 
-void Media::StopRealPlay(){//ok
-  NET_DVR_StopRealPlay((long)_handle_id);
+void Media::StopRealPlay(SESSION_ID handle_id){
+  NET_DVR_StopRealPlay((long)handle_id);
 }
 
-void Media::PlayBackByTime(){//ok
-  NET_DVR_TIME st = to_dvr_time(_play_info.start_time);
-  NET_DVR_TIME et  = to_dvr_time(_play_info.end_time);
+SESSION_ID Media::StartPlaybackByTime(SESSION_ID login_id, long channel,
+                                      TimeInfo start_time, TimeInfo end_time,
+                                      StreamType::type stream_type, ConnectType::type){
+  NET_DVR_TIME st = to_dvr_time(start_time);
+  NET_DVR_TIME et  = to_dvr_time(end_time);
+
   auto data_callback = [] (LONG lPlayHandle, DWORD dwDataType, BYTE *pBuffer, DWORD dwBufSize, void *pUser){
     auto pthis = (Media*)pUser;
-    device::info::MediaPackage media;
-    media.type = to_media_type(dwDataType);
-    media.payload = string(pBuffer, pBuffer + dwBufSize);
-    pthis->_HandleDate(media);
+    pthis->_HandleDate((char*)pBuffer, dwBufSize, to_media_type(dwDataType));
   };
 
-  auto session_id = NET_DVR_PlayBackByTime((long)_login_id, _play_info.channel, &st, &et, 0);
+  auto session_id = NET_DVR_PlayBackByTime((long)login_id, channel, &st, &et, 0);
   if (session_id == -1){
-    _MediaFinish();
-    return;
+    return 0;
   }
   if (!NET_DVR_SetPlayDataCallBack_V40(session_id, data_callback, this)){
     NET_DVR_StopPlayBack(session_id);
-    _MediaFinish();
-    return;
+    return 0;
   }
   if (!NET_DVR_PlayBackControl(session_id, NET_DVR_PLAYSTART, 0, 0)){
     NET_DVR_StopPlayBack(session_id);
-    _MediaFinish();
-    return;
+    return 0;
   };
-  _handle_id = (SESSION_ID) session_id;
-  _MediaStart();
+  return (SESSION_ID) session_id;
 }
 
-void Media::StopPlayBackByTime(){//ok
-  NET_DVR_StopPlayBack((long)_handle_id);
+void Media::StopPlaybackByTime(SESSION_ID handle_id){
+  NET_DVR_StopPlayBack((long)handle_id);
 }
 
-void Media::StartVoiceTalk(){
-}
+SESSION_ID Media::StartVoiceTalk(SESSION_ID login_id, long channel,
+                                 StreamType::type stream_type, ConnectType::type){}
 
-void Media::StopVoiceTalk(){
-}
+void Media::StopVoiceTalk(SESSION_ID handle_id){}
 
-void Media::SendVoiceData(const std::string& buffer){
-}
+void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){}

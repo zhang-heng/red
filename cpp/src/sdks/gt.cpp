@@ -112,92 +112,80 @@ void Device::Logout(){//ok
 }
 
 /****************media method fun****************/
-void Media::StartRealPlay(){//ok
+SESSION_ID Media::StartRealPlay(SESSION_ID login_id, long channel,
+                                device::types::StreamType::type stream_type, device::types::ConnectType::type){//ok
+
   auto data_callback = [] (gt_session_handle_t real_handle, void * frame_buf, int frame_size,
                            frametype_t frame_type, stream_format_t *format) {
     auto m = pServer->FindMedia((SESSION_ID)real_handle);
-    if (m){
-      device::info::MediaPackage media;
-      media.type = to_media_type(frame_type);
-      media.payload = string((char*)frame_buf, (char*)frame_buf + frame_size);
-      m->_HandleDate(media);
-    }else{
-      gt_stop_rt_av_service(real_handle);
-    }
+    if(m) m->_HandleDate((char*)frame_buf, (long)frame_size, to_media_type(frame_type));
   };
+
   auto finsh_callback = [](gt_session_handle_t handle) {
     auto m = pServer->FindMedia((SESSION_ID)handle);
     if(m) m->_MediaFinish();
   };
 
-  auto handle = gt_require_rt_av_service((long)_login_id, _play_info.channel, 1, "0.0.0.0", data_callback, finsh_callback);
+  auto handle = gt_require_rt_av_service((long)login_id, channel, 1, "0.0.0.0", data_callback, finsh_callback);
   if (handle < 0) {
     stringstream ss;
     ss<<"startplay error: "<<handle<<" "<< gt_get_last_error()<<". "<<get_error_description(gt_get_last_error());
     _Log(ss.str());
-    _MediaFinish();
-    return;
+    return 0;
   }
-  _handle_id = (SESSION_ID)handle;
-  _MediaStart();
+  return (SESSION_ID)handle;
 }
 
-void Media::StopRealPlay(){//ok
-  gt_stop_rt_av_service((long)_handle_id);
+void Media::StopRealPlay(SESSION_ID handle_id){//ok
+  gt_stop_rt_av_service((long)handle_id);
 };
 
-void Media::PlayBackByTime(){
-  auto st = to_dvr_time(_play_info.start_time);
-  auto et = to_dvr_time(_play_info.end_time);
+SESSION_ID Media::StartPlaybackByTime(SESSION_ID login_id, long channel,
+                                      TimeInfo start_time, TimeInfo end_time,
+                                      StreamType::type stream_type, ConnectType::type){
+  auto st = to_dvr_time(start_time);
+  auto et = to_dvr_time(end_time);
 
   auto data_callback = [] (gt_session_handle_t playback_handle, void *frame_buf, int frame_size,
                            frametype_t frame_type, stream_format_t *format) {
     auto m = pServer->FindMedia((SESSION_ID)playback_handle);
-    if (m){
-      device::info::MediaPackage media;
-      media.type = to_media_type(frame_type);
-      media.payload = string((char*)frame_buf, (char*)frame_buf + frame_size);
-      m->_HandleDate(media);
-    }else{
-      gt_stop_pb_av_service(playback_handle);
-    }
+    if(m) m->_HandleDate((char*)frame_buf, (long)frame_size, to_media_type(frame_type));
   };
+
   auto finish_callback = [] (gt_session_handle_t playback_handle) {
     auto m = pServer->FindMedia((SESSION_ID)playback_handle);
     if(m) m->_MediaFinish();
   };
-  auto handle = gt_require_pb_av_service((long)_login_id, _play_info.channel, NSPEED, "0.0.0.0",&st, &et,
+
+  auto handle = gt_require_pb_av_service((long)_login_id, channel, NSPEED, "0.0.0.0",&st, &et,
                                          data_callback, finish_callback);
   if (handle < 0) {
-    _MediaFinish();
+    return 0;
   }
-  _MediaStart();
+  return (SESSION_ID)handle;
 }
 
-void Media::StopPlayBackByTime(){
-  gt_stop_pb_av_service((long)_handle_id);
+void Media::StopPlaybackByTime(SESSION_ID handle_id){
+  gt_stop_pb_av_service((long)handle_id);
 }
 
-void Media::StartVoiceTalk(){
-  auto handle = gt_require_speak_service((long)_login_id, _play_info.channel, 8097, 1, 7900);
+SESSION_ID Media::StartVoiceTalk(SESSION_ID login_id, long channel,
+                                 StreamType::type stream_type, ConnectType::type){
+  auto handle = gt_require_speak_service((long)_login_id, channel, 8097, 1, 7900);
   if (handle < 0) {
     stringstream ss;
     ss<<"start voice talk error: "<<handle<<" "<< gt_get_last_error()<<". "<<get_error_description(gt_get_last_error());
     _Log(ss.str());
-    _MediaFinish();
+    return 0;
   }
-  _handle_id = (SESSION_ID)handle;
-  _MediaStart();
+  return (SESSION_ID)handle;
 }
 
-void Media::StopVoiceTalk(){
-  gt_stop_speak_service((long)_handle_id);
+void Media::StopVoiceTalk(SESSION_ID handle_id){
+  gt_stop_speak_service((long)handle_id);
 }
 
-void Media::SendVoiceData(const std::string& buffer){
-  int rt = gt_write_speak_data((long)_handle_id, reinterpret_cast<unsigned char*>(const_cast<char*>(buffer.c_str())), buffer.size());
-  if (rt < 0) {
-    _MediaFinish();
-    StopVoiceTalk();
-  }
+void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){
+  int rt = gt_write_speak_data((long)handle_id, reinterpret_cast<unsigned char*>(const_cast<char*>(buffer.c_str())), buffer.size());
+  if (rt<0) _MediaFinish();
 }

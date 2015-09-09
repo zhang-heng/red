@@ -45,7 +45,7 @@ std::shared_ptr<Media> Device::FindMedia(SESSION_ID id){
 
 void Device::StartMedia(const device::info::PlayInfo& play_info, const std::string& media_id){
   if(!FindMedia(media_id)){
-    auto media = std::make_shared<Media>(Media(_client_port, _device_id, _login_id, this, media_id, play_info));
+    auto media = (new Media(_client_port, _device_id, _login_id, this, media_id, play_info))->Pointer;
     _medias_mtx.lock();
     _medias.insert(std::pair<std::string, std::shared_ptr<Media> >(media_id, media));
     _medias_mtx.unlock();

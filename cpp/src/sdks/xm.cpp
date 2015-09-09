@@ -79,30 +79,27 @@ void Device::Logout(){//ok
 }
 
 /****************media method fun****************/
-void Media::StartRealPlay(){//ok
+SESSION_ID Media::StartRealPlay(SESSION_ID login_id, long channel,
+                                device::types::StreamType::type stream_type, device::types::ConnectType::type connect_type){
   H264_DVR_CLIENTINFO info;
-  info.nChannel = _play_info.channel;
-  info.nStream  = _play_info.stream_type == StreamType::Main ? 0 : 1;
-  info.nMode    = _play_info.connect_type == ConnectType::Tcp ? 0 : 1;
+  info.nChannel = channel;
+  info.nStream  = stream_type == StreamType::Main ? 0 : 1;
+  info.nMode    = connect_type == ConnectType::Tcp ? 0 : 1;
   info.nComType = 0;
   info.hWnd     = nullptr;
 
-  long session_id = H264_DVR_RealPlay((long)_login_id, &info);
+  auto session_id = H264_DVR_RealPlay((long)login_id, &info);
   if (!session_id) {
     LONG err = H264_DVR_GetLastError();
     stringstream ss;
     ss<<"fail to realplay, "<<err;
     _Log(ss.str());
-    _MediaFinish();
-    return;
+    return 0;
   }
 
   auto data_callback = [](long lRealHandle, long dwDataType, unsigned char *pBuffer,long lbufsize,long dwUser){
     auto pthis = (Media*)dwUser;
-    device::info::MediaPackage media;
-    media.type = to_media_type(dwDataType);
-    media.payload = string(pBuffer, pBuffer + lbufsize);
-    pthis->_HandleDate(media);
+    pthis->_HandleDate((char*)pBuffer, lbufsize, to_media_type(dwDataType));
     return TRUE;
   };
 
@@ -110,20 +107,21 @@ void Media::StartRealPlay(){//ok
     H264_DVR_StopRealPlay(session_id);
   }
 
-  _handle_id = (SESSION_ID)session_id;
-  _MediaStart();
+  return (SESSION_ID)session_id;
 }
 
-void Media::StopRealPlay(){//ok
-  H264_DVR_StopRealPlay((long) _handle_id);
+void Media::StopRealPlay(SESSION_ID handle_id){
+  H264_DVR_StopRealPlay((long)handle_id);
 }
 
-void Media::PlayBackByTime(){//ok
+SESSION_ID Media::StartPlaybackByTime(SESSION_ID login_id, long channel,
+                                      TimeInfo start_time, TimeInfo end_time,
+                                      StreamType::type stream_type, ConnectType::type){
   H264_DVR_FINDINFO info;
-  info.nChannelN0    = _play_info.channel;
+  info.nChannelN0    = channel;
   info.nFileType     = SDK_RECORD_ALL;
-  info.startTime     = to_dvr_time(_play_info.start_time);
-  info.endTime       = to_dvr_time(_play_info.end_time);
+  info.startTime     = to_dvr_time(start_time);
+  info.endTime       = to_dvr_time(end_time);
   info.szFileName[0] = '\0';
   info.hWnd          = nullptr;
 
@@ -134,34 +132,26 @@ void Media::PlayBackByTime(){//ok
   };
   auto data_callback = [] (long lRealHandle, long dwDataType, unsigned char *pBuffer,long lbufsize, long dwUser) -> int {
     auto pthis = (Media*)dwUser;
-    device::info::MediaPackage media;
-    media.type = to_media_type(dwDataType);
-    media.pos = pthis->_playback_pos;
-    media.total = pthis->_playback_total;
-    media.block = true;
-    media.payload = string(pBuffer, pBuffer + lbufsize);
-    pthis->_HandleDate(media);
+    pthis->_HandleDate((char*)pBuffer, lbufsize, to_media_type(dwDataType),
+                       pthis->_playback_pos, pthis->_playback_total, true);
     return 1;
   };
 
   auto session_id = H264_DVR_PlayBackByTime((long)_login_id, &info, pos_callback, data_callback, (long)this);
   if (!session_id) {
     _Log("Fail to start playback: " + to_string(H264_DVR_GetLastError()));
-    _MediaFinish();
+    return 0;
   }
-  _handle_id = (SESSION_ID) session_id;
-  _MediaStart();
+  return (SESSION_ID) session_id;
 }
 
-void Media::StopPlayBackByTime(){//ok
-  H264_DVR_StopPlayBack((long)_handle_id);
+void Media::StopPlaybackByTime(SESSION_ID handle_id){
+  H264_DVR_StopPlayBack((long)handle_id);
 }
 
-void Media::StartVoiceTalk(){
-}
+SESSION_ID Media::StartVoiceTalk(SESSION_ID login_id, long channel,
+                                 StreamType::type stream_type, ConnectType::type){}
 
-void Media::StopVoiceTalk(){
-}
+void Media::StopVoiceTalk(SESSION_ID handle_id){}
 
-void Media::SendVoiceData(const std::string& buffer){
-}
+void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){}
