@@ -16,7 +16,9 @@ class Media{
 
   Media(int client_port, std::string device_id, SESSION_ID login_id, Device* device,
         std::string media_id,  const device::info::PlayInfo& play_info);
-
+  ~Media(){
+    std::cout<<"media released.---> "<< _media_id <<std::endl;
+  };
   SESSION_ID HandleID();
   void _Log(std::string msg);
   void _HandleDate(char* pbuffer, long size, device::types::MediaPayloadType::type type, bool block = false);

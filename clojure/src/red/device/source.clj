@@ -4,7 +4,7 @@
             [red.device.operate :refer :all]
             [red.utils :refer [now Timeinfo->str-time]])
   (:import [red.device.device Device]
-           [device.types MediaType]
+           [device.types MediaPayloadType MediaType]
            [device.info LoginAccount PlayInfo]
            [device.netsdk Sdk$Iface Notify$Iface]
            [clojure.lang Ref PersistentArrayMap Atom]
@@ -22,7 +22,6 @@
                  ^Sdk$Iface    device
                  ^String       manufacturer ;;厂商
                  ^LoginAccount account      ;;设备账号
-                 ^Keyword      source-type ;; :playback :realplay :voicetalk
                  ^PlayInfo     info
                  ^Ref          clients ;;(ref {id client ...})
                  ^Atom         header-data
@@ -31,11 +30,7 @@
                  ^DateTime     start-time]
   ISource
   (connect [this]
-    (dosync
-     (case source-type
-       :playback  (.PlayBackByTime this info id nil)
-       :realplay  (.StartRealPlay  this info id nil)
-       :voicetalk (.StartVoiceTalk this info id nil))))
+    (.StartMedia this info id nil))
 
   (add-client [this client id]
     (dosync
@@ -47,16 +42,13 @@
        (close this))))
 
   (source->device [this data]
-    (case source-type
-      :realplay  nil
-      :playback  nil
-      :voicetalk (.SendVoiceData this data nil nil)))
+    (.SendMediaData this data nil nil))
 
   IOperate
   (can-multiplex? [this args]
     "可复用的媒体,意味着实时流,且所有参数全相等"
-    (let [[manufacturer* account* source-type* info*] args]
-      (and (= :realplay source-type source-type*)
+    (let [[manufacturer* account* ^PlayInfo info*] args]
+      (and (= MediaType/RealPlay (.type info) (.type info*))
            (= manufacturer manufacturer*)
            (= account account*)
            (= info info*))))
@@ -65,34 +57,19 @@
     (dosync
      (log/info "close source")
      (remove-source device id)
-     (case source-type
-       :realplay  (.StopRealPlay  this nil nil)
-       :playback  (.StopPlayBack  this nil nil)
-       :voicetalk (.StopVoiceTalk this nil nil))
+     (.StopMedia this nil nil)
      (doseq [pclient (deref clients)]
        (close (val pclient)))))
 
   Sdk$Iface
-  (StartRealPlay [this _ _ _]
-    (.StartRealPlay device info id _))
+  (StartMedia [this _ _ _]
+    (.StartMedia device info id _))
 
-  (StopRealPlay [this _ _]
-    (.StopRealPlay device id _))
+  (StopMedia [this _ _]
+    (.StopMedia device id _))
 
-  (StartVoiceTalk [this _ _ _]
-    (.StartVoiceTalk device info id _))
-
-  (StopVoiceTalk [this _ _]
-    (.StopVoiceTalk device id _))
-
-  (SendVoiceData [this data _ _]
-    (.SendVoiceData device data id _))
-
-  (PlayBackByTime [this _ _ _]
-    (.PlayBackByTime device info id _))
-
-  (StopPlayBack [this _ _]
-    (.StopPlayBack device id _))
+  (SendMediaData [this data _ _]
+    (.SendMediaData device data id _))
 
   Notify$Iface
   (Connected [this _]
@@ -117,7 +94,7 @@
   (MediaData [this data _ _]
     (let [{:keys [^bytes payload type]} (bean data)]
       (swap! device->flow + (alength payload))
-      (when (= type (.getValue MediaType/FileHeader))
+      (when (= type (.getValue MediaPayloadType/FileHeader))
         (reset! header-data data)))
     (doseq [pclient (deref clients)]
       (.MediaData ^Notify$Iface (val pclient) data _ _)))
@@ -128,8 +105,8 @@
   Object
   (toString [_]
     (let [{:keys [channel stream_type connect_type start_time end_time]} (bean info)]
-      (format "____source: %s %d %s %s %s %s, %d bytes\n%s"
-              source-type channel stream_type connect_type
+      (format "____source: %d %s %s %s %s, %d bytes\n%s"
+              channel stream_type connect_type
               (Timeinfo->str-time start_time) (Timeinfo->str-time end_time)
               @device->flow
               (->> @clients vals (map str)
@@ -137,17 +114,16 @@
 
 (defn- create-source!
   "新建媒体源"
-  [manufacturer ^LoginAccount account
-   media-type   ^PlayInfo     info]
+  [manufacturer ^LoginAccount account ^PlayInfo info]
   (dosync
    (let [{:keys [addr port]} (bean account)
          {:keys [channel stream_type connect_type start_time end_time]} (bean info)]
-     (log/infof "create source: %s:%d %d %s %s %s %s"
-                addr port channel stream_type connect_type start_time end_time))
+     (log/infof "create source: %s:%d %d %s %s %s"
+                addr port channel connect_type start_time end_time))
    (let [device  (add-device! manufacturer account)
          id      (str (UUID/randomUUID))
          clients (ref {})
-         source  (Source. id device manufacturer account media-type info clients (atom nil) (atom 0) (atom 0) (now))]
+         source  (Source. id device manufacturer account info clients (atom nil) (atom 0) (atom 0) (now))]
      ;;将本source 添加入设备
      (add-source device source id)
      (connect source)
@@ -162,20 +138,18 @@
 
 (defn- can-source-multiplex?*
   "源能否复用"
-  [manufacturer ^LoginAccount account
-   media-type   ^PlayInfo     info]
+  [manufacturer ^LoginAccount account ^PlayInfo info]
   (dosync
    (some (fn [psource]
            (let [^Source source (val psource)]
-             (when (can-multiplex+? source manufacturer account media-type info)
+             (when (can-multiplex+? source manufacturer account info)
                source)))
          (get-all-sources))))
 
 (defn get-source!
   "获取源,即生成执行程序并建立联系"
-  [manufacturer ^LoginAccount account
-   media-type   ^PlayInfo     info]
+  [manufacturer ^LoginAccount account ^PlayInfo info]
   (dosync
-   (if-let [source (can-source-multiplex?* manufacturer account media-type info)]
+   (if-let [source (can-source-multiplex?* manufacturer account info)]
      source
-     (create-source! manufacturer account media-type info))))
+     (create-source! manufacturer account info))))

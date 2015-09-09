@@ -57,11 +57,17 @@ void Media::StartMedia(){
     _handle_id = StartPlaybackByFile(_login_id, _play_info.file_path, _play_info.stream_type, _play_info.connect_type);
     break;
   }
-  if(_handle_id == 0) ;//通知失败
-  if(!_working) StopMedia();//过程中已关闭
+  if(!_working) {
+    StopMedia();//过程中已关闭
+    return;
+  }
+  if(_handle_id == 0) {//通知失败
+    _MediaFinish();
+  }
 }
 
 void Media::StopMedia(){
+  Pointer = nullptr;
   _working = false;
   if(_handle_id)
     switch(_play_info.type){

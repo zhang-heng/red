@@ -18,7 +18,7 @@
 (defonce ^:private executors (ref {}))
 
 (thrift/import
- (:types    [device.types  MediaType    StreamType]
+ (:types    [device.types  MediaPayloadType StreamType]
             [device.info   LoginAccount MediaPackage])
  (:clients  [device.netsdk Sdk]))
 
@@ -117,11 +117,6 @@
         (catch Exception e (log/errorf "close executor thrift: \n%s" (stack-trace e))))))
 
   Sdk$Iface
-  (Test1 [this mp] (log/debug "->sdk test1" (try-do this #(request @thrift-sdk Test1 (device.info.MediaPackage.)))))
-  (Test2 [this bs] (log/debug "->sdk test2" (try-do this #(request @thrift-sdk Test2 (ByteBuffer/allocate 0)))))
-  (Test3 [this] (log/debug "->sdk test3" (try-do this #(request @thrift-sdk Test3))))
-  (Test4 [this] (log/debug "->sdk test4" (try-do this #(request @thrift-sdk Test4))))
-
   (GetVersion [this]
     (log/infof "%s version=%s"
                manufacturer (try-do this #(request @thrift-sdk GetVersion))))
@@ -141,22 +136,12 @@
   (Logout [this device-id]
     (try-do this #(request @thrift-sdk Logout device-id)))
 
-  (StartRealPlay [this info source-id device-id]
-    (try-do this #(request @thrift-sdk StartRealPlay info source-id device-id)))
-  (StopRealPlay [this source-id device-id]
-    (try-do this #(request @thrift-sdk StopRealPlay source-id device-id)))
-
-  (StartVoiceTalk [this info source-id device-id]
-    (try-do this #(request @thrift-sdk StartVoiceTalk info source-id device-id)))
-  (StopVoiceTalk [this source-id device-id]
-    (try-do this #(request @thrift-sdk StopVoiceTalk source-id device-id)))
-  (SendVoiceData [this data source-id device-id]
-    (try-do this #(request @thrift-sdk SendVoiceData data source-id device-id)))
-
-  (PlayBackByTime [this info source-id device-id]
-    (try-do this #(request @thrift-sdk PlayBackByTime info source-id device-id)))
-  (StopPlayBack [this source-id device-id]
-    (try-do this #(request @thrift-sdk StopPlayBack source-id device-id)))
+  (StartMedia [this info source-id device-id]
+    (try-do this #(request @thrift-sdk StartMedia info source-id device-id)))
+  (StopMedia [this source-id device-id]
+    (try-do this #(request @thrift-sdk StopMedia source-id device-id)))
+  (SendMediaData [this data source-id device-id]
+    (try-do this #(request @thrift-sdk SendMediaData data source-id device-id)))
 
   Notify$Iface
   (Log [this msg]

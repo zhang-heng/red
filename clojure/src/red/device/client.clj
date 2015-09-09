@@ -6,7 +6,7 @@
             [red.utils :refer [now pass-mill]])
   (:import [red.device.source Source]
            [device.netsdk Sdk$Iface Notify$Iface]
-           [device.types StreamType ConnectType]
+           [device.types StreamType ConnectType MediaType]
            [device.info LoginAccount PlayInfo]
            [clojure.lang Ref PersistentArrayMap Fn Atom]
            [org.joda.time DateTime]
@@ -47,7 +47,7 @@
     (write-handle (ByteBuffer/allocate 0) :block))
 
   (MediaData [this data _ _]
-    (let [{:keys [^device.types.MediaType type reserver pos block total]} (bean data)
+    (let [{:keys [^device.types.MediaPayloadType type reserver pos block total]} (bean data)
           payload (.bufferForPayload data)
           header  (doto (ByteBuffer/allocate 17)
                     (.put (unchecked-byte (.getValue type)))
@@ -75,6 +75,11 @@
                         :sub1 StreamType/Sub
                         :sub2 StreamType/Sub
                         :sub3 StreamType/Sub})
+
+(defonce source-type* {:realplay      MediaType/RealPlay
+                       :voice-talk    MediaType/VoiceTalk
+                       :playback      MediaType/PlaybackByTime
+                       :playback-file MediaType/PlaybackByFile})
 
 (defn- create-client
   "生成与客户端的相关数据"
@@ -115,15 +120,16 @@
 (defn open-session!
   "处理请求,建立与设备的准备数据;返回数据发送函数和关闭函数"
   [connection {:keys [manufacturer addr port user password
-                      session-type channel-id stream-type start-time end-time
+                      session-type channel-id stream-type start-time end-time path
                       session-id]}
    write-handle close-handle]
   (dosync
    (let [connect-type ConnectType/Tcp
          stream-type  (get stream-types* stream-type StreamType/Main)
+         session-type (get source-type* session-type MediaType/RealPlay)
          account      (LoginAccount. addr port user password)
-         info         (PlayInfo. channel-id stream-type connect-type start-time end-time)]
-     (-> (get-source! manufacturer account session-type info)
+         info         (PlayInfo. session-type channel-id stream-type connect-type start-time end-time path)]
+     (-> (get-source! manufacturer account info)
          (create-client connection
                         manufacturer account session-type info
                         write-handle close-handle

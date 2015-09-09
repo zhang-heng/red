@@ -60,6 +60,7 @@ void Device::StopMedia(const std::string& media_id){
     _medias.erase(media_id);
     _medias_mtx.unlock();
     media->StopMedia();
+    media = nullptr;
   }
 }
 

@@ -31,10 +31,6 @@
   (GetVersion [this]
     (.GetVersion device))
 
-  (xDownloadRecordByFile [this])
-  (xDownloadRecordByTime [this])
-  (xStopDownload [this])
-
   Notify$Iface
   (Connected [this _])
 

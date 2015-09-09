@@ -30,7 +30,7 @@ bool SerialStart(1:string device_id), //透明串口
 bool SerialStop(1:string device_id),
 oneway void SerialSend(1:string device_id),
 
-//**********回放**********/
+//**********媒体**********/
 oneway void StartMedia (1:info.PlayInfo play_info, 2:string media_id, 3:string device_id), //启动媒体
 oneway void StopMedia  (1:string media_id, 2:string device_id), //停止媒体
 void SendMediaData     (1:binary buffer, 2:string media_id, 3:string device_id), //发送对讲音频

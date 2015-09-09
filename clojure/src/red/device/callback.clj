@@ -40,11 +40,6 @@
 
 (defn start-thrift! [^Notify$Iface notifier]
   (let [handler (thrift/service Notify
-                                (Test1 [mp] (log/debug "->sdk test1" mp))
-                                (Test2 [bs] (log/debug "->sdk test2:" bs))
-                                (Test3 [] (log/debug "->sdk test3") (device.info.MediaPackage.))
-                                (Test4 [] (log/debug "->sdk test4") (ByteBuffer/allocate 0))
-
                                 (Log [msg] (.Log notifier msg))
 
                                 (Lanuched [port] (try-do #(.Lanuched notifier port)))

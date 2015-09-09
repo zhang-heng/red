@@ -87,31 +87,17 @@
     (when (= :online @status)
       (.Logout executor id)))
 
-  (StartRealPlay [this info source-id _]
+  (StartMedia [this info source-id _]
     (when (= :online @status)
-      (.StartRealPlay executor info source-id id)))
+      (.StartMedia executor info source-id id)))
 
-  (StopRealPlay [this source-id _]
-    (.StopRealPlay executor source-id id))
+  (StopMedia [this source-id _]
+    (.StopMedia executor source-id id))
 
-  (StartVoiceTalk [this info source-id _]
-    (when (= :online @status)
-      (.StartVoiceTalk executor info source-id id)))
-
-  (StopVoiceTalk [this source-id _]
-    (.StopVoiceTalk executor source-id id))
-
-  (SendVoiceData [this data source-id _]
+  (SendMediaData [this data source-id _]
     (dosync
      (swap! client->flow + (.limit data)))
-    (.SendVoiceData executor data source-id id))
-
-  (PlayBackByTime [this info source-id _]
-    (when (= :online @status)
-      (.PlayBackByTime executor info source-id id)))
-
-  (StopPlayBack [this source-id _]
-    (.StopPlayBack executor source-id id))
+    (.SendMediaData executor data source-id id))
 
   Notify$Iface
   (Lanuched [this _]
