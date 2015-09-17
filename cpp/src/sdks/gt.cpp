@@ -189,3 +189,14 @@ void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){
   int rt = gt_write_speak_data((long)handle_id, reinterpret_cast<unsigned char*>(const_cast<char*>(buffer.c_str())), buffer.size());
   if (rt<0) _MediaFinish();
 }
+
+void Media::PlayBackNormalSpeed(){
+}
+void Media::PlayBackPause(){
+}
+void Media::PlayBackFast(){
+}
+void Media::PlayBackSlow(){
+}
+void Media::PlayBackSeek(){
+}

@@ -30,11 +30,11 @@ class Media{
   void StopMedia();
   void SendMediaData(const std::string& buffer);
 
-  void PlayBackNormalSpeed(){}; //SDK
-  void PlayBackPause(){};       //SDK
-  void PlayBackFast(){};        //SDK
-  void PlayBackSlow(){};        //SDK
-  void PlayBackSeek(){};        //SDK
+  void PlayBackNormalSpeed(); //SDK
+  void PlayBackPause();       //SDK
+  void PlayBackFast();        //SDK
+  void PlayBackSlow();        //SDK
+  void PlayBackSeek();        //SDK
 
  private:
   Client* _client;

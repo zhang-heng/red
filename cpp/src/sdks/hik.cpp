@@ -165,3 +165,14 @@ void Media::StopVoiceTalk(SESSION_ID handle_id){
 void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){
   NET_DVR_VoiceComSendData((LONG)handle_id, const_cast<char*>(buffer.c_str()), buffer.size());
 }
+
+void Media::PlayBackNormalSpeed(){
+}
+void Media::PlayBackPause(){
+}
+void Media::PlayBackFast(){
+}
+void Media::PlayBackSlow(){
+}
+void Media::PlayBackSeek(){
+}

@@ -155,3 +155,15 @@ SESSION_ID Media::StartVoiceTalk(SESSION_ID login_id, long channel,
 void Media::StopVoiceTalk(SESSION_ID handle_id){}
 
 void Media::SendVoiceData(SESSION_ID handle_id, const std::string& buffer){}
+
+
+void Media::PlayBackNormalSpeed(){
+}
+void Media::PlayBackPause(){
+}
+void Media::PlayBackFast(){
+}
+void Media::PlayBackSlow(){
+}
+void Media::PlayBackSeek(){
+}
