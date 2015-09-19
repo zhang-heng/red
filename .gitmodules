@@ -1,3 +1,0 @@
-[submodule "third-part"]
-	path = third-part
-	url = git@git.gtalarm.tk:zhangheng/red-libs.git
